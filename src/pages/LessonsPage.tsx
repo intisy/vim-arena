@@ -1,8 +1,13 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { LESSON_CATEGORIES } from '@/data/categories'
 import { ALL_LESSONS } from '@/data/lessons/index'
 
 export default function LessonsPage() {
+  useEffect(() => {
+    document.title = 'Lessons | vim-arena'
+  }, [])
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-6xl">
       <div className="mb-12">

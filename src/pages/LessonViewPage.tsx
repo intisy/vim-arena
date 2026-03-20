@@ -12,6 +12,14 @@ export default function LessonViewPage() {
   const { lessonId } = useParams<{ lessonId: string }>()
   const lesson = lessonId ? LESSONS_BY_ID.get(lessonId) : undefined
   
+  useEffect(() => {
+    if (lesson) {
+      document.title = `${lesson.title} | vim-arena`
+    } else {
+      document.title = 'Lesson | vim-arena'
+    }
+  }, [lesson])
+
   const editorRef = useRef<VimEditorRef>(null)
   const [showSuccess, setShowSuccess] = useState(false)
 

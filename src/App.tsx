@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom'
 import { Suspense } from 'react'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { DesktopGate } from '@/components/DesktopGate'
+import { KeyboardHelp } from '@/components/KeyboardHelp'
 import { MainLayout } from '@/layouts/MainLayout'
 import {
   HomePage,
@@ -17,6 +18,7 @@ function App() {
   return (
     <ThemeProvider>
       <DesktopGate>
+        <KeyboardHelp />
         <HashRouter>
           <Routes>
             <Route element={<MainLayout />}>

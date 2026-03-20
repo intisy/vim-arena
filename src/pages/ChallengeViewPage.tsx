@@ -8,6 +8,10 @@ import type { VimEditorRef } from '@/components/VimEditor'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
 
 export default function ChallengeViewPage() {
+  useEffect(() => {
+    document.title = 'Challenge | vim-arena'
+  }, [])
+
   const location = useLocation()
   const navigate = useNavigate()
   const difficulty = location.state?.difficulty || 1

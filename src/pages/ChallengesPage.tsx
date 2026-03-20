@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
 
@@ -11,6 +11,10 @@ const DIFFICULTIES = [
 ]
 
 export default function ChallengesPage() {
+  useEffect(() => {
+    document.title = 'Challenges | vim-arena'
+  }, [])
+
   const [selectedDifficulty, setSelectedDifficulty] = useState<number>(1)
   const navigate = useNavigate()
   const { stats } = useChallengeStats()
