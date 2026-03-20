@@ -41,6 +41,10 @@ export default function ChallengeViewPage() {
     if (phase === 'countdown' && editorRef.current) {
       editorRef.current.reset()
     }
+    if (phase === 'active' && editorRef.current) {
+      // Auto-focus so vim keybinds work without clicking
+      editorRef.current.focus()
+    }
   }, [phase, challenge])
 
   const handleBack = () => {

@@ -29,6 +29,7 @@ const MODE_LABELS: Record<VimMode, string> = {
 export interface VimEditorRef {
   reset: () => void
   getState: () => VimEditorState
+  focus: () => void
 }
 
 export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEditor(
@@ -50,6 +51,9 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
 
   // Listen for vim-mode-change events emitted by @replit/codemirror-vim
   const handleEditorCreate = useCallback((view: EditorView) => {
+    // Auto-focus the editor so vim keybinds work immediately
+    requestAnimationFrame(() => view.focus())
+
     view.dom.addEventListener('vim-mode-change', (e: Event) => {
       const detail = (e as CustomEvent<{ mode: string; subMode?: string }>).detail
       const rawMode = detail?.mode ?? 'normal'
@@ -96,6 +100,10 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: initialContent }
       })
+    },
+    focus: () => {
+      const view = cmRef.current?.view
+      if (view) requestAnimationFrame(() => view.focus())
     },
     getState: () => {
       const view = cmRef.current?.view

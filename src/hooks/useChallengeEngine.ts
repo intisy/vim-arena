@@ -91,6 +91,9 @@ export function useChallengeEngine() {
 
   const handleEditorStateChange = useCallback((state: EditorState) => {
     if (phase !== 'active' || !engineRef.current) return
+    // Don't validate if user hasn't pressed any keys yet — prevents auto-win
+    // from spurious onChange events during editor initialization
+    if (engineRef.current.getKeystrokeCount() === 0) return
     
     const res = engineRef.current.validateCompletion(state)
     if (res) {
