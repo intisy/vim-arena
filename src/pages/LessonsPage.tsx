@@ -2,8 +2,11 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { LESSON_CATEGORIES } from '@/data/categories'
 import { ALL_LESSONS } from '@/data/lessons/index'
+import { useLessonProgress } from '@/hooks/useLessonProgress'
 
 export default function LessonsPage() {
+  const { isCompleted } = useLessonProgress()
+  
   useEffect(() => {
     document.title = 'Lessons | vim-arena'
   }, [])
@@ -22,6 +25,7 @@ export default function LessonsPage() {
         {LESSON_CATEGORIES.map(category => {
           const categoryLessons = ALL_LESSONS.filter(l => l.categoryId === category.id)
           const lessonCount = categoryLessons.length
+          const completedInCategory = categoryLessons.filter(l => isCompleted(l.id)).length
           const firstLesson = categoryLessons[0]
           
           if (!firstLesson) return null
@@ -40,9 +44,14 @@ export default function LessonsPage() {
                 {category.description}
               </p>
               <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--color-border)]">
-                <span className="text-xs font-semibold text-[var(--color-muted)] bg-[var(--color-border)] px-2.5 py-1 rounded-full">
-                  {lessonCount} {lessonCount === 1 ? 'lesson' : 'lessons'}
-                </span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-[var(--color-muted)] bg-[var(--color-border)] px-2.5 py-1 rounded-full w-fit">
+                    {lessonCount} {lessonCount === 1 ? 'lesson' : 'lessons'}
+                  </span>
+                  <span className="text-[10px] font-medium text-[var(--color-muted)] ml-1">
+                    {completedInCategory} / {lessonCount} completed
+                  </span>
+                </div>
                 <span className="text-sm font-medium text-[var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                   Start <span aria-hidden="true">&rarr;</span>
                 </span>

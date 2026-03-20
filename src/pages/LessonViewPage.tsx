@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { LESSONS_BY_ID, ALL_LESSONS } from '@/data/lessons/index'
 import { useLessonEngine } from '@/hooks/useLessonEngine'
+import { useLessonProgress } from '@/hooks/useLessonProgress'
 import { LessonStepper } from '@/components/LessonStepper'
 import { InstructionPanel } from '@/components/InstructionPanel'
 import { VimEditor } from '@/components/VimEditor'
@@ -27,6 +28,14 @@ export default function LessonViewPage() {
   // We'll use a dummy lesson if not found, and return early below
   const dummyLesson = ALL_LESSONS[0]
   const engine = useLessonEngine(lesson || dummyLesson)
+  const { markLessonComplete } = useLessonProgress()
+
+  // Mark lesson as complete when engine finishes
+  useEffect(() => {
+    if (engine.isComplete && lesson) {
+      markLessonComplete(lesson.id)
+    }
+  }, [engine.isComplete, lesson, markLessonComplete])
 
   // Reset editor when step changes
   useEffect(() => {
