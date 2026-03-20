@@ -1,0 +1,223 @@
+import type { Lesson } from '@/types/lesson'
+
+export const BASIC_VIM_LESSONS: Lesson[] = [
+  {
+    id: 'basic-vim-modes',
+    categoryId: 'basic-vim',
+    title: 'Understanding Vim Modes',
+    description: 'Switch between Normal and Insert mode confidently.',
+    order: 1,
+    prerequisiteIds: [],
+    steps: [
+      {
+        id: 'basic-vim-modes-step-1',
+        instruction: 'Press `i` to enter Insert mode.',
+        initialContent: `function fetchUser(id: string) {
+  return api.get('/users/' + id)
+}`,
+        initialCursor: { line: 0, column: 0 },
+        expectedContent: undefined,
+        expectedCursor: undefined,
+        hints: ['Press `i` in Normal mode.', 'You should see Insert mode activate.'],
+        requiredCommands: ['i'],
+      },
+      {
+        id: 'basic-vim-modes-step-2',
+        instruction: 'Press `Esc` to return to Normal mode.',
+        initialContent: `const endpoint = '/health'
+console.log(endpoint)`,
+        initialCursor: { line: 0, column: 0 },
+        expectedContent: undefined,
+        expectedCursor: undefined,
+        hints: ['Use the Escape key.', 'In this project, the command key is `Esc`.'],
+        requiredCommands: ['Esc'],
+      },
+      {
+        id: 'basic-vim-modes-step-3',
+        instruction: 'Practice mode switching with `i` then `Esc`.',
+        initialContent: `type User = {
+  id: string
+  email: string
+}`,
+        initialCursor: { line: 1, column: 2 },
+        expectedContent: undefined,
+        expectedCursor: undefined,
+        hints: ['Enter Insert mode, then leave it.', 'Use `i`, then `Esc`.'],
+        requiredCommands: ['i', 'Esc'],
+      },
+    ],
+  },
+  {
+    id: 'basic-vim-hjkl-navigation',
+    categoryId: 'basic-vim',
+    title: 'Navigate with h j k l',
+    description: 'Move left, down, up, and right without arrow keys.',
+    order: 2,
+    prerequisiteIds: ['basic-vim-modes'],
+    steps: [
+      {
+        id: 'basic-vim-hjkl-navigation-step-1',
+        instruction: 'Move right to the `r` in `role` using `l`.',
+        initialContent: `const role = 'admin'`,
+        initialCursor: { line: 0, column: 0 },
+        expectedContent: undefined,
+        expectedCursor: { line: 0, column: 6 },
+        hints: ['Move right from column 0.', 'Use `l` six times.'],
+        requiredCommands: ['l'],
+      },
+      {
+        id: 'basic-vim-hjkl-navigation-step-2',
+        instruction: 'Move down to line 2 using `j`.',
+        initialContent: `const user = getUser()
+const profile = getProfile(user.id)
+return profile`,
+        initialCursor: { line: 0, column: 0 },
+        expectedContent: undefined,
+        expectedCursor: { line: 2, column: 0 },
+        hints: ['`j` moves down one line.', 'Press `j` twice.'],
+        requiredCommands: ['j'],
+      },
+      {
+        id: 'basic-vim-hjkl-navigation-step-3',
+        instruction: 'From line 2, move up to line 1 and left to column 4 using `k` and `h`.',
+        initialContent: `const retries = 3
+const timeoutMs = 1500
+scheduleRetry(timeoutMs)`,
+        initialCursor: { line: 2, column: 10 },
+        expectedContent: undefined,
+        expectedCursor: { line: 1, column: 4 },
+        hints: ['First go up one line.', 'Then move left to column 4.'],
+        requiredCommands: ['k', 'h'],
+      },
+    ],
+  },
+  {
+    id: 'basic-vim-delete-character-x',
+    categoryId: 'basic-vim',
+    title: 'Delete Characters with x',
+    description: 'Use x to remove the character under the cursor.',
+    order: 3,
+    prerequisiteIds: ['basic-vim-hjkl-navigation'],
+    steps: [
+      {
+        id: 'basic-vim-delete-character-x-step-1',
+        instruction: 'Delete the extra underscore in `user__id` with `x`.',
+        initialContent: `const user__id = getUserId()`,
+        initialCursor: { line: 0, column: 10 },
+        expectedContent: `const user_id = getUserId()`,
+        expectedCursor: undefined,
+        hints: ['Place the cursor on the second underscore.', 'Press `x` once.'],
+        requiredCommands: ['x'],
+      },
+      {
+        id: 'basic-vim-delete-character-x-step-2',
+        instruction: 'Delete the semicolon at the end of the line using `x`.',
+        initialContent: `const cacheKey = createKey();`,
+        initialCursor: { line: 0, column: 28 },
+        expectedContent: `const cacheKey = createKey()`,
+        expectedCursor: undefined,
+        hints: ['Move to the final character if needed.', 'Press `x` on `;`.'],
+        requiredCommands: ['x'],
+      },
+      {
+        id: 'basic-vim-delete-character-x-step-3',
+        instruction: 'Delete the first `l` in `alllowed` to fix the typo.',
+        initialContent: `const alllowed = checkPermission(user)`,
+        initialCursor: { line: 0, column: 9 },
+        expectedContent: `const allowed = checkPermission(user)`,
+        expectedCursor: undefined,
+        hints: ['The typo has one extra `l`.', 'Press `x` on the extra character.'],
+        requiredCommands: ['x'],
+      },
+    ],
+  },
+  {
+    id: 'basic-vim-replace-character-r',
+    categoryId: 'basic-vim',
+    title: 'Replace One Character with r',
+    description: 'Use r to overwrite a single character without entering Insert mode.',
+    order: 4,
+    prerequisiteIds: ['basic-vim-delete-character-x'],
+    steps: [
+      {
+        id: 'basic-vim-replace-character-r-step-1',
+        instruction: 'Change `minLenght` to `minLength` using `r` on the typo.',
+        initialContent: `const minLenght = 8`,
+        initialCursor: { line: 0, column: 11 },
+        expectedContent: `const minLength = 8`,
+        expectedCursor: undefined,
+        hints: ['Move to the wrong character.', 'Press `r` then type the replacement character.'],
+        requiredCommands: ['r'],
+      },
+      {
+        id: 'basic-vim-replace-character-r-step-2',
+        instruction: 'Change `v1` to `v2` in the API path.',
+        initialContent: `const path = '/api/v1/users'`,
+        initialCursor: { line: 0, column: 18 },
+        expectedContent: `const path = '/api/v2/users'`,
+        expectedCursor: undefined,
+        hints: ['Place cursor on `1`.', 'Use `r` followed by `2`.'],
+        requiredCommands: ['r'],
+      },
+      {
+        id: 'basic-vim-replace-character-r-step-3',
+        instruction: 'Fix `returm` to `return` by replacing the wrong character.',
+        initialContent: `returm response`,
+        initialCursor: { line: 0, column: 5 },
+        expectedContent: `return response`,
+        expectedCursor: undefined,
+        hints: ['Cursor should be on `m`.', 'Use `r` then type `n`.'],
+        requiredCommands: ['r'],
+      },
+    ],
+  },
+  {
+    id: 'basic-vim-undo-redo',
+    categoryId: 'basic-vim',
+    title: 'Undo and Redo Changes',
+    description: 'Recover from mistakes with undo and redo.',
+    order: 5,
+    prerequisiteIds: ['basic-vim-replace-character-r'],
+    steps: [
+      {
+        id: 'basic-vim-undo-redo-step-1',
+        instruction: 'Delete one character with `x`, then undo it with `u`.',
+        initialContent: `const env = 'prod'`,
+        initialCursor: { line: 0, column: 6 },
+        expectedContent: `const env = 'prod'`,
+        expectedCursor: undefined,
+        hints: ['Make a small change first.', 'Use `u` to restore original content.'],
+        requiredCommands: ['x', 'u'],
+      },
+      {
+        id: 'basic-vim-undo-redo-step-2',
+        instruction: 'After undoing, redo the change with `Ctrl-r`.',
+        initialContent: `const level = 'info'`,
+        initialCursor: { line: 0, column: 6 },
+        expectedContent: `const evel = 'info'`,
+        expectedCursor: undefined,
+        hints: ['Do a single-character deletion first.', 'Undo with `u`, then redo with `Ctrl-r`.'],
+        requiredCommands: ['x', 'u', 'Ctrl-r'],
+      },
+      {
+        id: 'basic-vim-undo-redo-step-3',
+        instruction: 'Use undo/redo to practice safe editing on this line.',
+        initialContent: `const retries = 5`,
+        initialCursor: { line: 0, column: 6 },
+        expectedContent: undefined,
+        expectedCursor: undefined,
+        hints: ['Any small edit works.', 'Try `x`, `u`, then `Ctrl-r`.'],
+        requiredCommands: ['x', 'u', 'Ctrl-r'],
+      },
+    ],
+  },
+]
+import type { Lesson } from '@/types/lesson'
+
+export const BASIC_VIM_LESSONS: Lesson[] = [
+  { id: 'basic-vim-modes', categoryId: 'basic-vim', title: 'Normal and Insert Modes', description: 'Switch between Normal and Insert modes.', order: 1, prerequisiteIds: [], steps: [{ id: 'basic-vim-modes-step-1', instruction: 'Press i then Esc.', initialContent: "function greet(name: string) {\n  return `Hello, ${name}`\n}", initialCursor: { line: 0, column: 0 }, expectedContent: undefined, expectedCursor: undefined, hints: ['Use i.', 'Then use Esc.'], requiredCommands: ['i', 'Esc'] }] },
+  { id: 'basic-vim-hjkl-navigation', categoryId: 'basic-vim', title: 'Move with h j k l', description: 'Navigate with home-row keys.', order: 2, prerequisiteIds: ['basic-vim-modes'], steps: [{ id: 'basic-vim-hjkl-navigation-step-1', instruction: 'Move down one line with j.', initialContent: "let count = 0\ncount += 1", initialCursor: { line: 0, column: 0 }, expectedContent: undefined, expectedCursor: { line: 1, column: 0 }, hints: ['Use j.', 'Down one line.'], requiredCommands: ['j'] }] },
+  { id: 'basic-vim-delete-char-x', categoryId: 'basic-vim', title: 'Delete Character with x', description: 'Use x for single-character deletion.', order: 3, prerequisiteIds: ['basic-vim-hjkl-navigation'], steps: [{ id: 'basic-vim-delete-char-x-step-1', instruction: 'Delete underscore with x.', initialContent: "const user_name = 'Ada'", initialCursor: { line: 0, column: 10 }, expectedContent: "const username = 'Ada'", expectedCursor: undefined, hints: ['Cursor on _.', 'Press x.'], requiredCommands: ['x'] }] },
+  { id: 'basic-vim-replace-char-r', categoryId: 'basic-vim', title: 'Replace Character with r', description: 'Use r to replace one character.', order: 4, prerequisiteIds: ['basic-vim-delete-char-x'], steps: [{ id: 'basic-vim-replace-char-r-step-1', instruction: 'Replace v with V.', initialContent: "const version = '2.0.0'", initialCursor: { line: 0, column: 6 }, expectedContent: "const Version = '2.0.0'", expectedCursor: undefined, hints: ['Use r then V.', 'Single-char replace.'], requiredCommands: ['r'] }] },
+  { id: 'basic-vim-line-positioning', categoryId: 'basic-vim', title: 'Line Start and End Motions', description: 'Use 0, ^, and $ for line anchors.', order: 5, prerequisiteIds: ['basic-vim-replace-char-r'], steps: [{ id: 'basic-vim-line-positioning-step-1', instruction: 'Jump to line end with $.', initialContent: "return totalAmount", initialCursor: { line: 0, column: 0 }, expectedContent: undefined, expectedCursor: { line: 0, column: 17 }, hints: ['Use $.', 'End of line.'], requiredCommands: ['$'] }] },
+]
