@@ -1,73 +1,39 @@
-# React + TypeScript + Vite
+# vim-arena ⚔️
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Master Vim. Compete. Dominate.
 
-Currently, two official plugins are available:
+Vim Arena is an interactive learning platform designed to help you master Vim motions and commands through structured lessons and timed challenges. Whether you're a beginner or a seasoned pro, Vim Arena provides the tools to sharpen your skills and track your progress.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- 📚 **8 lesson categories** with 40+ interactive lessons
+- ⚡ **Timed challenges** with scoring (efficiency + speed)
+- 🎨 **4 themes**: Terminal Green, Cyberpunk Neon, Clean Light, Dracula
+- 💾 **Progress saved locally** (no account needed)
+- ⌨️ **Desktop-only** (vim on a keyboard, always)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- **Frontend**: React 19 + Vite 8 + TypeScript 5
+- **Editor**: CodeMirror 6 with @replit/codemirror-vim
+- **Styling**: Tailwind CSS v4
+- **Testing**: Vitest
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Development
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/YOUR_USERNAME/vim-arena.git
+cd vim-arena
+npm install
+npm run dev      # dev server at http://localhost:5173
+npm test         # run tests
+npm run build    # production build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Deployment
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+This project is configured to automatically deploy to GitHub Pages via GitHub Actions whenever changes are pushed to the `master` branch.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## License
+
+MIT
