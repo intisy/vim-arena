@@ -1,0 +1,88 @@
+import type { CodeSnippet } from '@/types/challenge'
+
+export const TYPESCRIPT_SNIPPETS: CodeSnippet[] = [
+  {
+    id: 'ts-snippet-1',
+    content: `interface User {\n  id: string\n  name: string\n  email: string\n  createdAt: Date\n}`,
+    language: 'typescript',
+    lineCount: 6,
+    tags: ['interface', 'type'],
+  },
+  {
+    id: 'ts-snippet-2',
+    content: `function mergeObjects<T extends object>(target: T, source: Partial<T>): T {\n  return { ...target, ...source }\n}`,
+    language: 'typescript',
+    lineCount: 3,
+    tags: ['function', 'generics', 'object'],
+  },
+  {
+    id: 'ts-snippet-3',
+    content: `type Result<T, E = Error> =\n  | { ok: true; value: T }\n  | { ok: false; error: E }`,
+    language: 'typescript',
+    lineCount: 3,
+    tags: ['type', 'generics', 'union'],
+  },
+  {
+    id: 'ts-snippet-4',
+    content: `class Logger {\n  private static instance: Logger\n\n  private constructor(private readonly prefix: string) {}\n\n  static getInstance(prefix: string = 'App'): Logger {\n    if (!Logger.instance) {\n      Logger.instance = new Logger(prefix)\n    }\n    return Logger.instance\n  }\n\n  log(message: string): void {\n    console.log(\`[\${this.prefix}] \${message}\`)\n  }\n}`,
+    language: 'typescript',
+    lineCount: 16,
+    tags: ['class', 'singleton', 'static'],
+  },
+  {
+    id: 'ts-snippet-5',
+    content: `async function retryWithBackoff<T>(\n  fn: () => Promise<T>,\n  maxRetries: number = 3\n): Promise<T> {\n  for (let attempt = 0; attempt < maxRetries; attempt++) {\n    try {\n      return await fn()\n    } catch (error) {\n      if (attempt === maxRetries - 1) throw error\n      await new Promise(r => setTimeout(r, 2 ** attempt * 1000))\n    }\n  }\n  throw new Error('Unreachable')\n}`,
+    language: 'typescript',
+    lineCount: 14,
+    tags: ['function', 'async', 'generics', 'error-handling'],
+  },
+  {
+    id: 'ts-snippet-6',
+    content: `const useLocalStorage = <T>(key: string, initialValue: T) => {\n  const stored = localStorage.getItem(key)\n  const initial = stored ? JSON.parse(stored) : initialValue\n  return initial as T\n}`,
+    language: 'typescript',
+    lineCount: 5,
+    tags: ['arrow', 'generics', 'storage'],
+  },
+  {
+    id: 'ts-snippet-7',
+    content: `enum HttpStatus {\n  OK = 200,\n  Created = 201,\n  BadRequest = 400,\n  Unauthorized = 401,\n  NotFound = 404,\n  InternalServerError = 500,\n}`,
+    language: 'typescript',
+    lineCount: 8,
+    tags: ['enum', 'http'],
+  },
+  {
+    id: 'ts-snippet-8',
+    content: `function pipe<T>(...fns: Array<(arg: T) => T>): (arg: T) => T {\n  return (arg: T) => fns.reduce((prev, fn) => fn(prev), arg)\n}`,
+    language: 'typescript',
+    lineCount: 3,
+    tags: ['function', 'generics', 'functional'],
+  },
+  {
+    id: 'ts-snippet-9',
+    content: `interface ApiResponse<T> {\n  data: T\n  status: number\n  message: string\n  timestamp: number\n}`,
+    language: 'typescript',
+    lineCount: 6,
+    tags: ['interface', 'generics', 'api'],
+  },
+  {
+    id: 'ts-snippet-10',
+    content: `class Queue<T> {\n  private items: T[] = []\n\n  enqueue(item: T): void {\n    this.items.push(item)\n  }\n\n  dequeue(): T | undefined {\n    return this.items.shift()\n  }\n\n  get size(): number {\n    return this.items.length\n  }\n}`,
+    language: 'typescript',
+    lineCount: 15,
+    tags: ['class', 'generics', 'data-structure'],
+  },
+  {
+    id: 'ts-snippet-11',
+    content: `type DeepPartial<T> = {\n  [P in keyof T]?: T[P] extends object\n    ? DeepPartial<T[P]>\n    : T[P]\n}`,
+    language: 'typescript',
+    lineCount: 5,
+    tags: ['type', 'generics', 'utility'],
+  },
+  {
+    id: 'ts-snippet-12',
+    content: `function assertNever(value: never): never {\n  throw new Error(\`Unexpected value: \${value}\`)\n}`,
+    language: 'typescript',
+    lineCount: 3,
+    tags: ['function', 'type-guard', 'error-handling'],
+  },
+]
