@@ -7,7 +7,7 @@ export const TEXT_OBJECTS_LESSONS: Lesson[] = [
     title: 'What Are Text Objects',
     description: 'Text objects let you operate on semantic units like words, quotes, and brackets.',
     order: 1,
-    prerequisiteIds: ['search-practice'],
+    prerequisiteIds: ['search-lesson-5'],
     steps: [
       {
         id: 'text-objects-intro-step-1',
