@@ -1,11 +1,11 @@
 import type { Lesson } from '@/types/lesson'
-import { BASIC_OPERATORS_LESSONS } from './basic-operators'
 import { BASIC_VIM_LESSONS } from './basic-vim'
-import { ESSENTIAL_MOTIONS_LESSONS } from './essential-motions'
 import { INSERT_MODE_LESSONS } from './insert-mode'
+import { ESSENTIAL_MOTIONS_LESSONS } from './essential-motions'
+import { BASIC_OPERATORS_LESSONS } from './basic-operators'
+import { VERTICAL_MOVEMENT_LESSONS } from './vertical-movement'
 import { SEARCH_LESSONS } from './search'
 import { TEXT_OBJECTS_LESSONS } from './text-objects'
-import { VERTICAL_MOVEMENT_LESSONS } from './vertical-movement'
 import { VISUAL_MODE_LESSONS } from './visual-mode'
 
 export const ALL_LESSONS: Lesson[] = [

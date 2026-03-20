@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest'
+﻿import { describe, test, expect } from 'vitest'
 import { ALL_LESSONS, LESSONS_BY_ID } from '@/data/lessons/index'
 import { LESSON_CATEGORIES } from '@/data/categories'
 import { SUPPORTED_COMMAND_KEYS } from '@/data/supported-commands'
