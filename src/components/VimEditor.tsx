@@ -1,7 +1,8 @@
-import { forwardRef, useImperativeHandle, useRef, useCallback, useState, useMemo } from 'react'
+import { forwardRef, useImperativeHandle, useRef, useCallback, useState, useMemo, useEffect } from 'react'
 import ReactCodeMirror from '@uiw/react-codemirror'
 import type { ReactCodeMirrorRef } from '@uiw/react-codemirror'
-import { EditorView } from '@codemirror/view'
+import { EditorView, Decoration, type DecorationSet } from '@codemirror/view'
+import { StateField, StateEffect } from '@codemirror/state'
 import { vim } from '@replit/codemirror-vim'
 import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
@@ -50,10 +51,43 @@ function applyCursor(view: EditorView, cursor?: { line: number; column: number }
   view.dispatch({ selection: { anchor: pos } })
 }
 
+const setTargetPos = StateEffect.define<number | null>()
+
+const targetMark = Decoration.mark({ class: 'cm-target-cursor' })
+
+const targetField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none
+  },
+  update(decos, tr) {
+    for (const effect of tr.effects) {
+      if (effect.is(setTargetPos)) {
+        if (effect.value === null) return Decoration.none
+        const pos = effect.value
+        if (pos < 0 || pos >= tr.state.doc.length) return Decoration.none
+        return Decoration.set([targetMark.range(pos, pos + 1)])
+      }
+    }
+    return decos
+  },
+  provide: (f) => EditorView.decorations.from(f),
+})
+
+const preventMouseSelection = EditorView.domEventHandlers({
+  mousedown(event, view) {
+    if (!view.hasFocus) {
+      view.focus()
+    }
+    event.preventDefault()
+    return true
+  },
+})
+
 export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEditor(
   {
     initialContent,
     initialCursor,
+    targetCursor,
     language = 'javascript',
     readOnly = false,
     height = '400px',
@@ -78,6 +112,22 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
       }),
     [],
   )
+
+  useEffect(() => {
+    const view = cmRef.current?.view
+    if (!view) return
+
+    if (!targetCursor) {
+      view.dispatch({ effects: setTargetPos.of(null) })
+      return
+    }
+
+    const lineCount = view.state.doc.lines
+    const lineNum = Math.min(targetCursor.line + 1, lineCount)
+    const line = view.state.doc.line(lineNum)
+    const pos = Math.min(line.from + targetCursor.column, line.to)
+    view.dispatch({ effects: setTargetPos.of(pos) })
+  }, [targetCursor])
 
   const handleEditorCreate = useCallback(
     (view: EditorView) => {
@@ -135,7 +185,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
   )
 
   const extensions = useMemo(
-    () => [vim(), getLangExtension(language), stateTracker],
+    () => [vim(), getLangExtension(language), stateTracker, targetField, preventMouseSelection],
     [language, stateTracker],
   )
 
@@ -145,6 +195,41 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
       style={{ display: 'flex', flexDirection: 'column', fontFamily: 'monospace' }}
       onKeyDown={handleKeyDown}
     >
+      <style>{`
+        .cm-target-cursor {
+          background-color: rgba(80, 250, 123, 0.35);
+          border: 1px solid #50fa7b;
+          border-radius: 2px;
+          position: relative;
+        }
+        .cm-editor {
+          background-color: #1e1f29 !important;
+        }
+        .cm-editor .cm-gutters {
+          background-color: #1e1f29 !important;
+          border-right: 1px solid #333 !important;
+          color: #6272a4 !important;
+        }
+        .cm-editor .cm-activeLineGutter {
+          background-color: #282a36 !important;
+        }
+        .cm-editor .cm-activeLine {
+          background-color: rgba(68, 71, 90, 0.3) !important;
+        }
+        .cm-editor .cm-content {
+          caret-color: #f8f8f2 !important;
+        }
+        .cm-editor .cm-cursor {
+          border-left-color: #f8f8f2 !important;
+        }
+        .cm-editor .cm-selectionBackground {
+          background-color: rgba(98, 114, 164, 0.4) !important;
+        }
+        .cm-fat-cursor .cm-cursor {
+          background-color: rgba(248, 248, 242, 0.7) !important;
+          border: none !important;
+        }
+      `}</style>
       <ReactCodeMirror
         ref={cmRef}
         value={initialContent}
@@ -153,26 +238,35 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
         onCreateEditor={handleEditorCreate}
         readOnly={readOnly}
         theme="dark"
+        basicSetup={{
+          lineNumbers: true,
+          highlightActiveLine: true,
+          highlightActiveLineGutter: true,
+          foldGutter: false,
+          dropCursor: false,
+          allowMultipleSelections: false,
+          indentOnInput: false,
+        }}
         style={{
           fontSize: '14px',
-          border: '1px solid var(--theme-border, #333)',
         }}
       />
       <div
         aria-label={`Vim mode: ${mode}`}
         data-testid="vim-mode-indicator"
         style={{
-          padding: '2px 8px',
+          padding: '4px 12px',
           fontSize: '12px',
           fontFamily: 'monospace',
-          backgroundColor: 'var(--theme-editor-gutter, #0a1a0a)',
+          fontWeight: 'bold',
+          backgroundColor: '#1e1f29',
           color:
             mode === 'insert'
-              ? 'var(--theme-warning, #ffaa00)'
+              ? '#ffb86c'
               : mode.startsWith('visual')
-                ? 'var(--theme-accent, #39ff14)'
-                : 'var(--theme-primary, #00ff41)',
-          borderTop: '1px solid var(--theme-border, #333)',
+                ? '#bd93f9'
+                : '#50fa7b',
+          borderTop: '1px solid #333',
           userSelect: 'none',
         }}
       >

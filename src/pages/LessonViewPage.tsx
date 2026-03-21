@@ -23,6 +23,17 @@ function formatInstruction(text: string) {
   })
 }
 
+function computeEditorHeight(content: string): string {
+  const lineCount = content.split('\n').length
+  const lineHeight = 22
+  const padding = 16
+  const modeBar = 28
+  const minHeight = 60
+  const maxHeight = 400
+  const computed = lineCount * lineHeight + padding + modeBar
+  return `${Math.max(minHeight, Math.min(computed, maxHeight))}px`
+}
+
 export default function LessonViewPage() {
   const { lessonId } = useParams<{ lessonId: string }>()
   const lesson = lessonId ? LESSONS_BY_ID.get(lessonId) : undefined
@@ -37,7 +48,7 @@ export default function LessonViewPage() {
 
   const editorRef = useRef<VimEditorRef>(null)
   const [showSuccess, setShowSuccess] = useState(false)
-  const hasInteractedRef = useRef(false)
+  const initialStateRef = useRef<EditorState | null>(null)
 
   const dummyLesson = ALL_LESSONS[0]
   const engine = useLessonEngine(lesson || dummyLesson)
@@ -51,15 +62,16 @@ export default function LessonViewPage() {
 
   useEffect(() => {
     if (engine.currentStep) {
-      hasInteractedRef.current = false
+      const step = engine.currentStep
+      initialStateRef.current = {
+        content: step.initialContent,
+        cursorLine: step.initialCursor.line,
+        cursorColumn: step.initialCursor.column,
+      }
       editorRef.current?.reset()
       editorRef.current?.focus()
     }
   }, [engine.stepIndex, engine.currentStep])
-
-  const handleKeystroke = useCallback(() => {
-    hasInteractedRef.current = true
-  }, [])
 
   if (!lesson) {
     return (
@@ -81,29 +93,54 @@ export default function LessonViewPage() {
   }
 
   const handleStateChange = (state: EditorState) => {
-    if (!hasInteractedRef.current) return
     if (showSuccess || engine.isComplete) return
+
+    const init = initialStateRef.current
+    if (
+      init &&
+      state.content === init.content &&
+      state.cursorLine === init.cursorLine &&
+      state.cursorColumn === init.cursorColumn
+    ) {
+      return
+    }
 
     const isValid = engine.validateAndAdvance(state)
     if (isValid) {
       setShowSuccess(true)
       setTimeout(() => {
         setShowSuccess(false)
-      }, 1000)
+      }, 800)
     }
   }
 
   const handleResetStep = () => {
-    hasInteractedRef.current = false
+    if (engine.currentStep) {
+      initialStateRef.current = {
+        content: engine.currentStep.initialContent,
+        cursorLine: engine.currentStep.initialCursor.line,
+        cursorColumn: engine.currentStep.initialCursor.column,
+      }
+    }
     engine.resetStep()
     editorRef.current?.reset()
+    requestAnimationFrame(() => editorRef.current?.focus())
   }
+
+  const handleEditorContainerClick = useCallback(() => {
+    editorRef.current?.focus()
+  }, [])
 
   const currentIndex = ALL_LESSONS.findIndex(l => l.id === lesson.id)
   const prevLesson = currentIndex > 0 ? ALL_LESSONS[currentIndex - 1] : null
   const nextLesson = currentIndex >= 0 && currentIndex < ALL_LESSONS.length - 1 
     ? ALL_LESSONS[currentIndex + 1] 
     : null
+
+  const targetCursor = engine.currentStep?.expectedCursor ?? undefined
+  const editorHeight = engine.currentStep
+    ? computeEditorHeight(engine.currentStep.initialContent)
+    : '120px'
 
   const renderCompletionScreen = () => (
     <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in duration-500">
@@ -209,15 +246,18 @@ export default function LessonViewPage() {
                         </div>
                       )}
 
-                      <div className="relative w-full h-[400px] rounded-lg overflow-hidden border border-[var(--theme-border)] shadow-sm bg-[var(--theme-background)] mb-6">
+                      <div
+                        className="relative w-full rounded-lg overflow-hidden border border-[#44475a] shadow-lg mb-6 cursor-text"
+                        onClick={handleEditorContainerClick}
+                      >
                         <VimEditor 
                           ref={editorRef}
                           initialContent={engine.currentStep.initialContent}
                           initialCursor={engine.currentStep.initialCursor}
+                          targetCursor={targetCursor}
                           onStateChange={handleStateChange}
-                          onKeystroke={handleKeystroke}
                           className="h-full"
-                          height="100%"
+                          height={editorHeight}
                         />
                         
                         {showSuccess && (
@@ -262,7 +302,6 @@ export default function LessonViewPage() {
                 </div>
               )}
 
-              {/* Navigation Footer */}
               <div className="mt-16 pt-8 border-t border-[var(--theme-border)] flex items-center justify-between">
                 {prevLesson ? (
                   <Link 

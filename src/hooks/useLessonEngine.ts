@@ -24,6 +24,11 @@ export function useLessonEngine(lesson: Lesson) {
     syncState()
   }, [syncState])
 
+  const checkStep = useCallback((editorState: EditorState): boolean => {
+    if (engine.isComplete()) return false
+    return engine.validateStep(editorState)
+  }, [engine])
+
   const validateAndAdvance = useCallback((editorState: EditorState) => {
     if (engine.isComplete()) return false
 
@@ -55,6 +60,7 @@ export function useLessonEngine(lesson: Lesson) {
     isComplete,
     hint,
     attempts,
+    checkStep,
     validateAndAdvance,
     resetStep,
     resetLesson

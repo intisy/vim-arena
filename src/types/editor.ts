@@ -9,6 +9,7 @@ export type VimMode = 'normal' | 'insert' | 'visual' | 'visual-line' | 'replace'
 export interface VimEditorProps {
   initialContent: string
   initialCursor?: { line: number; column: number }
+  targetCursor?: { line: number; column: number }
   language?: 'javascript' | 'typescript' | 'python' | 'plaintext'
   readOnly?: boolean
   height?: string
