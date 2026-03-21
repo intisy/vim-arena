@@ -1,29 +1,53 @@
+export type LessonType = 'theory' | 'step-based' | 'target-based'
+
+export interface KeyCard {
+  key: string
+  description: string
+  example?: {
+    before: string
+    after: string
+    cursorBefore: { line: number; column: number }
+    cursorAfter: { line: number; column: number }
+  }
+}
+
+export interface TargetConfig {
+  targetCount: number
+  editorContent: string
+  allowedKeys: string[]
+}
+
 export interface LessonStep {
   id: string
-  instruction: string           // Markdown-formatted instruction (bold with **, code with `, kbd shortcuts)
-  initialContent: string        // Starting content for the editor
-  initialCursor: { line: number; column: number }  // 0-based
-  expectedContent?: string      // If undefined, any content is accepted (cursor-only challenge)
-  expectedCursor?: { line: number; column: number } // If undefined, any cursor position accepted
-  hints: string[]               // Progressive hints: hint[0] after 3 fails, hint[1] after 6, etc.
-  requiredCommands: string[]    // e.g. ['dd', 'j', 'k'] — must ALL be in SUPPORTED_VIM_COMMANDS
-  successMessage?: string       // Optional custom success message (default: "✓ Correct!")
+  instruction: string
+  initialContent: string
+  initialCursor: { line: number; column: number }
+  expectedContent?: string
+  expectedCursor?: { line: number; column: number }
+  hints: string[]
+  requiredCommands: string[]
+  successMessage?: string
 }
 
 export interface Lesson {
-  id: string                    // kebab-case, e.g. 'basic-movement-hjkl'
-  categoryId: string            // matches a LessonCategory.id
+  id: string
+  categoryId: string
   title: string
-  description: string           // 1-2 sentence description for lesson card
-  order: number                 // sort order within category (1-based)
+  description: string
+  order: number
+  type: LessonType
+  keyCards: KeyCard[]
+  explanation: string
+  additionalNotes?: string
   steps: LessonStep[]
-  prerequisiteIds: string[]     // lesson IDs that must be completed first (empty = always unlocked)
+  targetConfig?: TargetConfig
+  prerequisiteIds: string[]
 }
 
 export interface LessonCategory {
-  id: string                    // kebab-case, e.g. 'basic-vim'
-  title: string                 // Display name, e.g. 'Basic Vim'
-  description: string           // 1-2 sentence description
-  icon: string                  // emoji
-  order: number                 // sort order (1-based)
+  id: string
+  title: string
+  description: string
+  icon: string
+  order: number
 }

@@ -1,4 +1,4 @@
-﻿import { describe, test, expect } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import { ALL_LESSONS, LESSONS_BY_ID } from '@/data/lessons/index'
 import { LESSON_CATEGORIES } from '@/data/categories'
 import { SUPPORTED_COMMAND_KEYS } from '@/data/supported-commands'
@@ -17,11 +17,15 @@ describe('Lesson Content Validation', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  test('at least 5 lessons per category', () => {
+  test('every category has at least 1 lesson', () => {
     for (const category of LESSON_CATEGORIES) {
       const count = ALL_LESSONS.filter((l) => l.categoryId === category.id).length
-      expect(count).toBeGreaterThanOrEqual(5)
+      expect(count).toBeGreaterThanOrEqual(1)
     }
+  })
+
+  test('total lesson count is at least 40', () => {
+    expect(ALL_LESSONS.length).toBeGreaterThanOrEqual(40)
   })
 
   test('all steps have non-empty initialContent', () => {

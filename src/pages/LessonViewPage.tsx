@@ -5,6 +5,8 @@ import { useLessonEngine } from '@/hooks/useLessonEngine'
 import { useLessonProgress } from '@/hooks/useLessonProgress'
 import { LessonStepper } from '@/components/LessonStepper'
 import { VimEditor } from '@/components/VimEditor'
+import { LessonSidebar } from '@/components/LessonSidebar'
+import { KeyCardGrid } from '@/components/KeyCardGrid'
 import type { VimEditorRef } from '@/components/VimEditor'
 import type { EditorState } from '@/types/editor'
 
@@ -61,16 +63,19 @@ export default function LessonViewPage() {
 
   if (!lesson) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] p-8 text-center">
-        <div className="text-6xl mb-6">🔍</div>
-        <h1 className="text-3xl font-bold mb-4 text-[var(--theme-foreground)]">Lesson not found</h1>
-        <p className="text-[var(--theme-muted-foreground)] mb-8">The lesson you're looking for doesn't exist or has been moved.</p>
-        <Link 
-          to="/lessons" 
-          className="px-6 py-2 rounded bg-[var(--theme-primary)] text-black font-medium hover:bg-opacity-90 transition-colors"
-        >
-          Back to Lessons
-        </Link>
+      <div className="flex h-screen overflow-hidden bg-[var(--theme-background)]">
+        <LessonSidebar />
+        <main className="flex-1 overflow-y-auto p-8 flex flex-col items-center justify-center">
+          <div className="text-6xl mb-6">🔍</div>
+          <h1 className="text-3xl font-bold mb-4 text-[var(--theme-foreground)]">Lesson not found</h1>
+          <p className="text-[var(--theme-muted-foreground)] mb-8">The lesson you're looking for doesn't exist or has been moved.</p>
+          <Link 
+            to="/lessons" 
+            className="px-6 py-2 rounded bg-[var(--theme-primary)] text-black font-medium hover:bg-opacity-90 transition-colors"
+          >
+            Back to Lessons
+          </Link>
+        </main>
       </div>
     )
   }
@@ -94,118 +99,199 @@ export default function LessonViewPage() {
     editorRef.current?.reset()
   }
 
-  if (engine.isComplete) {
-    const currentIndex = ALL_LESSONS.findIndex(l => l.id === lesson.id)
-    const nextLesson = currentIndex >= 0 && currentIndex < ALL_LESSONS.length - 1 
-      ? ALL_LESSONS[currentIndex + 1] 
-      : null
+  const currentIndex = ALL_LESSONS.findIndex(l => l.id === lesson.id)
+  const prevLesson = currentIndex > 0 ? ALL_LESSONS[currentIndex - 1] : null
+  const nextLesson = currentIndex >= 0 && currentIndex < ALL_LESSONS.length - 1 
+    ? ALL_LESSONS[currentIndex + 1] 
+    : null
 
-    return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] p-8 text-center">
-        <div className="text-6xl mb-6 animate-bounce">🎉</div>
-        <h1 className="text-4xl font-bold text-[var(--theme-foreground)] mb-4">Lesson Complete!</h1>
-        <p className="text-lg text-[var(--theme-muted-foreground)] mb-12 max-w-md">
-          You've successfully completed <span className="font-semibold text-[var(--theme-foreground)]">"{lesson.title}"</span>.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row justify-center gap-4 w-full max-w-md">
+  const renderCompletionScreen = () => (
+    <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in duration-500">
+      <div className="text-6xl mb-6 animate-bounce">🎉</div>
+      <h1 className="text-4xl font-bold text-[var(--theme-foreground)] mb-4">Lesson Complete!</h1>
+      <p className="text-lg text-[var(--theme-muted-foreground)] mb-12 max-w-md">
+        You've successfully completed <span className="font-semibold text-[var(--theme-foreground)]">"{lesson.title}"</span>.
+      </p>
+      
+      <div className="flex flex-col sm:flex-row justify-center gap-4 w-full max-w-md">
+        {nextLesson ? (
           <Link 
-            to="/lessons" 
-            className="flex-1 px-6 py-3 rounded-lg border border-[var(--theme-border)] text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] transition-colors font-medium"
+            to={`/lessons/${nextLesson.id}`}
+            className="flex-1 px-6 py-3 rounded-lg bg-[var(--theme-primary)] text-black font-bold hover:bg-opacity-90 transition-colors shadow-lg shadow-primary/20"
           >
-            Back to Lessons
+            Next Lesson &rarr;
           </Link>
-          {nextLesson && (
-            <Link 
-              to={`/lessons/${nextLesson.id}`}
-              className="flex-1 px-6 py-3 rounded-lg bg-[var(--theme-primary)] text-black font-bold hover:bg-opacity-90 transition-colors shadow-lg shadow-primary/20"
-            >
-              Next Lesson &rarr;
-            </Link>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl flex flex-col min-h-[calc(100vh-4rem)]">
-      <div className="flex items-center gap-3 mb-4">
-        <Link to="/lessons" className="text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] transition-colors text-sm font-medium">
-          &larr; Lessons
-        </Link>
-        <span className="text-[var(--theme-border)]">/</span>
-        <h1 className="text-xl font-bold text-[var(--theme-foreground)] truncate">{lesson.title}</h1>
-      </div>
-
-      <div className="mb-8">
-        <LessonStepper totalSteps={engine.totalSteps} currentStep={engine.stepIndex} />
-      </div>
-
-      <div className="mb-8">
-        <div className="text-lg text-[var(--theme-foreground)] leading-relaxed">
-          {formatInstruction(engine.currentStep.instruction)}
-        </div>
-      </div>
-
-      {engine.currentStep.requiredCommands.length > 0 && (
-        <div className="mb-10">
-          <h3 className="text-sm font-bold text-[var(--theme-muted-foreground)] mb-4 uppercase tracking-wider">Required Commands</h3>
-          <div className="flex flex-wrap gap-3">
-            {engine.currentStep.requiredCommands.map((cmd, i) => (
-              <kbd key={i} className="inline-flex items-center justify-center w-14 h-14 bg-[var(--theme-muted)] border-2 border-[var(--theme-border)] rounded-lg text-xl font-mono font-bold text-[var(--theme-foreground)] shadow-[0_2px_0_var(--theme-border)]">
-                {cmd}
-              </kbd>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="relative flex py-5 items-center mb-6">
-        <div className="flex-grow border-t border-[var(--theme-border)]"></div>
-        <span className="flex-shrink-0 mx-4 text-[var(--theme-muted-foreground)] text-sm font-medium">Now it's your turn!</span>
-        <div className="flex-grow border-t border-[var(--theme-border)]"></div>
-      </div>
-
-      <div className="relative w-full h-[400px] rounded-lg overflow-hidden border border-[var(--theme-border)] shadow-sm bg-[var(--theme-background)] mb-6">
-        <VimEditor 
-          ref={editorRef}
-          initialContent={engine.currentStep.initialContent}
-          initialCursor={engine.currentStep.initialCursor}
-          onStateChange={handleStateChange}
-          onKeystroke={handleKeystroke}
-          className="h-full"
-          height="100%"
-        />
-        
-        {showSuccess && (
-          <div className="absolute inset-0 bg-green-500/10 backdrop-blur-[2px] flex items-center justify-center z-10 transition-all duration-300">
-            <div className="bg-green-500 text-white px-8 py-4 rounded-full font-bold shadow-xl flex items-center gap-3 transform scale-110 animate-in zoom-in duration-200">
-              <span className="text-2xl leading-none">✓</span> 
-              <span className="text-lg">Correct!</span>
-            </div>
-          </div>
+        ) : (
+          <Link 
+            to="/" 
+            className="flex-1 px-6 py-3 rounded-lg bg-[var(--theme-primary)] text-black font-bold hover:bg-opacity-90 transition-colors shadow-lg shadow-primary/20"
+          >
+            Back to Home
+          </Link>
         )}
       </div>
+    </div>
+  )
 
-      {engine.hint && (
-        <div className="mb-6 flex items-start gap-3 text-amber-500 bg-amber-500/10 p-4 rounded-md border border-amber-500/20">
-          <span className="text-xl leading-none">💡</span>
-          <div className="text-sm">
-            <span className="font-semibold block mb-1 text-amber-600">Hint (Attempt {engine.attempts})</span>
-            <span className="text-amber-700/90">{engine.hint}</span>
-          </div>
+  return (
+    <div className="flex h-screen overflow-hidden bg-[var(--theme-background)]">
+      <LessonSidebar />
+      
+      <main className="flex-1 overflow-y-auto p-6 md:p-10">
+        <div className="max-w-3xl mx-auto pb-20">
+          {engine.isComplete ? (
+            renderCompletionScreen()
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold text-[var(--theme-foreground)] mb-6">{lesson.title}</h1>
+              
+              {lesson.explanation && (
+                <div className="text-lg text-[var(--theme-foreground)] leading-relaxed mb-8">
+                  {formatInstruction(lesson.explanation)}
+                </div>
+              )}
+
+              {lesson.keyCards && lesson.keyCards.length > 0 && (
+                <KeyCardGrid keyCards={lesson.keyCards} />
+              )}
+
+              {lesson.type !== 'theory' && (
+                <>
+                  <div className="relative flex py-8 items-center">
+                    <div className="flex-grow border-t border-[var(--theme-border)]"></div>
+                    <span className="flex-shrink-0 mx-4 text-[var(--theme-muted-foreground)] text-sm font-bold uppercase tracking-widest">Now it's your turn</span>
+                    <div className="flex-grow border-t border-[var(--theme-border)]"></div>
+                  </div>
+
+                  {lesson.type === 'step-based' && (
+                    <div className="mb-8">
+                      <LessonStepper totalSteps={engine.totalSteps} currentStep={engine.stepIndex} />
+                    </div>
+                  )}
+
+                  {lesson.type === 'target-based' && lesson.targetConfig && (
+                    <div className="mb-6 flex items-center justify-between bg-[var(--theme-muted)] p-4 rounded-lg border border-[var(--theme-border)]">
+                      <div>
+                        <span className="text-sm font-bold text-[var(--theme-muted-foreground)] uppercase tracking-wider block mb-1">Target</span>
+                        <span className="text-xl font-bold text-[var(--theme-foreground)]">{lesson.targetConfig.targetCount} keystrokes</span>
+                      </div>
+                      {lesson.targetConfig.allowedKeys && (
+                        <div className="text-right">
+                          <span className="text-sm font-bold text-[var(--theme-muted-foreground)] uppercase tracking-wider block mb-1">Allowed Keys</span>
+                          <div className="flex gap-1">
+                            {lesson.targetConfig.allowedKeys.map(k => (
+                              <kbd key={k} className="text-xs font-mono px-1.5 py-0.5 rounded bg-[var(--theme-background)] border border-[var(--theme-border)] text-[var(--theme-foreground)]">{k}</kbd>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {engine.currentStep && (
+                    <>
+                      <div className="mb-6">
+                        <div className="text-lg text-[var(--theme-foreground)] leading-relaxed">
+                          {formatInstruction(engine.currentStep.instruction)}
+                        </div>
+                      </div>
+
+                      {engine.currentStep.requiredCommands && engine.currentStep.requiredCommands.length > 0 && (
+                        <div className="mb-8">
+                          <h3 className="text-xs font-bold text-[var(--theme-muted-foreground)] mb-3 uppercase tracking-wider">Required Commands</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {engine.currentStep.requiredCommands.map((cmd, i) => (
+                              <kbd key={i} className="inline-flex items-center justify-center min-w-[2.5rem] h-10 px-2 bg-[var(--theme-muted)] border-2 border-[var(--theme-border)] rounded-md text-lg font-mono font-bold text-[var(--theme-foreground)] shadow-[0_2px_0_var(--theme-border)]">
+                                {cmd}
+                              </kbd>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="relative w-full h-[400px] rounded-lg overflow-hidden border border-[var(--theme-border)] shadow-sm bg-[var(--theme-background)] mb-6">
+                        <VimEditor 
+                          ref={editorRef}
+                          initialContent={engine.currentStep.initialContent}
+                          initialCursor={engine.currentStep.initialCursor}
+                          onStateChange={handleStateChange}
+                          onKeystroke={handleKeystroke}
+                          className="h-full"
+                          height="100%"
+                        />
+                        
+                        {showSuccess && (
+                          <div className="absolute inset-0 bg-green-500/10 backdrop-blur-[2px] flex items-center justify-center z-10 transition-all duration-300">
+                            <div className="bg-green-500 text-white px-8 py-4 rounded-full font-bold shadow-xl flex items-center gap-3 transform scale-110 animate-in zoom-in duration-200">
+                              <span className="text-2xl leading-none">✓</span> 
+                              <span className="text-lg">Correct!</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {engine.hint && (
+                        <div className="mb-6 flex items-start gap-3 text-amber-500 bg-amber-500/10 p-4 rounded-md border border-amber-500/20">
+                          <span className="text-xl leading-none">💡</span>
+                          <div className="text-sm">
+                            <span className="font-semibold block mb-1 text-amber-600">Hint (Attempt {engine.attempts})</span>
+                            <span className="text-amber-700/90">{engine.hint}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-center mb-12">
+                        <button 
+                          onClick={handleResetStep}
+                          className="px-6 py-2 text-sm font-medium rounded-md border border-[var(--theme-border)] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:border-[var(--theme-muted-foreground)] hover:bg-[var(--theme-muted)] transition-all whitespace-nowrap"
+                        >
+                          Reset Step
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              {lesson.additionalNotes && (
+                <div className="mt-12 p-6 bg-[var(--theme-muted)] rounded-lg border border-[var(--theme-border)]">
+                  <h3 className="text-sm font-bold text-[var(--theme-foreground)] mb-3 uppercase tracking-wider">Additional Notes</h3>
+                  <div className="text-sm text-[var(--theme-muted-foreground)] leading-relaxed">
+                    {formatInstruction(lesson.additionalNotes)}
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation Footer */}
+              <div className="mt-16 pt-8 border-t border-[var(--theme-border)] flex items-center justify-between">
+                {prevLesson ? (
+                  <Link 
+                    to={`/lessons/${prevLesson.id}`}
+                    className="flex flex-col items-start group"
+                  >
+                    <span className="text-xs font-bold text-[var(--theme-muted-foreground)] uppercase tracking-wider mb-1 group-hover:text-[var(--theme-foreground)] transition-colors">Previous</span>
+                    <span className="text-[var(--theme-primary)] font-medium group-hover:underline">&larr; {prevLesson.title}</span>
+                  </Link>
+                ) : (
+                  <div />
+                )}
+
+                {nextLesson ? (
+                  <Link 
+                    to={`/lessons/${nextLesson.id}`}
+                    className="flex flex-col items-end group"
+                  >
+                    <span className="text-xs font-bold text-[var(--theme-muted-foreground)] uppercase tracking-wider mb-1 group-hover:text-[var(--theme-foreground)] transition-colors">Next</span>
+                    <span className="text-[var(--theme-primary)] font-medium group-hover:underline">{nextLesson.title} &rarr;</span>
+                  </Link>
+                ) : (
+                  <div />
+                )}
+              </div>
+            </>
+          )}
         </div>
-      )}
-
-      <div className="mt-auto pt-4 pb-8 flex justify-center">
-        <button 
-          onClick={handleResetStep}
-          className="px-6 py-2 text-sm font-medium rounded-md border border-[var(--theme-border)] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:border-[var(--theme-muted-foreground)] hover:bg-[var(--theme-muted)] transition-all whitespace-nowrap"
-        >
-          Reset Step
-        </button>
-      </div>
+      </main>
     </div>
   )
 }

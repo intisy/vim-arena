@@ -8,6 +8,9 @@ const BASIC_LESSON: Lesson = {
   title: 'Test Lesson',
   description: 'A lesson for testing',
   order: 1,
+  type: 'step-based',
+  keyCards: [{ key: 'dw', description: 'delete word' }],
+  explanation: 'Test explanation for the lesson engine.',
   prerequisiteIds: [],
   steps: [
     {
@@ -231,5 +234,3 @@ describe('LessonEngine', () => {
     expect(engine.getLesson().id).toBe('test-lesson')
   })
 })
-
-

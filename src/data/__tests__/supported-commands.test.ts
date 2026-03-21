@@ -16,7 +16,7 @@ describe('SUPPORTED_VIM_COMMANDS', () => {
     const validCategories = [
       'basic-movement', 'word-movement', 'line-movement', 'vertical-movement',
       'insert-mode', 'modes', 'editing', 'operators', 'find', 'search',
-      'visual', 'text-objects', 'misc'
+      'visual', 'text-objects', 'misc', 'operator-combos', 'operator-text-objects'
     ]
     for (const [key, cmd] of Object.entries(SUPPORTED_VIM_COMMANDS)) {
       expect(validCategories, `${key} has invalid category: ${cmd.category}`)
