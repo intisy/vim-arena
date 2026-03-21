@@ -426,7 +426,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       const offset = pickOffsetCursor(rng, chosen.index, lines.length)
       const actionSteps: SolutionStep[] = [
         { keys: 'ciw', description: 'Change inner word' },
-        { keys: replacement, description: `Type "${replacement}"`, mode: 'insert' },
+        { keys: replacement, description: `Type "${replacement}"` },
       ]
       const solutions = computeSolutions(offset.line, chosen.index, word.start, chosen.line, actionSteps)
 

@@ -43,12 +43,13 @@ export function useChallengeEngine() {
   }, [cleanup])
 
   const togglePracticeMode = useCallback(() => {
+    if (phase === 'active' || phase === 'countdown') return
     setPracticeMode(prev => {
       const next = !prev
       practiceModeRef.current = next
       return next
     })
-  }, [])
+  }, [phase])
 
   const startChallenge = useCallback((diff: 1 | 2 | 3 | 4 | 5) => {
     cleanup()

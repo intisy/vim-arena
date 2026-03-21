@@ -102,10 +102,13 @@ export default function ChallengeViewPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={togglePracticeMode}
+            disabled={phase === 'active' || phase === 'countdown'}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border ${
-              practiceMode
-                ? 'bg-amber-900/50 text-amber-400 border-amber-700'
-                : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200 hover:border-gray-500'
+              phase === 'active' || phase === 'countdown'
+                ? 'bg-gray-800/50 text-gray-600 border-gray-800 cursor-not-allowed'
+                : practiceMode
+                  ? 'bg-amber-900/50 text-amber-400 border-amber-700'
+                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200 hover:border-gray-500'
             }`}
           >
             <span>{practiceMode ? '🎯' : '🎓'}</span>
