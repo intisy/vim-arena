@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ChallengeEngine } from '@/engine/ChallengeEngine'
 import { ChallengeGenerator, SeededRandom } from '@/engine/ChallengeGenerator'
+import { ProceduralSnippetGenerator } from '@/engine/ProceduralSnippetGenerator'
 import { CHALLENGE_TEMPLATES } from '@/data/challenge-templates'
 import { ALL_SNIPPETS } from '@/data/snippets'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
+import { useEloRating } from '@/hooks/useEloRating'
 import type { GeneratedChallenge, ChallengeResult } from '@/types/challenge'
 import type { EditorState } from '@/types/editor'
 
@@ -21,6 +23,7 @@ export function useChallengeEngine() {
   const engineRef = useRef<ChallengeEngine | null>(null)
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { recordResult } = useChallengeStats()
+  const { recordChallengeResult: recordElo } = useEloRating()
 
   const cleanup = useCallback(() => {
     if (countdownIntervalRef.current) {
@@ -41,8 +44,14 @@ export function useChallengeEngine() {
     cleanup()
     setDifficulty(diff)
     
-    const rng = new SeededRandom(Date.now())
-    const generator = new ChallengeGenerator(CHALLENGE_TEMPLATES, ALL_SNIPPETS, rng)
+    const seed = Date.now()
+    const rng = new SeededRandom(seed)
+
+    const proceduralGen = new ProceduralSnippetGenerator(new SeededRandom(seed + 1))
+    const proceduralSnippets = proceduralGen.generateBatch(8)
+    const allSnippets = [...ALL_SNIPPETS, ...proceduralSnippets]
+
+    const generator = new ChallengeGenerator(CHALLENGE_TEMPLATES, allSnippets, rng)
     const newChallenge = generator.generate({ difficulty: diff })
     
     setChallenge(newChallenge)
@@ -70,6 +79,7 @@ export function useChallengeEngine() {
             setResult(res)
             setPhase('complete')
             recordResult(res)
+            recordElo(diff, res.totalScore, true)
           }
         })
         engineRef.current = engine
@@ -77,15 +87,14 @@ export function useChallengeEngine() {
         setPhase('active')
       }
     }, 1000)
-  }, [cleanup, recordResult])
+  }, [cleanup, recordResult, recordElo])
 
   const retry = useCallback(() => {
     startChallenge(difficulty)
   }, [startChallenge, difficulty])
 
   const nextChallenge = useCallback(() => {
-    const nextDiff = Math.min(difficulty + 1, 5) as 1 | 2 | 3 | 4 | 5
-    startChallenge(nextDiff)
+    startChallenge(difficulty)
   }, [startChallenge, difficulty])
 
   const handleEditorStateChange = useCallback((state: EditorState) => {
@@ -97,8 +106,9 @@ export function useChallengeEngine() {
       setResult(res)
       setPhase('complete')
       recordResult(res)
+      recordElo(difficulty, res.totalScore, false)
     }
-  }, [phase, recordResult])
+  }, [phase, recordResult, recordElo, difficulty])
 
   const handleKeystroke = useCallback(() => {
     if (phase !== 'active' || !engineRef.current) return
