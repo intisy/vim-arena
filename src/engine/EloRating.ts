@@ -72,6 +72,27 @@ export function updateElo(
   }
 }
 
+export type DifficultyWeights = Record<1 | 2 | 3 | 4 | 5, number>
+
+const WEIGHT_TABLE: Record<number, DifficultyWeights> = {
+  1: { 1: 60, 2: 25, 3: 10, 4: 4, 5: 1 },
+  2: { 1: 20, 2: 50, 3: 20, 4: 8, 5: 2 },
+  3: { 1: 5, 2: 20, 3: 50, 4: 20, 5: 5 },
+  4: { 1: 2, 2: 8, 3: 20, 4: 50, 5: 20 },
+  5: { 1: 1, 2: 4, 3: 10, 4: 25, 5: 60 },
+}
+
+export function getDifficultyWeights(rating: number): DifficultyWeights {
+  const base = ratingToDifficulty(rating)
+  return WEIGHT_TABLE[base]
+}
+
+export function getTimeMultiplier(playerDifficulty: 1 | 2 | 3 | 4 | 5, challengeDifficulty: 1 | 2 | 3 | 4 | 5): number {
+  const gap = challengeDifficulty - playerDifficulty
+  if (gap <= 0) return 1
+  return 1 + gap * 0.5
+}
+
 export function getRatingLabel(rating: number): string {
   if (rating < 600) return 'Novice'
   if (rating < 900) return 'Beginner'

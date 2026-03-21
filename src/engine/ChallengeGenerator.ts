@@ -1,4 +1,5 @@
 import type { ChallengeTemplate, CodeSnippet, GeneratedChallenge } from '@/types/challenge'
+import type { DifficultyWeights } from '@/engine/EloRating'
 
 /**
  * Mulberry32 PRNG — deterministic, fast, good distribution.
@@ -27,6 +28,17 @@ export class SeededRandom {
   }
 }
 
+function pickWeightedDifficulty(rng: SeededRandom, weights: DifficultyWeights): 1 | 2 | 3 | 4 | 5 {
+  const total = weights[1] + weights[2] + weights[3] + weights[4] + weights[5]
+  const roll = rng.next() * total
+  let cumulative = 0
+  for (const d of [1, 2, 3, 4, 5] as const) {
+    cumulative += weights[d]
+    if (roll < cumulative) return d
+  }
+  return 3
+}
+
 export class ChallengeGenerator {
   constructor(
     private templates: ChallengeTemplate[],
@@ -37,17 +49,23 @@ export class ChallengeGenerator {
   generate(options?: {
     difficulty?: 1 | 2 | 3 | 4 | 5
     templateId?: string
+    weights?: DifficultyWeights
+    timeMultiplierFn?: (challengeDiff: 1 | 2 | 3 | 4 | 5) => number
   }): GeneratedChallenge {
     let candidates = this.templates
 
-    if (options?.difficulty != null) {
-      candidates = candidates.filter(t => t.difficulty === options.difficulty)
+    const chosenDifficulty = options?.weights
+      ? pickWeightedDifficulty(this.rng, options.weights)
+      : options?.difficulty
+
+    if (chosenDifficulty != null) {
+      candidates = candidates.filter(t => t.difficulty === chosenDifficulty)
     }
     if (options?.templateId != null) {
       candidates = candidates.filter(t => t.id === options.templateId)
     }
     if (candidates.length === 0) {
-      throw new Error('No matching templates found for the given options')
+      candidates = this.templates
     }
 
     const maxAttempts = candidates.length * this.snippets.length
@@ -57,6 +75,10 @@ export class ChallengeGenerator {
       const seed = this.rng.nextInt(0, 2147483647)
       const challenge = template.generateChallenge(snippet, seed)
       if (challenge != null) {
+        if (options?.timeMultiplierFn) {
+          const mult = options.timeMultiplierFn(challenge.difficulty)
+          challenge.timeLimit = Math.round(challenge.timeLimit * mult)
+        }
         return challenge
       }
     }
@@ -65,6 +87,10 @@ export class ChallengeGenerator {
       for (const snippet of this.snippets) {
         const challenge = template.generateChallenge(snippet, 42)
         if (challenge != null) {
+          if (options?.timeMultiplierFn) {
+            const mult = options.timeMultiplierFn(challenge.difficulty)
+            challenge.timeLimit = Math.round(challenge.timeLimit * mult)
+          }
           return challenge
         }
       }

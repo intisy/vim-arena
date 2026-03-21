@@ -126,14 +126,16 @@ describe('ChallengeGenerator', () => {
     expect(challenge.templateId).toBe('delete-line')
   })
 
-  test('generate throws for non-existent templateId', () => {
+  test('generate falls back to all templates for non-existent templateId', () => {
     const gen = new ChallengeGenerator(templates, snippets, new SeededRandom(1))
-    expect(() => gen.generate({ templateId: 'does-not-exist' })).toThrow()
+    const challenge = gen.generate({ templateId: 'does-not-exist' })
+    expect(challenge.templateId).toBeTruthy()
   })
 
-  test('generate throws when no templates match difficulty', () => {
+  test('generate falls back to all templates when no difficulty match', () => {
     const gen = new ChallengeGenerator(templates, snippets, new SeededRandom(1))
-    expect(() => gen.generate({ difficulty: 5 })).toThrow()
+    const challenge = gen.generate({ difficulty: 5 })
+    expect(challenge.templateId).toBeTruthy()
   })
 
   test('generateBatch returns correct count', () => {

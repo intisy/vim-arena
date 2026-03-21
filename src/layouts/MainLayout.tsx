@@ -34,6 +34,10 @@ export function MainLayout() {
           flexDirection: 'column',
           padding: '1.5rem 1rem',
           gap: '0.5rem',
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+          overflowY: 'auto',
         }}
       >
         <Link

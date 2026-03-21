@@ -16,15 +16,15 @@ function seededRandom(seed: number): () => number {
   }
 }
 
-const PALETTES = [
-  ['#50fa7b', '#1e1f29'],
-  ['#ff79c6', '#1e1f29'],
-  ['#bd93f9', '#1e1f29'],
-  ['#ffb86c', '#1e1f29'],
-  ['#8be9fd', '#1e1f29'],
-  ['#f1fa8c', '#1e1f29'],
-  ['#ff5555', '#1e1f29'],
-  ['#6272a4', '#1e1f29'],
+const PALETTES: [string, string, string][] = [
+  ['#50fa7b', '#8be9fd', '#282a36'],
+  ['#ff79c6', '#bd93f9', '#282a36'],
+  ['#bd93f9', '#ff79c6', '#282a36'],
+  ['#ffb86c', '#f1fa8c', '#282a36'],
+  ['#8be9fd', '#50fa7b', '#282a36'],
+  ['#f1fa8c', '#ffb86c', '#282a36'],
+  ['#ff5555', '#ffb86c', '#282a36'],
+  ['#50fa7b', '#bd93f9', '#282a36'],
 ]
 
 function generateIdenticon(seed: string, size: number): string[][] {
@@ -37,7 +37,14 @@ function generateIdenticon(seed: string, size: number): string[][] {
     const row: string[] = []
     const half = Math.ceil(size / 2)
     for (let x = 0; x < half; x++) {
-      row.push(rand() > 0.5 ? palette[0] : palette[1])
+      const r = rand()
+      if (r > 0.65) {
+        row.push(palette[0])
+      } else if (r > 0.35) {
+        row.push(palette[1])
+      } else {
+        row.push(palette[2])
+      }
     }
     for (let x = half; x < size; x++) {
       row.push(row[size - 1 - x])
@@ -56,7 +63,7 @@ interface AvatarProps {
   onClick?: () => void
 }
 
-export function Avatar({ seed, size = 5, pixelSize = 6, className, onClick }: AvatarProps) {
+export function Avatar({ seed, size = 8, pixelSize = 5, className, onClick }: AvatarProps) {
   const grid = useMemo(() => generateIdenticon(seed, size), [seed, size])
   const totalSize = size * pixelSize
 
@@ -67,9 +74,13 @@ export function Avatar({ seed, size = 5, pixelSize = 6, className, onClick }: Av
       viewBox={`0 0 ${size} ${size}`}
       className={className}
       onClick={onClick}
-      style={{ borderRadius: '50%', cursor: onClick ? 'pointer' : undefined }}
+      style={{
+        borderRadius: '50%',
+        cursor: onClick ? 'pointer' : undefined,
+        boxShadow: '0 0 0 2px #44475a, 0 0 0 3px #6272a4',
+      }}
     >
-      <rect width={size} height={size} fill="#1e1f29" />
+      <rect width={size} height={size} fill="#282a36" />
       {grid.map((row, y) =>
         row.map((color, x) => (
           <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={color} />

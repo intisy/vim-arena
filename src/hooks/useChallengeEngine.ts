@@ -6,6 +6,7 @@ import { CHALLENGE_TEMPLATES } from '@/data/challenge-templates'
 import { ALL_SNIPPETS } from '@/data/snippets'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
 import { useEloRating } from '@/hooks/useEloRating'
+import { getDifficultyWeights, getTimeMultiplier } from '@/engine/EloRating'
 import type { GeneratedChallenge, ChallengeResult } from '@/types/challenge'
 import type { EditorState } from '@/types/editor'
 
@@ -25,7 +26,7 @@ export function useChallengeEngine() {
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const practiceModeRef = useRef(false)
   const { recordResult } = useChallengeStats()
-  const { recordChallengeResult: recordElo } = useEloRating()
+  const { recordChallengeResult: recordElo, elo } = useEloRating()
 
   const cleanup = useCallback(() => {
     if (countdownIntervalRef.current) {
@@ -62,8 +63,12 @@ export function useChallengeEngine() {
     const proceduralSnippets = proceduralGen.generateBatch(8)
     const allSnippets = [...ALL_SNIPPETS, ...proceduralSnippets]
 
+    const weights = getDifficultyWeights(elo.rating)
     const generator = new ChallengeGenerator(CHALLENGE_TEMPLATES, allSnippets, rng)
-    const newChallenge = generator.generate({ difficulty: diff })
+    const newChallenge = generator.generate({
+      weights,
+      timeMultiplierFn: (challengeDiff) => getTimeMultiplier(diff, challengeDiff),
+    })
     
     setChallenge(newChallenge)
     setResult(null)
@@ -92,7 +97,7 @@ export function useChallengeEngine() {
             if (!practiceModeRef.current) {
               try {
                 recordResult(res)
-                recordElo(diff, res.totalScore, true)
+                recordElo(newChallenge.difficulty, res.totalScore, true)
               } catch (_) { /* storage errors should not break UI */ }
             }
           }
@@ -102,7 +107,7 @@ export function useChallengeEngine() {
         setPhase('active')
       }
     }, 1000)
-  }, [cleanup, recordResult, recordElo])
+  }, [cleanup, recordResult, recordElo, elo.rating])
 
   const retry = useCallback(() => {
     startChallenge(difficulty)

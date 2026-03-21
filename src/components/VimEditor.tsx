@@ -2,7 +2,7 @@ import { forwardRef, useImperativeHandle, useRef, useCallback, useState, useMemo
 import ReactCodeMirror from '@uiw/react-codemirror'
 import type { ReactCodeMirrorRef } from '@uiw/react-codemirror'
 import { EditorView, Decoration, type DecorationSet } from '@codemirror/view'
-import { StateField, StateEffect, type Range } from '@codemirror/state'
+import { StateField, StateEffect, Prec, type Range } from '@codemirror/state'
 import { vim, getCM, Vim } from '@replit/codemirror-vim'
 import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
@@ -166,7 +166,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
 
   const keyFilter = useMemo(
     () =>
-      EditorView.domEventHandlers({
+      Prec.highest(EditorView.domEventHandlers({
         keydown(event, view) {
           const keys = allowedKeysRef.current
           if (!keys) return false
@@ -196,7 +196,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
           }
           return false
         },
-      }),
+      })),
     [],
   )
 
