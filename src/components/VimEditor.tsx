@@ -3,7 +3,7 @@ import ReactCodeMirror from '@uiw/react-codemirror'
 import type { ReactCodeMirrorRef } from '@uiw/react-codemirror'
 import { EditorView, Decoration, type DecorationSet } from '@codemirror/view'
 import { StateField, StateEffect, type Range } from '@codemirror/state'
-import { vim } from '@replit/codemirror-vim'
+import { vim, getCM, Vim } from '@replit/codemirror-vim'
 import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
 import type { VimEditorProps, VimMode, EditorState as VimEditorState } from '@/types/editor'
@@ -41,6 +41,17 @@ function getEditorState(view: EditorView): VimEditorState {
     cursorLine: line.number - 1,
     cursorColumn: sel.head - line.from,
   }
+}
+
+function readVimMode(view: EditorView): VimMode {
+  const cm = getCM(view)
+  if (!cm) return 'normal'
+  const vs = cm.state.vim
+  if (!vs) return 'normal'
+  if (vs.insertMode) return 'insert'
+  if (vs.visualMode) return vs.visualLine ? 'visual-line' : 'visual'
+  if (vs.mode === 'replace') return 'replace'
+  return 'normal'
 }
 
 function applyCursor(view: EditorView, cursor?: { line: number; column: number }) {
@@ -112,15 +123,24 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
   const [mode, setMode] = useState<VimMode>('normal')
   const onStateChangeRef = useRef(onStateChange)
   onStateChangeRef.current = onStateChange
+  const onModeChangeRef = useRef(onModeChange)
+  onModeChangeRef.current = onModeChange
   const allowedKeysRef = useRef(allowedKeys)
   allowedKeysRef.current = allowedKeys
-  const modeRef = useRef<VimMode>('normal')
+  const lastModeRef = useRef<VimMode>('normal')
 
   const stateTracker = useMemo(
     () =>
       EditorView.updateListener.of((update) => {
         if (update.docChanged || update.selectionSet) {
           onStateChangeRef.current?.(getEditorState(update.view))
+        }
+
+        const currentMode = readVimMode(update.view)
+        if (currentMode !== lastModeRef.current) {
+          lastModeRef.current = currentMode
+          setMode(currentMode)
+          onModeChangeRef.current?.(currentMode)
         }
       }),
     [],
@@ -129,9 +149,10 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
   const keyFilter = useMemo(
     () =>
       EditorView.domEventHandlers({
-        keydown(event, _view) {
-          const currentMode = modeRef.current
+        keydown(event, view) {
+          const currentMode = readVimMode(view)
           if (currentMode === 'insert' || currentMode === 'replace') return false
+          if (currentMode === 'visual' || currentMode === 'visual-line') return false
           const keys = allowedKeysRef.current
           if (!keys) return false
           if (event.key === 'Escape' || event.key === 'Enter' || event.key === 'Backspace' || event.key === 'Tab') return false
@@ -205,24 +226,6 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
         dispatchTargets(view)
       })
 
-      view.dom.addEventListener('vim-mode-change', (e: Event) => {
-        const detail = (e as CustomEvent<{ mode: string; subMode?: string }>).detail
-        const rawMode = detail?.mode ?? 'normal'
-        const vimMode: VimMode =
-          rawMode === 'visual'
-            ? detail?.subMode === 'linewise'
-              ? 'visual-line'
-              : 'visual'
-            : rawMode === 'insert'
-              ? 'insert'
-              : rawMode === 'replace'
-                ? 'replace'
-                : 'normal'
-        modeRef.current = vimMode
-        setMode(vimMode)
-        onModeChange?.(vimMode)
-      })
-
       if (trapFocus) {
         const handleBlur = () => {
           requestAnimationFrame(() => view.focus())
@@ -230,7 +233,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
         view.dom.addEventListener('blur', handleBlur, true)
       }
     },
-    [onModeChange, initialCursor, dispatchTargets, trapFocus],
+    [initialCursor, dispatchTargets, trapFocus],
   )
 
   const handleKeyDown = useCallback(() => {
@@ -263,14 +266,18 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
       exitInsertMode: () => {
         const view = cmRef.current?.view
         if (!view) return
-        const escEvent = new KeyboardEvent('keydown', {
-          key: 'Escape',
-          code: 'Escape',
-          keyCode: 27,
-          bubbles: true,
-          cancelable: true,
-        })
-        view.contentDOM.dispatchEvent(escEvent)
+        const cm = getCM(view)
+        if (!cm) return
+        const vs = cm.state.vim
+        if (vs?.insertMode) {
+          Vim.exitInsertMode(cm as Parameters<typeof Vim.exitInsertMode>[0])
+        }
+        if (vs?.visualMode) {
+          Vim.exitVisualMode(cm as Parameters<typeof Vim.exitVisualMode>[0])
+        }
+        lastModeRef.current = 'normal'
+        setMode('normal')
+        onModeChangeRef.current?.('normal')
       },
     }),
     [initialContent, initialCursor, dispatchTargets],
@@ -361,7 +368,9 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
               ? '#ffb86c'
               : mode.startsWith('visual')
                 ? '#bd93f9'
-                : '#50fa7b',
+                : mode === 'replace'
+                  ? '#ff5555'
+                  : '#50fa7b',
           borderTop: '1px solid #333',
           userSelect: 'none',
         }}
