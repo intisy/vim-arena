@@ -1,13 +1,12 @@
-import { forwardRef, useImperativeHandle, useRef, useCallback, useState } from 'react'
+import { forwardRef, useImperativeHandle, useRef, useCallback, useState, useMemo } from 'react'
 import ReactCodeMirror from '@uiw/react-codemirror'
 import type { ReactCodeMirrorRef } from '@uiw/react-codemirror'
-import type { EditorView } from '@codemirror/view'
+import { EditorView } from '@codemirror/view'
 import { vim } from '@replit/codemirror-vim'
 import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
 import type { VimEditorProps, VimMode, EditorState as VimEditorState } from '@/types/editor'
 
-// Language extension map
 function getLangExtension(lang: VimEditorProps['language']) {
   switch (lang) {
     case 'javascript': return javascript()
@@ -17,7 +16,6 @@ function getLangExtension(lang: VimEditorProps['language']) {
   }
 }
 
-// Mode display strings
 const MODE_LABELS: Record<VimMode, string> = {
   normal: '-- NORMAL --',
   insert: '-- INSERT --',
@@ -32,9 +30,29 @@ export interface VimEditorRef {
   focus: () => void
 }
 
+function getEditorState(view: EditorView): VimEditorState {
+  const sel = view.state.selection.main
+  const line = view.state.doc.lineAt(sel.head)
+  return {
+    content: view.state.doc.toString(),
+    cursorLine: line.number - 1,
+    cursorColumn: sel.head - line.from,
+  }
+}
+
+function applyCursor(view: EditorView, cursor?: { line: number; column: number }) {
+  if (!cursor) return
+  const lineCount = view.state.doc.lines
+  const lineNum = Math.min(cursor.line + 1, lineCount)
+  const line = view.state.doc.line(lineNum)
+  const pos = Math.min(line.from + cursor.column, line.to)
+  view.dispatch({ selection: { anchor: pos } })
+}
+
 export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEditor(
   {
     initialContent,
+    initialCursor,
     language = 'javascript',
     readOnly = false,
     height = '400px',
@@ -43,83 +61,82 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     onKeystroke,
     className,
   },
-  ref
+  ref,
 ) {
   const cmRef = useRef<ReactCodeMirrorRef>(null)
-  const modeRef = useRef<VimMode>('normal')
   const [mode, setMode] = useState<VimMode>('normal')
+  const onStateChangeRef = useRef(onStateChange)
+  onStateChangeRef.current = onStateChange
 
-  // Listen for vim-mode-change events emitted by @replit/codemirror-vim
-  const handleEditorCreate = useCallback((view: EditorView) => {
-    // Auto-focus the editor so vim keybinds work immediately
-    requestAnimationFrame(() => view.focus())
+  const stateTracker = useMemo(
+    () =>
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged || update.selectionSet) {
+          onStateChangeRef.current?.(getEditorState(update.view))
+        }
+      }),
+    [],
+  )
 
-    view.dom.addEventListener('vim-mode-change', (e: Event) => {
-      const detail = (e as CustomEvent<{ mode: string; subMode?: string }>).detail
-      const rawMode = detail?.mode ?? 'normal'
-      const vimMode: VimMode =
-        rawMode === 'visual'
-          ? detail?.subMode === 'linewise'
-            ? 'visual-line'
-            : 'visual'
-          : rawMode === 'insert'
-          ? 'insert'
-          : rawMode === 'replace'
-          ? 'replace'
-          : 'normal'
-      modeRef.current = vimMode
-      setMode(vimMode)
-      onModeChange?.(vimMode)
-    })
-  }, [onModeChange])
+  const handleEditorCreate = useCallback(
+    (view: EditorView) => {
+      requestAnimationFrame(() => {
+        applyCursor(view, initialCursor)
+        view.focus()
+      })
 
-  // Handle state changes from CodeMirror
-  const handleChange = useCallback((value: string) => {
-    const view = cmRef.current?.view
-    if (!view) return
-    const cmState = view.state
-    const selection = cmState.selection.main
-    const line = cmState.doc.lineAt(selection.head)
-    const editorState: VimEditorState = {
-      content: value,
-      cursorLine: line.number - 1,  // 0-based
-      cursorColumn: selection.head - line.from,
-    }
-    onStateChange?.(editorState)
-  }, [onStateChange])
+      view.dom.addEventListener('vim-mode-change', (e: Event) => {
+        const detail = (e as CustomEvent<{ mode: string; subMode?: string }>).detail
+        const rawMode = detail?.mode ?? 'normal'
+        const vimMode: VimMode =
+          rawMode === 'visual'
+            ? detail?.subMode === 'linewise'
+              ? 'visual-line'
+              : 'visual'
+            : rawMode === 'insert'
+              ? 'insert'
+              : rawMode === 'replace'
+                ? 'replace'
+                : 'normal'
+        setMode(vimMode)
+        onModeChange?.(vimMode)
+      })
+    },
+    [onModeChange, initialCursor],
+  )
 
-  // Keystroke tracking via keydown on the editor wrapper
   const handleKeyDown = useCallback(() => {
     onKeystroke?.()
   }, [onKeystroke])
 
-  useImperativeHandle(ref, () => ({
-    reset: () => {
-      const view = cmRef.current?.view
-      if (!view) return
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: initialContent }
-      })
-    },
-    focus: () => {
-      const view = cmRef.current?.view
-      if (view) requestAnimationFrame(() => view.focus())
-    },
-    getState: () => {
-      const view = cmRef.current?.view
-      if (!view) return { content: initialContent, cursorLine: 0, cursorColumn: 0 }
-      const cmState = view.state
-      const selection = cmState.selection.main
-      const line = cmState.doc.lineAt(selection.head)
-      return {
-        content: view.state.doc.toString(),
-        cursorLine: line.number - 1,
-        cursorColumn: selection.head - line.from,
-      }
-    }
-  }), [initialContent])
+  useImperativeHandle(
+    ref,
+    () => ({
+      reset: () => {
+        const view = cmRef.current?.view
+        if (!view) return
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: initialContent },
+        })
+        requestAnimationFrame(() => applyCursor(view, initialCursor))
+      },
+      focus: () => {
+        const view = cmRef.current?.view
+        if (view) requestAnimationFrame(() => view.focus())
+      },
+      getState: () => {
+        const view = cmRef.current?.view
+        if (!view) return { content: initialContent, cursorLine: 0, cursorColumn: 0 }
+        return getEditorState(view)
+      },
+    }),
+    [initialContent, initialCursor],
+  )
 
-  const extensions = [vim(), getLangExtension(language)]
+  const extensions = useMemo(
+    () => [vim(), getLangExtension(language), stateTracker],
+    [language, stateTracker],
+  )
 
   return (
     <div
@@ -133,15 +150,12 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
         height={height}
         extensions={extensions}
         readOnly={readOnly}
-        onChange={handleChange}
-        onCreateEditor={handleEditorCreate}
         theme="dark"
         style={{
           fontSize: '14px',
           border: '1px solid var(--theme-border, #333)',
         }}
       />
-      {/* Mode indicator */}
       <div
         aria-label={`Vim mode: ${mode}`}
         data-testid="vim-mode-indicator"
@@ -150,9 +164,12 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
           fontSize: '12px',
           fontFamily: 'monospace',
           backgroundColor: 'var(--theme-editor-gutter, #0a1a0a)',
-          color: mode === 'insert' ? 'var(--theme-warning, #ffaa00)'
-            : mode.startsWith('visual') ? 'var(--theme-accent, #39ff14)'
-            : 'var(--theme-primary, #00ff41)',
+          color:
+            mode === 'insert'
+              ? 'var(--theme-warning, #ffaa00)'
+              : mode.startsWith('visual')
+                ? 'var(--theme-accent, #39ff14)'
+                : 'var(--theme-primary, #00ff41)',
           borderTop: '1px solid var(--theme-border, #333)',
           userSelect: 'none',
         }}

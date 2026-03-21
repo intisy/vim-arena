@@ -7,7 +7,6 @@ interface InstructionPanelProps {
 }
 
 function formatInstruction(text: string) {
-  // Split by ** for bold, then by ` for code
   const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g)
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {

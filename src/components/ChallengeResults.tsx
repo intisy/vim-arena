@@ -19,7 +19,7 @@ export function ChallengeResults({
   const [displayScore, setDisplayScore] = useState(0)
 
   useEffect(() => {
-    const duration = 1000 // 1 second animation
+    const duration = 1000
     const steps = 30
     const stepTime = duration / steps
     const increment = result.totalScore / steps

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { LESSONS_BY_ID, ALL_LESSONS } from '@/data/lessons/index'
 import { useLessonEngine } from '@/hooks/useLessonEngine'
@@ -9,7 +9,6 @@ import type { VimEditorRef } from '@/components/VimEditor'
 import type { EditorState } from '@/types/editor'
 
 function formatInstruction(text: string) {
-  // Split by ** for bold, then by ` for code
   const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g)
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
@@ -36,28 +35,29 @@ export default function LessonViewPage() {
 
   const editorRef = useRef<VimEditorRef>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const hasInteractedRef = useRef(false)
 
-  // We must handle undefined lesson gracefully, but hooks must be called unconditionally
-  // We'll use a dummy lesson if not found, and return early below
   const dummyLesson = ALL_LESSONS[0]
   const engine = useLessonEngine(lesson || dummyLesson)
   const { markLessonComplete } = useLessonProgress()
 
-  // Mark lesson as complete when engine finishes
   useEffect(() => {
     if (engine.isComplete && lesson) {
       markLessonComplete(lesson.id)
     }
   }, [engine.isComplete, lesson, markLessonComplete])
 
-  // Reset editor when step changes
   useEffect(() => {
     if (engine.currentStep) {
+      hasInteractedRef.current = false
       editorRef.current?.reset()
-      // Auto-focus so vim keybinds work without clicking
       editorRef.current?.focus()
     }
   }, [engine.stepIndex, engine.currentStep])
+
+  const handleKeystroke = useCallback(() => {
+    hasInteractedRef.current = true
+  }, [])
 
   if (!lesson) {
     return (
@@ -76,6 +76,7 @@ export default function LessonViewPage() {
   }
 
   const handleStateChange = (state: EditorState) => {
+    if (!hasInteractedRef.current) return
     if (showSuccess || engine.isComplete) return
 
     const isValid = engine.validateAndAdvance(state)
@@ -88,6 +89,7 @@ export default function LessonViewPage() {
   }
 
   const handleResetStep = () => {
+    hasInteractedRef.current = false
     engine.resetStep()
     editorRef.current?.reset()
   }
@@ -128,7 +130,6 @@ export default function LessonViewPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl flex flex-col min-h-[calc(100vh-4rem)]">
-      {/* Breadcrumb */}
       <div className="flex items-center gap-3 mb-4">
         <Link to="/lessons" className="text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] transition-colors text-sm font-medium">
           &larr; Lessons
@@ -137,19 +138,16 @@ export default function LessonViewPage() {
         <h1 className="text-xl font-bold text-[var(--theme-foreground)] truncate">{lesson.title}</h1>
       </div>
 
-      {/* Progress Bar */}
       <div className="mb-8">
         <LessonStepper totalSteps={engine.totalSteps} currentStep={engine.stepIndex} />
       </div>
 
-      {/* Instruction Section */}
       <div className="mb-8">
         <div className="text-lg text-[var(--theme-foreground)] leading-relaxed">
           {formatInstruction(engine.currentStep.instruction)}
         </div>
       </div>
 
-      {/* Required Commands */}
       {engine.currentStep.requiredCommands.length > 0 && (
         <div className="mb-10">
           <h3 className="text-sm font-bold text-[var(--theme-muted-foreground)] mb-4 uppercase tracking-wider">Required Commands</h3>
@@ -163,24 +161,23 @@ export default function LessonViewPage() {
         </div>
       )}
 
-      {/* Divider */}
       <div className="relative flex py-5 items-center mb-6">
         <div className="flex-grow border-t border-[var(--theme-border)]"></div>
         <span className="flex-shrink-0 mx-4 text-[var(--theme-muted-foreground)] text-sm font-medium">Now it's your turn!</span>
         <div className="flex-grow border-t border-[var(--theme-border)]"></div>
       </div>
 
-      {/* Editor Section */}
       <div className="relative w-full h-[400px] rounded-lg overflow-hidden border border-[var(--theme-border)] shadow-sm bg-[var(--theme-background)] mb-6">
         <VimEditor 
           ref={editorRef}
           initialContent={engine.currentStep.initialContent}
+          initialCursor={engine.currentStep.initialCursor}
           onStateChange={handleStateChange}
+          onKeystroke={handleKeystroke}
           className="h-full"
           height="100%"
         />
         
-        {/* Success Flash */}
         {showSuccess && (
           <div className="absolute inset-0 bg-green-500/10 backdrop-blur-[2px] flex items-center justify-center z-10 transition-all duration-300">
             <div className="bg-green-500 text-white px-8 py-4 rounded-full font-bold shadow-xl flex items-center gap-3 transform scale-110 animate-in zoom-in duration-200">
@@ -191,7 +188,6 @@ export default function LessonViewPage() {
         )}
       </div>
 
-      {/* Hint */}
       {engine.hint && (
         <div className="mb-6 flex items-start gap-3 text-amber-500 bg-amber-500/10 p-4 rounded-md border border-amber-500/20">
           <span className="text-xl leading-none">💡</span>
@@ -202,7 +198,6 @@ export default function LessonViewPage() {
         </div>
       )}
 
-      {/* Reset Button */}
       <div className="mt-auto pt-4 pb-8 flex justify-center">
         <button 
           onClick={handleResetStep}
