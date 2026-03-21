@@ -5,7 +5,14 @@ export interface CodeSnippet {
   content: string
   language: 'javascript' | 'typescript' | 'python' | 'plaintext'
   lineCount: number
-  tags: string[]               // e.g. ['function', 'arrow', 'class'] for filtering
+  tags: string[]
+}
+
+export interface TargetHighlight {
+  fromLine: number
+  fromCol: number
+  toLine: number
+  toCol: number
 }
 
 export interface GeneratedChallenge {
@@ -15,22 +22,23 @@ export interface GeneratedChallenge {
   initialCursor: CursorPosition
   expectedContent: string
   expectedCursor?: CursorPosition
-  referenceKeystrokeCount: number  // optimal keystroke count for the reference solution
-  description: string              // human-readable task, e.g. "Delete the word at the cursor"
-  timeLimit: number                // seconds allowed to complete
+  referenceKeystrokeCount: number
+  description: string
+  timeLimit: number
   difficulty: 1 | 2 | 3 | 4 | 5
+  targetHighlight?: TargetHighlight
 }
 
 export interface ChallengeResult {
   templateId: string
   snippetId: string
-  completedAt: number              // Unix timestamp
-  timeSeconds: number              // actual time taken
-  keystrokeCount: number           // actual keystrokes used
+  completedAt: number
+  timeSeconds: number
+  keystrokeCount: number
   referenceKeystrokeCount: number
-  efficiencyScore: number          // 0-100
-  speedScore: number               // 0-100
-  totalScore: number               // 0-100 (weighted combination)
+  efficiencyScore: number
+  speedScore: number
+  totalScore: number
   timedOut: boolean
 }
 
@@ -42,9 +50,5 @@ export interface ChallengeTemplate {
   difficulty: 1 | 2 | 3 | 4 | 5
   requiredCommands: string[]
   timeLimitSeconds: number
-  /**
-   * Generates a concrete challenge from a code snippet.
-   * Returns null if the snippet is not suitable for this template.
-   */
   generateChallenge: (snippet: CodeSnippet, seed: number) => GeneratedChallenge | null
 }

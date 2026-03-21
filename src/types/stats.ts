@@ -3,29 +3,38 @@ import type { ChallengeResult } from './challenge'
 export interface LessonProgress {
   lessonId: string
   completed: boolean
-  completedAt?: number         // Unix timestamp
-  attempts: number             // total attempts across all sessions
-  stepsCompleted: number       // highest step index reached (0-based)
+  completedAt?: number
+  attempts: number
+  stepsCompleted: number
 }
 
 export interface ChallengeStats {
   templateId: string
   attempts: number
-  bestScore: number            // 0-100
+  bestScore: number
   bestTimeSeconds: number
-  averageEfficiency: number    // 0-100 average across last 20 attempts
-  recentResults: ChallengeResult[]  // last 20 results, newest first
+  averageEfficiency: number
+  recentResults: ChallengeResult[]
+}
+
+export interface EloRating {
+  rating: number
+  gamesPlayed: number
+  wins: number
+  losses: number
+  peakRating: number
+  history: Array<{ rating: number; timestamp: number; difficulty: number; score: number }>
 }
 
 export interface UserStats {
   lessonsCompleted: number
   totalLessons: number
   challengesAttempted: number
-  challengesCompleted: number  // completed = score ≥ 50
+  challengesCompleted: number
   totalPracticeTimeSeconds: number
   averageChallengeScore: number
   bestChallengeScore: number
-  streakDays: number           // consecutive days with at least 1 activity
-  lastActiveDate: string       // ISO date string 'YYYY-MM-DD'
-  joinedDate: string           // ISO date string
+  streakDays: number
+  lastActiveDate: string
+  joinedDate: string
 }
