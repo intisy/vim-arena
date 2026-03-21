@@ -2,7 +2,7 @@ import { forwardRef, useImperativeHandle, useRef, useCallback, useState, useMemo
 import ReactCodeMirror from '@uiw/react-codemirror'
 import type { ReactCodeMirrorRef } from '@uiw/react-codemirror'
 import { EditorView, Decoration, type DecorationSet } from '@codemirror/view'
-import { StateField, StateEffect } from '@codemirror/state'
+import { StateField, StateEffect, type Range } from '@codemirror/state'
 import { vim } from '@replit/codemirror-vim'
 import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
@@ -34,7 +34,7 @@ export interface VimEditorRef {
 function getEditorState(view: EditorView): VimEditorState {
   const sel = view.state.selection.main
   const line = view.state.doc.lineAt(sel.head)
-  
+
   return {
     content: view.state.doc.toString(),
     cursorLine: line.number - 1,
@@ -51,9 +51,17 @@ function applyCursor(view: EditorView, cursor?: { line: number; column: number }
   view.dispatch({ selection: { anchor: pos } })
 }
 
-const setTargetPos = StateEffect.define<number | null>()
+function cursorToPos(view: EditorView, cursor: { line: number; column: number }): number {
+  const lineCount = view.state.doc.lines
+  const lineNum = Math.min(cursor.line + 1, lineCount)
+  const line = view.state.doc.line(lineNum)
+  return Math.min(line.from + cursor.column, line.to)
+}
+
+const setTargetEffect = StateEffect.define<Range<Decoration>[] | null>()
 
 const targetMark = Decoration.mark({ class: 'cm-target-cursor' })
+const targetRangeMark = Decoration.mark({ class: 'cm-target-range' })
 
 const targetField = StateField.define<DecorationSet>({
   create() {
@@ -61,11 +69,9 @@ const targetField = StateField.define<DecorationSet>({
   },
   update(decos, tr) {
     for (const effect of tr.effects) {
-      if (effect.is(setTargetPos)) {
+      if (effect.is(setTargetEffect)) {
         if (effect.value === null) return Decoration.none
-        const pos = effect.value
-        if (pos < 0 || pos >= tr.state.doc.length) return Decoration.none
-        return Decoration.set([targetMark.range(pos, pos + 1)])
+        return Decoration.set(effect.value, true)
       }
     }
     return decos
@@ -88,9 +94,12 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     initialContent,
     initialCursor,
     targetCursor,
+    targetRange,
     language = 'javascript',
     readOnly = false,
     height = '400px',
+    trapFocus = false,
+    allowedKeys,
     onStateChange,
     onModeChange,
     onKeystroke,
@@ -102,6 +111,8 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
   const [mode, setMode] = useState<VimMode>('normal')
   const onStateChangeRef = useRef(onStateChange)
   onStateChangeRef.current = onStateChange
+  const allowedKeysRef = useRef(allowedKeys)
+  allowedKeysRef.current = allowedKeys
 
   const stateTracker = useMemo(
     () =>
@@ -113,27 +124,81 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     [],
   )
 
+  const keyFilter = useMemo(
+    () =>
+      EditorView.domEventHandlers({
+        keydown(event, _view) {
+          const keys = allowedKeysRef.current
+          if (!keys) return false
+          if (event.key === 'Escape' || event.key === 'Enter' || event.key === 'Backspace' || event.key === 'Tab') return false
+          if (event.key.startsWith('Arrow')) return false
+          if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false
+          if (event.ctrlKey || event.altKey || event.metaKey) return false
+          if (!keys.includes(event.key)) {
+            event.preventDefault()
+            event.stopPropagation()
+            return true
+          }
+          return false
+        },
+      }),
+    [],
+  )
+
+  const dispatchTargets = useCallback((view: EditorView) => {
+    const decorations: Range<Decoration>[] = []
+
+    if (targetCursor) {
+      const pos = cursorToPos(view, targetCursor)
+      if (pos >= 0 && pos < view.state.doc.length) {
+        decorations.push(targetMark.range(pos, pos + 1))
+      }
+    }
+
+    if (targetRange) {
+      const from = cursorToPos(view, { line: targetRange.fromLine, column: targetRange.fromCol })
+      const to = cursorToPos(view, { line: targetRange.toLine, column: targetRange.toCol })
+      if (from < to && from >= 0 && to <= view.state.doc.length) {
+        decorations.push(targetRangeMark.range(from, to))
+      }
+    }
+
+    view.dispatch({
+      effects: setTargetEffect.of(decorations.length > 0 ? decorations : null),
+    })
+  }, [targetCursor, targetRange])
+
   useEffect(() => {
     const view = cmRef.current?.view
     if (!view) return
+    dispatchTargets(view)
+  }, [dispatchTargets])
 
-    if (!targetCursor) {
-      view.dispatch({ effects: setTargetPos.of(null) })
-      return
+  useEffect(() => {
+    if (!trapFocus) return
+    const view = cmRef.current?.view
+    if (!view) return
+
+    const handleBlur = () => {
+      requestAnimationFrame(() => {
+        if (cmRef.current?.view) {
+          cmRef.current.view.focus()
+        }
+      })
     }
 
-    const lineCount = view.state.doc.lines
-    const lineNum = Math.min(targetCursor.line + 1, lineCount)
-    const line = view.state.doc.line(lineNum)
-    const pos = Math.min(line.from + targetCursor.column, line.to)
-    view.dispatch({ effects: setTargetPos.of(pos) })
-  }, [targetCursor])
+    view.dom.addEventListener('blur', handleBlur, true)
+    return () => {
+      view.dom.removeEventListener('blur', handleBlur, true)
+    }
+  }, [trapFocus])
 
   const handleEditorCreate = useCallback(
     (view: EditorView) => {
       requestAnimationFrame(() => {
         applyCursor(view, initialCursor)
         view.focus()
+        dispatchTargets(view)
       })
 
       view.dom.addEventListener('vim-mode-change', (e: Event) => {
@@ -152,8 +217,15 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
         setMode(vimMode)
         onModeChange?.(vimMode)
       })
+
+      if (trapFocus) {
+        const handleBlur = () => {
+          requestAnimationFrame(() => view.focus())
+        }
+        view.dom.addEventListener('blur', handleBlur, true)
+      }
     },
-    [onModeChange, initialCursor],
+    [onModeChange, initialCursor, dispatchTargets, trapFocus],
   )
 
   const handleKeyDown = useCallback(() => {
@@ -169,7 +241,10 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: initialContent },
         })
-        requestAnimationFrame(() => applyCursor(view, initialCursor))
+        requestAnimationFrame(() => {
+          applyCursor(view, initialCursor)
+          dispatchTargets(view)
+        })
       },
       focus: () => {
         const view = cmRef.current?.view
@@ -181,12 +256,12 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
         return getEditorState(view)
       },
     }),
-    [initialContent, initialCursor],
+    [initialContent, initialCursor, dispatchTargets],
   )
 
   const extensions = useMemo(
-    () => [vim(), getLangExtension(language), stateTracker, targetField, preventMouseSelection],
-    [language, stateTracker],
+    () => [vim(), getLangExtension(language), stateTracker, targetField, preventMouseSelection, keyFilter],
+    [language, stateTracker, keyFilter],
   )
 
   return (
@@ -201,6 +276,10 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
           border: 1px solid #50fa7b;
           border-radius: 2px;
           position: relative;
+        }
+        .cm-target-range {
+          background-color: rgba(255, 184, 108, 0.25);
+          border-bottom: 2px solid #ffb86c;
         }
         .cm-editor {
           background-color: #1e1f29 !important;
