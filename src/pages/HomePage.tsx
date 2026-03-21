@@ -1,12 +1,30 @@
-import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useCallback } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { BookOpen, Zap, Swords, ArrowRight } from 'lucide-react'
 import { StatsOverview } from '@/components/StatsOverview'
 
 export function HomePage() {
+  const navigate = useNavigate()
+
   useEffect(() => {
     document.title = 'Home | vim-arena'
   }, [])
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (
+      document.activeElement?.tagName === 'INPUT' ||
+      document.activeElement?.tagName === 'TEXTAREA' ||
+      document.activeElement?.closest('.cm-editor')
+    ) return
+
+    if (e.key === '1') { e.preventDefault(); navigate('/lessons') }
+    else if (e.key === '2') { e.preventDefault(); navigate('/challenges') }
+  }, [navigate])
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
 
   return (
     <div className="max-w-5xl mx-auto flex flex-col gap-12 py-8">
@@ -24,14 +42,14 @@ export function HomePage() {
             className="relative px-8 py-4 bg-[var(--theme-primary)] text-[var(--theme-background)] font-bold rounded-lg text-lg hover:opacity-90 transition-opacity shadow-[0_0_15px_var(--theme-primary)]"
           >
             Start Learning
-            <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">g l</kbd>
+            <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">1</kbd>
           </Link>
           <Link
             to="/challenges"
             className="relative px-8 py-4 bg-transparent border-2 border-[var(--theme-primary)] text-[var(--theme-primary)] font-bold rounded-lg text-lg hover:bg-[var(--theme-muted)] transition-colors"
           >
             Try Challenges
-            <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">g c</kbd>
+            <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">2</kbd>
           </Link>
         </div>
       </section>

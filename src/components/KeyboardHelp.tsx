@@ -122,23 +122,77 @@ export function KeyboardHelp() {
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-[var(--theme-accent)] mb-4">Editor</h3>
+                <h3 className="text-lg font-bold text-[var(--theme-accent)] mb-4">Challenge Results</h3>
                 <ul className="space-y-3">
                   <li className="flex justify-between items-center">
-                    <span className="text-[var(--theme-foreground)]">Normal Mode</span>
-                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">Esc</kbd>
+                    <span className="text-[var(--theme-foreground)]">Next Challenge</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">n</kbd>
                   </li>
                   <li className="flex justify-between items-center">
-                    <span className="text-[var(--theme-foreground)]">Insert Mode</span>
-                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">i</kbd>
+                    <span className="text-[var(--theme-foreground)]">Retry</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">r</kbd>
                   </li>
                   <li className="flex justify-between items-center">
-                    <span className="text-[var(--theme-foreground)]">Visual Mode</span>
-                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">v</kbd>
+                    <span className="text-[var(--theme-foreground)]">Back</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">b</kbd>
                   </li>
+                  <li className="flex justify-between items-center">
+                    <span className="text-[var(--theme-foreground)]">Toggle Practice</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">p</kbd>
+                  </li>
+                </ul>
+
+                <h3 className="text-lg font-bold text-[var(--theme-accent)] mb-4 mt-6">Challenges Page</h3>
+                <ul className="space-y-3">
+                  <li className="flex justify-between items-center">
+                    <span className="text-[var(--theme-foreground)]">Start Challenge</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">Enter</kbd>
+                  </li>
+                  <li className="flex justify-between items-center">
+                    <span className="text-[var(--theme-foreground)]">Reset Rating</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">Ctrl+⌫</kbd>
+                  </li>
+                </ul>
+
+                <h3 className="text-lg font-bold text-[var(--theme-accent)] mb-4 mt-6">Settings</h3>
+                <ul className="space-y-3">
+                  <li className="flex justify-between items-center">
+                    <span className="text-[var(--theme-foreground)]">Select Theme</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">1-9</kbd>
+                  </li>
+                  <li className="flex justify-between items-center">
+                    <span className="text-[var(--theme-foreground)]">Reset All Data</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">Ctrl+⌫</kbd>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 className="text-lg font-bold text-[var(--theme-primary)] mb-4">Lesson Completion</h3>
+                <ul className="space-y-3">
+                  <li className="flex justify-between items-center">
+                    <span className="text-[var(--theme-foreground)]">Next Lesson</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">n</kbd>
+                  </li>
+                  <li className="flex justify-between items-center">
+                    <span className="text-[var(--theme-foreground)]">All Lessons</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">b</kbd>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-[var(--theme-primary)] mb-4">General</h3>
+                <ul className="space-y-3">
                   <li className="flex justify-between items-center">
                     <span className="text-[var(--theme-foreground)]">Show Help</span>
                     <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">?</kbd>
+                  </li>
+                  <li className="flex justify-between items-center">
+                    <span className="text-[var(--theme-foreground)]">Close / Cancel</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">Esc</kbd>
                   </li>
                 </ul>
               </div>

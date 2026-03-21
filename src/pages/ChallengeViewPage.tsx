@@ -51,6 +51,14 @@ export default function ChallengeViewPage() {
     if (phase === 'active' && editorRef.current) {
       editorRef.current.focus()
     }
+    if (phase === 'complete') {
+      const editor = document.querySelector('.cm-editor') as HTMLElement | null
+      if (editor) {
+        const focused = editor.querySelector('.cm-content') as HTMLElement | null
+        focused?.blur()
+        editor.blur()
+      }
+    }
   }, [phase, challenge])
 
   const handleBack = useCallback(() => {
@@ -62,7 +70,8 @@ export default function ChallengeViewPage() {
     if (e.key === 'n') { e.preventDefault(); nextChallenge() }
     else if (e.key === 'r') { e.preventDefault(); retry() }
     else if (e.key === 'b' || e.key === 'Escape') { e.preventDefault(); handleBack() }
-  }, [phase, result, nextChallenge, retry, handleBack])
+    else if (e.key === 'p') { e.preventDefault(); togglePracticeMode() }
+  }, [phase, result, nextChallenge, retry, handleBack, togglePracticeMode])
 
   useEffect(() => {
     if (phase === 'complete' && !result) {
@@ -70,6 +79,16 @@ export default function ChallengeViewPage() {
       return () => window.removeEventListener('keydown', handleTimeoutKeyDown)
     }
   }, [phase, result, handleTimeoutKeyDown])
+
+  // Practice toggle keybind works during entire complete phase (both result and timeout screens)
+  useEffect(() => {
+    if (phase !== 'complete') return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'p') { e.preventDefault(); togglePracticeMode() }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [phase, togglePracticeMode])
 
   const allowedKeys = useMemo(() => {
     if (!practiceMode || !challenge?.optimalSolutions) return undefined
@@ -132,6 +151,7 @@ export default function ChallengeViewPage() {
           >
             {practiceMode ? <Target size={14} /> : <GraduationCap size={14} />}
             {practiceMode ? 'Practice ON' : 'Practice'}
+            <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-1">p</kbd>
           </button>
           <ChallengeTimer
             timeLimit={challenge.timeLimit}

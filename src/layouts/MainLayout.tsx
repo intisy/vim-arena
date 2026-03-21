@@ -4,8 +4,8 @@ import { BookOpen, Zap, Swords, Settings, BarChart3 } from 'lucide-react'
 import { Avatar } from '@/components/Avatar'
 
 const NAV_LINKS = [
-  { to: '/lessons', label: 'Lessons', icon: BookOpen, end: false },
-  { to: '/challenges', label: 'Challenges', icon: Zap, end: false },
+  { to: '/lessons', label: 'Lessons', icon: BookOpen, end: false, hint: 'g l' },
+  { to: '/challenges', label: 'Challenges', icon: Zap, end: false, hint: 'g c' },
 ]
 
 export function MainLayout() {
@@ -58,7 +58,7 @@ export function MainLayout() {
           vim-arena <Swords size={20} color="var(--theme-accent, #ff79c6)" />
         </Link>
 
-        {NAV_LINKS.map(({ to, label, icon: Icon, end }) => (
+        {NAV_LINKS.map(({ to, label, icon: Icon, end, hint }) => (
           <NavLink
             key={to}
             to={to}
@@ -77,7 +77,16 @@ export function MainLayout() {
             })}
           >
             <Icon size={16} />
-            {label}
+            <span style={{ flex: 1 }}>{label}</span>
+            <kbd style={{
+              fontSize: '10px',
+              fontFamily: 'monospace',
+              padding: '1px 5px',
+              borderRadius: '3px',
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              color: 'var(--theme-muted-foreground, #666)',
+              border: '1px solid var(--theme-border, #333)',
+            }}>{hint}</kbd>
           </NavLink>
         ))}
 
@@ -136,7 +145,16 @@ export function MainLayout() {
                 })}
               >
                 <BarChart3 size={14} />
-                Stats
+                <span style={{ flex: 1 }}>Stats</span>
+                <kbd style={{
+                  fontSize: '10px',
+                  fontFamily: 'monospace',
+                  padding: '1px 5px',
+                  borderRadius: '3px',
+                  backgroundColor: 'rgba(0,0,0,0.4)',
+                  color: 'var(--theme-muted-foreground, #666)',
+                  border: '1px solid var(--theme-border, #333)',
+                }}>g t</kbd>
               </NavLink>
               <NavLink
                 to="/settings"
@@ -154,7 +172,16 @@ export function MainLayout() {
                 })}
               >
                 <Settings size={14} />
-                Settings
+                <span style={{ flex: 1 }}>Settings</span>
+                <kbd style={{
+                  fontSize: '10px',
+                  fontFamily: 'monospace',
+                  padding: '1px 5px',
+                  borderRadius: '3px',
+                  backgroundColor: 'rgba(0,0,0,0.4)',
+                  color: 'var(--theme-muted-foreground, #666)',
+                  border: '1px solid var(--theme-border, #333)',
+                }}>g s</kbd>
               </NavLink>
             </div>
           )}

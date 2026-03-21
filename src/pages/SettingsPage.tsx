@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { storageProvider } from '@/storage/LocalStorageProvider'
 
@@ -10,7 +10,7 @@ export function SettingsPage() {
     document.title = 'Settings | vim-arena'
   }, [])
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     if (window.confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
       storageProvider.clear()
       setResetMessage('Progress has been reset. Reloading...')
@@ -18,7 +18,32 @@ export function SettingsPage() {
         window.location.reload()
       }, 1500)
     }
-  }
+  }, [])
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (
+      document.activeElement?.tagName === 'INPUT' ||
+      document.activeElement?.tagName === 'TEXTAREA'
+    ) return
+
+    // Number keys 1-N select themes
+    const num = parseInt(e.key, 10)
+    if (num >= 1 && num <= themes.length) {
+      e.preventDefault()
+      setTheme(themes[num - 1].className)
+      return
+    }
+
+    if (e.key === 'Backspace' && e.ctrlKey) {
+      e.preventDefault()
+      handleReset()
+    }
+  }, [themes, setTheme, handleReset])
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
 
   return (
     <div className="max-w-4xl mx-auto py-8 flex flex-col gap-12">
@@ -34,18 +59,19 @@ export function SettingsPage() {
           Theme
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {themes.map((t) => {
+          {themes.map((t, i) => {
             const isActive = t.className === theme.className
             return (
               <button
                 key={t.className}
                 onClick={() => setTheme(t.className)}
-                className={`flex flex-col gap-4 p-6 rounded-xl border-2 text-left transition-all ${
+                className={`relative flex flex-col gap-4 p-6 rounded-xl border-2 text-left transition-all ${
                   isActive
                     ? 'border-[var(--theme-primary)] bg-[var(--theme-muted)] shadow-[0_0_10px_var(--theme-primary)]'
                     : 'border-[var(--theme-border)] bg-[var(--theme-background)] hover:border-[var(--theme-muted-foreground)]'
                 }`}
               >
+                <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">{i + 1}</kbd>
                 <div className="flex items-center justify-between w-full">
                   <span className="text-xl font-bold text-[var(--theme-foreground)]">
                     {t.name}
@@ -102,9 +128,10 @@ export function SettingsPage() {
           </div>
           <button
             onClick={handleReset}
-            className="px-6 py-3 bg-[var(--theme-error)] text-white font-bold rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+            className="px-6 py-3 bg-[var(--theme-error)] text-white font-bold rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap flex items-center gap-2"
           >
             Reset All Data
+            <kbd className="text-xs bg-red-900 px-1.5 py-0.5 rounded font-mono">Ctrl+⌫</kbd>
           </button>
         </div>
         {resetMessage && (
