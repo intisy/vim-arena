@@ -33,6 +33,7 @@ export interface VimEditorRef {
 function getEditorState(view: EditorView): VimEditorState {
   const sel = view.state.selection.main
   const line = view.state.doc.lineAt(sel.head)
+  
   return {
     content: view.state.doc.toString(),
     cursorLine: line.number - 1,
@@ -149,6 +150,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
         value={initialContent}
         height={height}
         extensions={extensions}
+        onCreateEditor={handleEditorCreate}
         readOnly={readOnly}
         theme="dark"
         style={{
