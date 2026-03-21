@@ -53,6 +53,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         description: `Delete the character at line ${chosen.index + 1}, column ${col + 1} using x`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: col,
@@ -104,6 +105,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         description: `Replace '${chosen.line[col]}' with '${replacement}' at line ${chosen.index + 1}, col ${col + 1}`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: col,
@@ -156,6 +158,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         description: `Delete the word at line ${chosen.index + 1}, column ${col + 1} using dw`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: range.start,
@@ -182,6 +185,9 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       const lineIdx = rng.nextInt(0, lines.length - 1)
       const newLines = lines.filter((_, i) => i !== lineIdx)
       const newCursorLine = Math.min(lineIdx, newLines.length - 1)
+      const landingLine = newLines[newCursorLine] ?? ''
+      const firstNonBlank = landingLine.search(/\S/)
+      const cursorCol = firstNonBlank >= 0 ? firstNonBlank : 0
 
       return {
         templateId: this.id,
@@ -189,11 +195,12 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         initialContent: snippet.content,
         initialCursor: { line: lineIdx, column: 0 },
         expectedContent: newLines.join('\n'),
-        expectedCursor: { line: newCursorLine, column: 0 },
+        expectedCursor: { line: newCursorLine, column: cursorCol },
         referenceKeystrokeCount: 2,
         description: `Delete line ${lineIdx + 1} using dd`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
         targetHighlight: {
           fromLine: lineIdx,
           fromCol: 0,
@@ -251,6 +258,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         description: `Change "${word.text}" to "${replacement}" at line ${chosen.index + 1}`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: word.start,
@@ -296,6 +304,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         description: `Delete from column ${col + 1} to end of line ${chosen.index + 1} using D`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: col,
@@ -334,6 +343,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         description: `Duplicate line ${lineIdx + 1} by yanking (yy) and pasting (p)`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
         targetHighlight: {
           fromLine: lineIdx,
           fromCol: 0,
@@ -387,6 +397,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         description: `Delete the word "${word.text}" at line ${chosen.index + 1} using diw`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: word.start,

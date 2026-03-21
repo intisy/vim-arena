@@ -7,6 +7,7 @@ interface ChallengeResultsProps {
   onNext: () => void
   onBack: () => void
   isPersonalBest: boolean
+  isPractice?: boolean
 }
 
 export function ChallengeResults({
@@ -15,6 +16,7 @@ export function ChallengeResults({
   onNext,
   onBack,
   isPersonalBest,
+  isPractice = false,
 }: ChallengeResultsProps) {
   const [displayScore, setDisplayScore] = useState(0)
 
@@ -50,8 +52,14 @@ export function ChallengeResults({
       <h2 className="text-3xl font-bold text-white mb-2">
         {result.timedOut ? 'Time\'s Up!' : 'Challenge Complete!'}
       </h2>
+
+      {isPractice && (
+        <div className="bg-amber-500/20 text-amber-400 px-4 py-1 rounded-full text-sm font-bold mb-4">
+          Practice Mode — No elo change
+        </div>
+      )}
       
-      {isPersonalBest && !result.timedOut && (
+      {isPersonalBest && !result.timedOut && !isPractice && (
         <div className="bg-yellow-500/20 text-yellow-400 px-4 py-1 rounded-full text-sm font-bold mb-6 animate-bounce">
           Personal Best! 🏆
         </div>

@@ -19,9 +19,11 @@ export function useChallengeEngine() {
   const [result, setResult] = useState<ChallengeResult | null>(null)
   const [countdown, setCountdown] = useState(3)
   const [difficulty, setDifficulty] = useState<1 | 2 | 3 | 4 | 5>(1)
+  const [practiceMode, setPracticeMode] = useState(false)
 
   const engineRef = useRef<ChallengeEngine | null>(null)
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const practiceModeRef = useRef(false)
   const { recordResult } = useChallengeStats()
   const { recordChallengeResult: recordElo } = useEloRating()
 
@@ -39,6 +41,14 @@ export function useChallengeEngine() {
   useEffect(() => {
     return cleanup
   }, [cleanup])
+
+  const togglePracticeMode = useCallback(() => {
+    setPracticeMode(prev => {
+      const next = !prev
+      practiceModeRef.current = next
+      return next
+    })
+  }, [])
 
   const startChallenge = useCallback((diff: 1 | 2 | 3 | 4 | 5) => {
     cleanup()
@@ -78,8 +88,10 @@ export function useChallengeEngine() {
             const res = engine.forceComplete()
             setResult(res)
             setPhase('complete')
-            recordResult(res)
-            recordElo(diff, res.totalScore, true)
+            if (!practiceModeRef.current) {
+              recordResult(res)
+              recordElo(diff, res.totalScore, true)
+            }
           }
         })
         engineRef.current = engine
@@ -105,8 +117,10 @@ export function useChallengeEngine() {
     if (res) {
       setResult(res)
       setPhase('complete')
-      recordResult(res)
-      recordElo(difficulty, res.totalScore, false)
+      if (!practiceModeRef.current) {
+        recordResult(res)
+        recordElo(difficulty, res.totalScore, false)
+      }
     }
   }, [phase, recordResult, recordElo, difficulty])
 
@@ -124,6 +138,8 @@ export function useChallengeEngine() {
     result,
     countdown,
     difficulty,
+    practiceMode,
+    togglePracticeMode,
     startChallenge,
     retry,
     nextChallenge,

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useChallengeEngine } from '@/hooks/useChallengeEngine'
 import { ChallengeTimer } from '@/components/ChallengeTimer'
@@ -6,6 +6,7 @@ import { ChallengeResults } from '@/components/ChallengeResults'
 import { VimEditor } from '@/components/VimEditor'
 import type { VimEditorRef } from '@/components/VimEditor'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
+import { buildAllowedKeys } from '@/engine/KeyFilter'
 import type { TargetRange } from '@/types/editor'
 
 export default function ChallengeViewPage() {
@@ -26,6 +27,8 @@ export default function ChallengeViewPage() {
     keystrokes,
     result,
     countdown,
+    practiceMode,
+    togglePracticeMode,
     startChallenge,
     retry,
     nextChallenge,
@@ -49,6 +52,11 @@ export default function ChallengeViewPage() {
   const handleBack = () => {
     navigate('/challenges')
   }
+
+  const allowedKeys = useMemo(() => {
+    if (!practiceMode || !challenge?.requiredCommands) return undefined
+    return buildAllowedKeys(challenge.requiredCommands)
+  }, [practiceMode, challenge])
 
   if (!challenge) {
     return (
@@ -82,15 +90,46 @@ export default function ChallengeViewPage() {
             <h2 className="text-2xl font-bold text-white">{challenge.description}</h2>
           </div>
           <p className="text-gray-400">
-            Complete the task using the fewest keystrokes possible.
+            {practiceMode
+              ? 'Practice mode — only the optimal keys are allowed. No elo change.'
+              : 'Complete the task using the fewest keystrokes possible.'}
           </p>
         </div>
-        <ChallengeTimer
-          timeLimit={challenge.timeLimit}
-          elapsed={elapsed}
-          isActive={phase === 'active'}
-        />
+        <div className="flex items-center gap-4">
+          <button
+            onClick={togglePracticeMode}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border ${
+              practiceMode
+                ? 'bg-amber-900/50 text-amber-400 border-amber-700'
+                : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200 hover:border-gray-500'
+            }`}
+          >
+            <span>{practiceMode ? '🎯' : '🎓'}</span>
+            {practiceMode ? 'Practice ON' : 'Practice'}
+          </button>
+          <ChallengeTimer
+            timeLimit={challenge.timeLimit}
+            elapsed={elapsed}
+            isActive={phase === 'active'}
+          />
+        </div>
       </div>
+
+      {practiceMode && challenge.requiredCommands && challenge.requiredCommands.length > 0 && (
+        <div className="mb-4 flex items-center gap-3 bg-amber-900/20 border border-amber-800/50 rounded-lg px-4 py-3">
+          <span className="text-sm font-bold text-amber-400 uppercase tracking-wider">Perfect keys:</span>
+          <div className="flex flex-wrap gap-2">
+            {challenge.requiredCommands.map((cmd, i) => (
+              <kbd
+                key={i}
+                className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 bg-amber-900/40 border border-amber-700 rounded text-sm font-mono font-bold text-amber-300"
+              >
+                {cmd}
+              </kbd>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 relative min-h-[400px]">
         <div className={`transition-opacity duration-300 ${phase === 'complete' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
@@ -100,6 +139,7 @@ export default function ChallengeViewPage() {
             initialCursor={challenge.initialCursor}
             targetCursor={targetCursor}
             targetRange={targetRange}
+            allowedKeys={allowedKeys}
             language="javascript"
             readOnly={phase !== 'active'}
             trapFocus={phase === 'active'}
@@ -131,6 +171,7 @@ export default function ChallengeViewPage() {
               onNext={nextChallenge}
               onBack={handleBack}
               isPersonalBest={isPersonalBest}
+              isPractice={practiceMode}
             />
           </div>
         )}

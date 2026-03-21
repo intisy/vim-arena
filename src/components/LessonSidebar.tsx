@@ -27,8 +27,8 @@ export function LessonSidebar() {
   return (
     <aside className="w-[280px] flex-shrink-0 border-r border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col h-screen overflow-y-auto">
       <div className="p-4 border-b border-[var(--theme-border)] sticky top-0 bg-[var(--theme-background)] z-10 flex items-center justify-between">
-        <Link to="/" className="font-mono font-bold text-lg text-[var(--theme-foreground)] hover:text-[var(--theme-primary)] transition-colors">
-          &larr; vim-arena
+        <Link to="/lessons" className="font-mono font-bold text-lg text-[var(--theme-foreground)] hover:text-[var(--theme-primary)] transition-colors">
+          &larr; Lessons
         </Link>
       </div>
       

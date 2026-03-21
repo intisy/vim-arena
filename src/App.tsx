@@ -23,12 +23,12 @@ function App() {
           <Routes>
             <Route element={<MainLayout />}>
               <Route index element={<Suspense fallback={null}><HomePage /></Suspense>} />
+              <Route path="lessons" element={<Suspense fallback={null}><LessonsPage /></Suspense>} />
               <Route path="challenges" element={<Suspense fallback={null}><ChallengesPage /></Suspense>} />
               <Route path="challenges/:challengeId" element={<Suspense fallback={null}><ChallengeViewPage /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={null}><SettingsPage /></Suspense>} />
               <Route path="*" element={<Suspense fallback={null}><NotFoundPage /></Suspense>} />
             </Route>
-            <Route path="lessons" element={<Suspense fallback={null}><LessonsPage /></Suspense>} />
             <Route path="lessons/:lessonId" element={<Suspense fallback={null}><LessonViewPage /></Suspense>} />
           </Routes>
         </HashRouter>

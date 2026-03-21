@@ -27,6 +27,7 @@ export interface GeneratedChallenge {
   timeLimit: number
   difficulty: 1 | 2 | 3 | 4 | 5
   targetHighlight?: TargetHighlight
+  requiredCommands?: string[]
 }
 
 export interface ChallengeResult {

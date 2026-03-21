@@ -21,15 +21,16 @@ describe('MainLayout', () => {
   test('renders all navigation links', () => {
     renderWithRouter('/')
     const nav = screen.getByRole('navigation', { name: /main navigation/i })
-    expect(within(nav).getByText(/home/i)).toBeInTheDocument()
     expect(within(nav).getByText(/lessons/i)).toBeInTheDocument()
     expect(within(nav).getByText(/challenges/i)).toBeInTheDocument()
-    expect(within(nav).getByText(/settings/i)).toBeInTheDocument()
+    expect(within(nav).getByText(/profile/i)).toBeInTheDocument()
   })
 
-  test('renders the vim-arena logo/title', () => {
+  test('renders the vim-arena logo/title as home link', () => {
     renderWithRouter('/')
-    expect(screen.getByText(/vim-arena/i)).toBeInTheDocument()
+    const logo = screen.getByText(/vim-arena/i)
+    expect(logo).toBeInTheDocument()
+    expect(logo.closest('a')).toHaveAttribute('href', '/')
   })
 
   test('renders outlet content', () => {
