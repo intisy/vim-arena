@@ -80,7 +80,8 @@ export default function ChallengeViewPage() {
 
   const editorTargetCursor = challenge.targetCursor ?? undefined
 
-  const bestSolution = challenge.optimalSolutions?.[0]
+  const bestKeystrokeCount = challenge.optimalSolutions?.[0]?.totalKeystrokes ?? Infinity
+  const equalSolutions = challenge.optimalSolutions?.filter(s => s.totalKeystrokes === bestKeystrokeCount) ?? []
 
   return (
     <div className="max-w-5xl mx-auto p-6 h-full flex flex-col relative">
@@ -118,30 +119,31 @@ export default function ChallengeViewPage() {
         </div>
       </div>
 
-      {practiceMode && bestSolution && (
-        <div className="mb-4 bg-amber-900/20 border border-amber-800/50 rounded-lg px-4 py-3">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm font-bold text-amber-400 uppercase tracking-wider">Solution steps:</span>
-            <span className="text-xs text-amber-600">({bestSolution.totalKeystrokes} keystrokes)</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {bestSolution.steps.map((step, i) => (
-              <div key={i} className="flex items-center gap-1.5">
-                {i > 0 && <span className="text-gray-600">→</span>}
-                <div className="flex items-center gap-1 bg-amber-900/40 border border-amber-700 rounded px-2 py-1">
-                  <kbd className="font-mono font-bold text-amber-300 text-sm">
-                    {step.keys}
-                  </kbd>
-                  <span className="text-amber-500 text-xs">{step.description}</span>
-                </div>
+      {practiceMode && equalSolutions.length > 0 && (
+        <div className="mb-4 bg-amber-900/20 border border-amber-800/50 rounded-lg px-4 py-3 space-y-3">
+          {equalSolutions.map((sol, si) => (
+            <div key={si}>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-sm font-bold text-amber-400 uppercase tracking-wider">
+                  {equalSolutions.length === 1 ? 'Solution:' : `Option ${si + 1}:`}
+                </span>
+                <span className="text-xs text-amber-600">({sol.totalKeystrokes} keystrokes)</span>
               </div>
-            ))}
-          </div>
-          {challenge.optimalSolutions && challenge.optimalSolutions.length > 1 && (
-            <div className="mt-2 text-xs text-amber-700">
-              {challenge.optimalSolutions.length - 1} alternative solution{challenge.optimalSolutions.length > 2 ? 's' : ''} also accepted
+              <div className="flex flex-wrap gap-2">
+                {sol.steps.map((step, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    {i > 0 && <span className="text-gray-600">→</span>}
+                    <div className="flex items-center gap-1 bg-amber-900/40 border border-amber-700 rounded px-2 py-1">
+                      <kbd className="font-mono font-bold text-amber-300 text-sm">
+                        {step.keys}
+                      </kbd>
+                      <span className="text-amber-500 text-xs">{step.description}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
+          ))}
         </div>
       )}
 
@@ -154,6 +156,7 @@ export default function ChallengeViewPage() {
             targetCursor={editorTargetCursor}
             targetRange={targetRange}
             allowedKeys={allowedKeys}
+            strictFilter={practiceMode}
             language="javascript"
             readOnly={phase !== 'active'}
             trapFocus={phase === 'active'}

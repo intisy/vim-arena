@@ -111,6 +111,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     readOnly = false,
     height = '400px',
     trapFocus = false,
+    strictFilter = false,
     allowedKeys,
     onStateChange,
     onModeChange,
@@ -129,6 +130,8 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
   onKeystrokeRef.current = onKeystroke
   const allowedKeysRef = useRef(allowedKeys)
   allowedKeysRef.current = allowedKeys
+  const strictFilterRef = useRef(strictFilter)
+  strictFilterRef.current = strictFilter
   const lastModeRef = useRef<VimMode>('normal')
 
   const stateTracker = useMemo(
@@ -165,11 +168,23 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     () =>
       EditorView.domEventHandlers({
         keydown(event, view) {
+          const keys = allowedKeysRef.current
+          if (!keys) return false
+
+          if (strictFilterRef.current) {
+            if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false
+            if (event.ctrlKey || event.altKey || event.metaKey) return false
+            if (!keys.includes(event.key)) {
+              event.preventDefault()
+              event.stopPropagation()
+              return true
+            }
+            return false
+          }
+
           const currentMode = readVimMode(view)
           if (currentMode === 'insert' || currentMode === 'replace') return false
           if (currentMode === 'visual' || currentMode === 'visual-line') return false
-          const keys = allowedKeysRef.current
-          if (!keys) return false
           if (event.key === 'Escape' || event.key === 'Enter' || event.key === 'Backspace' || event.key === 'Tab') return false
           if (event.key.startsWith('Arrow')) return false
           if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false

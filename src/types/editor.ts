@@ -22,6 +22,7 @@ export interface VimEditorProps {
   readOnly?: boolean
   height?: string
   trapFocus?: boolean
+  strictFilter?: boolean
   allowedKeys?: string[]
   onStateChange?: (state: EditorState) => void
   onModeChange?: (mode: VimMode) => void
