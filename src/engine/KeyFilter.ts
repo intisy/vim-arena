@@ -1,3 +1,5 @@
+import type { ChallengeSolution } from '@/types/challenge'
+
 type CommandCategory =
   | 'basic-motion'
   | 'word-motion'
@@ -201,13 +203,15 @@ export function buildAllowedKeys(requiredCommands: string[]): string[] | undefin
   return [...allAllowed]
 }
 
-export function buildPracticeKeys(requiredCommands: string[]): string[] | undefined {
-  if (requiredCommands.length === 0) return undefined
+export function buildPracticeKeys(solutions: ChallengeSolution[]): string[] | undefined {
+  if (solutions.length === 0) return undefined
 
   const keys = new Set<string>()
-  for (const cmd of requiredCommands) {
-    for (const ch of cmd) {
-      keys.add(ch)
+  for (const sol of solutions) {
+    for (const step of sol.steps) {
+      for (const ch of step.keys) {
+        keys.add(ch)
+      }
     }
   }
 

@@ -1,4 +1,4 @@
-import type { ChallengeTemplate, CodeSnippet, GeneratedChallenge } from '@/types/challenge'
+import type { ChallengeTemplate, CodeSnippet, GeneratedChallenge, SolutionStep, ChallengeSolution } from '@/types/challenge'
 import { SeededRandom } from '@/engine/ChallengeGenerator'
 
 function getDeleteWordRange(line: string, col: number): { start: number; end: number } {
@@ -21,10 +21,10 @@ function pickOffsetCursor(
   rng: SeededRandom,
   targetLine: number,
   totalLines: number,
-): { line: number; column: number; distance: number } {
+): { line: number; column: number } {
   if (totalLines <= 2) {
     const offsetLine = targetLine === 0 ? 1 : 0
-    return { line: offsetLine, column: 0, distance: Math.abs(targetLine - offsetLine) }
+    return { line: offsetLine, column: 0 }
   }
 
   const minDist = Math.min(2, Math.max(1, Math.floor(totalLines / 4)))
@@ -45,7 +45,136 @@ function pickOffsetCursor(
     offsetLine = targetLine === 0 ? 1 : targetLine - 1
   }
 
-  return { line: offsetLine, column: 0, distance: Math.abs(targetLine - offsetLine) }
+  return { line: offsetLine, column: 0 }
+}
+
+function countStepKeys(step: SolutionStep): number {
+  if (step.keys === 'Escape') return 1
+  return step.keys.length
+}
+
+function simulateW(line: string, startCol: number): number {
+  let col = startCol
+  const len = line.length
+  if (col >= len) return len
+
+  const isWord = (c: string) => /\w/.test(c)
+  const isSpace = (c: string) => /\s/.test(c)
+
+  if (isWord(line[col])) {
+    while (col < len && isWord(line[col])) col++
+  } else if (!isSpace(line[col])) {
+    while (col < len && !isWord(line[col]) && !isSpace(line[col])) col++
+  }
+
+  while (col < len && isSpace(line[col])) col++
+
+  return col >= len ? len : col
+}
+
+function countWMotions(line: string, targetCol: number): number | null {
+  if (targetCol === 0) return null
+  let col = 0
+  let count = 0
+  while (col < targetCol && col < line.length) {
+    const next = simulateW(line, col)
+    if (next <= col) return null
+    count++
+    if (next === targetCol) return count
+    if (next > targetCol) return null
+    col = next
+  }
+  return null
+}
+
+function verticalStep(fromLine: number, toLine: number): SolutionStep | null {
+  const diff = toLine - fromLine
+  if (diff === 0) return null
+  const dir = diff > 0 ? 'j' : 'k'
+  const dist = Math.abs(diff)
+  if (dist === 1) return { keys: dir, description: `Move ${diff > 0 ? 'down' : 'up'}` }
+  return { keys: `${dist}${dir}`, description: `Move ${diff > 0 ? 'down' : 'up'} ${dist} lines` }
+}
+
+function horizontalOptions(targetCol: number, lineContent: string): SolutionStep[] {
+  if (targetCol === 0) return []
+
+  const opts: SolutionStep[] = []
+
+  if (targetCol === 1) {
+    opts.push({ keys: 'l', description: 'Move right' })
+  } else {
+    opts.push({ keys: `${targetCol}l`, description: `Move right ${targetCol}` })
+  }
+
+  if (targetCol < lineContent.length) {
+    const ch = lineContent[targetCol]
+    if (/[^\s]/.test(ch)) {
+      const first = lineContent.indexOf(ch, 1)
+      if (first === targetCol) {
+        opts.push({ keys: `f${ch}`, description: `Find '${ch}'` })
+      }
+    }
+  }
+
+  const firstNonWs = lineContent.length - lineContent.trimStart().length
+  if (targetCol === firstNonWs && firstNonWs > 0) {
+    opts.push({ keys: '^', description: 'First non-whitespace' })
+  }
+
+  if (lineContent.length > 0 && targetCol === lineContent.length - 1) {
+    opts.push({ keys: '$', description: 'End of line' })
+  }
+
+  const wCount = countWMotions(lineContent, targetCol)
+  if (wCount !== null && wCount > 0) {
+    if (wCount <= 4) {
+      opts.push({ keys: 'w'.repeat(wCount), description: wCount === 1 ? 'Next word' : `${wCount} words forward` })
+    } else {
+      opts.push({ keys: `${wCount}w`, description: `${wCount} words forward` })
+    }
+  }
+
+  return opts
+}
+
+function computeSolutions(
+  fromLine: number,
+  toLine: number,
+  toCol: number,
+  lineContent: string,
+  actionSteps: SolutionStep[],
+): ChallengeSolution[] {
+  const vStep = verticalStep(fromLine, toLine)
+  const hOpts = horizontalOptions(toCol, lineContent)
+
+  const actionCost = actionSteps.reduce((n, s) => n + countStepKeys(s), 0)
+  const vCost = vStep ? countStepKeys(vStep) : 0
+
+  const solutions: ChallengeSolution[] = []
+
+  if (hOpts.length === 0) {
+    const steps: SolutionStep[] = []
+    if (vStep) steps.push(vStep)
+    steps.push(...actionSteps)
+    solutions.push({ label: 'Optimal', steps, totalKeystrokes: vCost + actionCost })
+  } else {
+    for (const hOpt of hOpts) {
+      const hCost = countStepKeys(hOpt)
+      const steps: SolutionStep[] = []
+      if (vStep) steps.push(vStep)
+      steps.push(hOpt)
+      steps.push(...actionSteps)
+      solutions.push({
+        label: `Via ${hOpt.keys}`,
+        steps,
+        totalKeystrokes: vCost + hCost + actionCost,
+      })
+    }
+  }
+
+  solutions.sort((a, b) => a.totalKeystrokes - b.totalKeystrokes)
+  return solutions
 }
 
 export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
@@ -74,19 +203,22 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       newLines[chosen.index] = newLine
 
       const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [{ keys: 'x', description: 'Delete character' }]
+      const solutions = computeSolutions(offset.line, chosen.index, col, chosen.line, actionSteps)
 
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: offset.line, column: offset.column },
+        initialCursor: offset,
         targetCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
-        referenceKeystrokeCount: 1 + offset.distance,
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
         description: 'Delete the highlighted character',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: col,
@@ -128,19 +260,22 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       newLines[chosen.index] = newLine
 
       const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [{ keys: `r${replacement}`, description: `Replace with '${replacement}'` }]
+      const solutions = computeSolutions(offset.line, chosen.index, col, chosen.line, actionSteps)
 
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: offset.line, column: offset.column },
+        initialCursor: offset,
         targetCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
-        referenceKeystrokeCount: 2 + offset.distance,
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
         description: `Replace the highlighted character with '${replacement}'`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: col,
@@ -183,19 +318,22 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       newLines[chosen.index] = newLine
 
       const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [{ keys: 'dw', description: 'Delete word' }]
+      const solutions = computeSolutions(offset.line, chosen.index, col, chosen.line, actionSteps)
 
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: offset.line, column: offset.column },
+        initialCursor: offset,
         targetCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
-        referenceKeystrokeCount: 2 + offset.distance,
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
         description: 'Delete the highlighted word',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: range.start,
@@ -223,19 +361,22 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       const newLines = lines.filter((_, i) => i !== lineIdx)
 
       const offset = pickOffsetCursor(rng, lineIdx, lines.length)
+      const actionSteps: SolutionStep[] = [{ keys: 'dd', description: 'Delete line' }]
+      const solutions = computeSolutions(offset.line, lineIdx, 0, lines[lineIdx], actionSteps)
 
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: offset.line, column: offset.column },
+        initialCursor: offset,
         targetCursor: { line: lineIdx, column: 0 },
         expectedContent: newLines.join('\n'),
-        referenceKeystrokeCount: 2 + offset.distance,
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
         description: 'Delete the highlighted line',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
         targetHighlight: {
           fromLine: lineIdx,
           fromCol: 0,
@@ -283,19 +424,25 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       newLines[chosen.index] = newLine
 
       const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [
+        { keys: 'ciw', description: 'Change inner word' },
+        { keys: replacement, description: `Type "${replacement}"`, mode: 'insert' },
+      ]
+      const solutions = computeSolutions(offset.line, chosen.index, word.start, chosen.line, actionSteps)
 
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: offset.line, column: offset.column },
+        initialCursor: offset,
         targetCursor: { line: chosen.index, column: word.start },
         expectedContent: newLines.join('\n'),
-        referenceKeystrokeCount: 3 + replacement.length + offset.distance,
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
         description: `Change the highlighted word to "${replacement}"`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: word.start,
@@ -331,19 +478,22 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       newLines[chosen.index] = newLine
 
       const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [{ keys: 'D', description: 'Delete to end of line' }]
+      const solutions = computeSolutions(offset.line, chosen.index, col, chosen.line, actionSteps)
 
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: offset.line, column: offset.column },
+        initialCursor: offset,
         targetCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
-        referenceKeystrokeCount: 1 + offset.distance,
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
         description: 'Delete everything after the cursor in the highlighted section',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: col,
@@ -372,19 +522,25 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       newLines.splice(lineIdx + 1, 0, lines[lineIdx])
 
       const offset = pickOffsetCursor(rng, lineIdx, lines.length)
+      const actionSteps: SolutionStep[] = [
+        { keys: 'yy', description: 'Yank line' },
+        { keys: 'p', description: 'Paste below' },
+      ]
+      const solutions = computeSolutions(offset.line, lineIdx, 0, lines[lineIdx], actionSteps)
 
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: offset.line, column: offset.column },
+        initialCursor: offset,
         targetCursor: { line: lineIdx, column: 0 },
         expectedContent: newLines.join('\n'),
-        referenceKeystrokeCount: 3 + offset.distance,
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
         description: 'Duplicate the highlighted line below it',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
         targetHighlight: {
           fromLine: lineIdx,
           fromCol: 0,
@@ -427,19 +583,22 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       newLines[chosen.index] = newLine
 
       const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [{ keys: 'diw', description: 'Delete inner word' }]
+      const solutions = computeSolutions(offset.line, chosen.index, word.start, chosen.line, actionSteps)
 
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: offset.line, column: offset.column },
+        initialCursor: offset,
         targetCursor: { line: chosen.index, column: word.start },
         expectedContent: newLines.join('\n'),
-        referenceKeystrokeCount: 3 + offset.distance,
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
         description: 'Delete the highlighted word',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
         targetHighlight: {
           fromLine: chosen.index,
           fromCol: word.start,

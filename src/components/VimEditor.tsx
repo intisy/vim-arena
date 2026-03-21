@@ -125,6 +125,8 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
   onStateChangeRef.current = onStateChange
   const onModeChangeRef = useRef(onModeChange)
   onModeChangeRef.current = onModeChange
+  const onKeystrokeRef = useRef(onKeystroke)
+  onKeystrokeRef.current = onKeystroke
   const allowedKeysRef = useRef(allowedKeys)
   allowedKeysRef.current = allowedKeys
   const lastModeRef = useRef<VimMode>('normal')
@@ -142,6 +144,19 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
           setMode(currentMode)
           onModeChangeRef.current?.(currentMode)
         }
+      }),
+    [],
+  )
+
+  const keystrokeTracker = useMemo(
+    () =>
+      EditorView.domEventHandlers({
+        keydown(event) {
+          if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false
+          if (event.ctrlKey || event.altKey || event.metaKey) return false
+          onKeystrokeRef.current?.()
+          return false
+        },
       }),
     [],
   )
@@ -236,10 +251,6 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     [initialCursor, dispatchTargets, trapFocus],
   )
 
-  const handleKeyDown = useCallback(() => {
-    onKeystroke?.()
-  }, [onKeystroke])
-
   useImperativeHandle(
     ref,
     () => ({
@@ -284,15 +295,14 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
   )
 
   const extensions = useMemo(
-    () => [vim(), getLangExtension(language), stateTracker, targetField, preventMouseSelection, keyFilter],
-    [language, stateTracker, keyFilter],
+    () => [vim(), getLangExtension(language), stateTracker, keystrokeTracker, targetField, preventMouseSelection, keyFilter],
+    [language, stateTracker, keystrokeTracker, keyFilter],
   )
 
   return (
     <div
       className={className}
       style={{ display: 'flex', flexDirection: 'column', fontFamily: 'monospace' }}
-      onKeyDown={handleKeyDown}
     >
       <style>{`
         .cm-target-cursor {

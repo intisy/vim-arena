@@ -89,13 +89,16 @@ describe('ChallengeEngine', () => {
     expect(result?.templateId).toBe('delete-word')
   })
 
-  test('forceComplete returns a result even without validation', () => {
+  test('forceComplete returns a result with score 0 (timed out)', () => {
     const engine = new ChallengeEngine(mockChallenge)
     engine.start()
+    engine.recordKeystroke()
     const result = engine.forceComplete()
     expect(result.templateId).toBe('delete-word')
-    expect(result.totalScore).toBeGreaterThanOrEqual(0)
     expect(result.timedOut).toBe(true)
+    expect(result.totalScore).toBe(0)
+    expect(result.efficiencyScore).toBe(0)
+    expect(result.speedScore).toBe(0)
   })
 
   test('reset makes engine inactive again', () => {

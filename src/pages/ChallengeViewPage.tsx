@@ -55,8 +55,8 @@ export default function ChallengeViewPage() {
   }
 
   const allowedKeys = useMemo(() => {
-    if (!practiceMode || !challenge?.requiredCommands) return undefined
-    return buildPracticeKeys(challenge.requiredCommands)
+    if (!practiceMode || !challenge?.optimalSolutions) return undefined
+    return buildPracticeKeys(challenge.optimalSolutions)
   }, [practiceMode, challenge])
 
   if (!challenge) {
@@ -80,6 +80,8 @@ export default function ChallengeViewPage() {
 
   const editorTargetCursor = challenge.targetCursor ?? undefined
 
+  const bestSolution = challenge.optimalSolutions?.[0]
+
   return (
     <div className="max-w-5xl mx-auto p-6 h-full flex flex-col relative">
       <div className="flex justify-between items-start mb-6 bg-gray-800/50 p-6 rounded-xl border border-gray-700">
@@ -92,7 +94,7 @@ export default function ChallengeViewPage() {
           </div>
           <p className="text-gray-400">
             {practiceMode
-              ? 'Practice mode — only the perfect keys are allowed. No elo change.'
+              ? 'Practice mode — follow the steps below. Only perfect keys are allowed. No elo change.'
               : 'Navigate to the highlighted area and complete the task.'}
           </p>
         </div>
@@ -116,19 +118,30 @@ export default function ChallengeViewPage() {
         </div>
       </div>
 
-      {practiceMode && challenge.requiredCommands && challenge.requiredCommands.length > 0 && (
-        <div className="mb-4 flex items-center gap-3 bg-amber-900/20 border border-amber-800/50 rounded-lg px-4 py-3">
-          <span className="text-sm font-bold text-amber-400 uppercase tracking-wider">Perfect keys:</span>
+      {practiceMode && bestSolution && (
+        <div className="mb-4 bg-amber-900/20 border border-amber-800/50 rounded-lg px-4 py-3">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm font-bold text-amber-400 uppercase tracking-wider">Solution steps:</span>
+            <span className="text-xs text-amber-600">({bestSolution.totalKeystrokes} keystrokes)</span>
+          </div>
           <div className="flex flex-wrap gap-2">
-            {challenge.requiredCommands.map((cmd, i) => (
-              <kbd
-                key={i}
-                className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 bg-amber-900/40 border border-amber-700 rounded text-sm font-mono font-bold text-amber-300"
-              >
-                {cmd}
-              </kbd>
+            {bestSolution.steps.map((step, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                {i > 0 && <span className="text-gray-600">→</span>}
+                <div className="flex items-center gap-1 bg-amber-900/40 border border-amber-700 rounded px-2 py-1">
+                  <kbd className="font-mono font-bold text-amber-300 text-sm">
+                    {step.keys}
+                  </kbd>
+                  <span className="text-amber-500 text-xs">{step.description}</span>
+                </div>
+              </div>
             ))}
           </div>
+          {challenge.optimalSolutions && challenge.optimalSolutions.length > 1 && (
+            <div className="mt-2 text-xs text-amber-700">
+              {challenge.optimalSolutions.length - 1} alternative solution{challenge.optimalSolutions.length > 2 ? 's' : ''} also accepted
+            </div>
+          )}
         </div>
       )}
 
@@ -164,16 +177,45 @@ export default function ChallengeViewPage() {
           </div>
         )}
 
-        {phase === 'complete' && result && (
+        {phase === 'complete' && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md rounded-xl z-20 p-6">
-            <ChallengeResults
-              result={result}
-              onRetry={retry}
-              onNext={nextChallenge}
-              onBack={handleBack}
-              isPersonalBest={isPersonalBest}
-              isPractice={practiceMode}
-            />
+            {result ? (
+              <ChallengeResults
+                result={result}
+                onRetry={retry}
+                onNext={nextChallenge}
+                onBack={handleBack}
+                isPersonalBest={isPersonalBest}
+                isPractice={practiceMode}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-md mx-auto">
+                <h2 className="text-3xl font-bold text-white mb-4">Time&apos;s Up!</h2>
+                <p className="text-gray-400 mb-8">Challenge ended without completion.</p>
+                <div className="flex flex-col w-full gap-3">
+                  <button
+                    onClick={nextChallenge}
+                    className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors"
+                  >
+                    Next Challenge
+                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={retry}
+                      className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition-colors"
+                    >
+                      Retry
+                    </button>
+                    <button
+                      onClick={handleBack}
+                      className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg transition-colors"
+                    >
+                      Back
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

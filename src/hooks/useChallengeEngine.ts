@@ -89,8 +89,10 @@ export function useChallengeEngine() {
             setResult(res)
             setPhase('complete')
             if (!practiceModeRef.current) {
-              recordResult(res)
-              recordElo(diff, res.totalScore, true)
+              try {
+                recordResult(res)
+                recordElo(diff, res.totalScore, true)
+              } catch (_) { /* storage errors should not break UI */ }
             }
           }
         })
@@ -111,15 +113,16 @@ export function useChallengeEngine() {
 
   const handleEditorStateChange = useCallback((state: EditorState) => {
     if (phase !== 'active' || !engineRef.current) return
-    if (engineRef.current.getKeystrokeCount() === 0) return
     
     const res = engineRef.current.validateCompletion(state)
     if (res) {
       setResult(res)
       setPhase('complete')
       if (!practiceModeRef.current) {
-        recordResult(res)
-        recordElo(difficulty, res.totalScore, false)
+        try {
+          recordResult(res)
+          recordElo(difficulty, res.totalScore, false)
+        } catch (_) { /* storage errors should not break UI */ }
       }
     }
   }, [phase, recordResult, recordElo, difficulty])

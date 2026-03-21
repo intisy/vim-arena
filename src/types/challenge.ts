@@ -1,4 +1,15 @@
-type CursorPosition = { line: number; column: number }
+export type CursorPosition = { line: number; column: number }
+
+export interface SolutionStep {
+  keys: string
+  description: string
+}
+
+export interface ChallengeSolution {
+  label: string
+  steps: SolutionStep[]
+  totalKeystrokes: number
+}
 
 export interface CodeSnippet {
   id: string
@@ -29,6 +40,7 @@ export interface GeneratedChallenge {
   difficulty: 1 | 2 | 3 | 4 | 5
   targetHighlight?: TargetHighlight
   requiredCommands?: string[]
+  optimalSolutions?: ChallengeSolution[]
 }
 
 export interface ChallengeResult {

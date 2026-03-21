@@ -62,10 +62,26 @@ export class ChallengeEngine {
 
   private _buildResult(timedOut: boolean): ChallengeResult {
     const timeSeconds = this.getElapsedSeconds()
+    this.destroy()
+
+    if (timedOut) {
+      return {
+        templateId: this.challenge.templateId,
+        snippetId: this.challenge.snippetId,
+        completedAt: Date.now(),
+        timeSeconds,
+        keystrokeCount: this.keystrokeCount,
+        referenceKeystrokeCount: this.challenge.referenceKeystrokeCount,
+        efficiencyScore: 0,
+        speedScore: 0,
+        totalScore: 0,
+        timedOut: true,
+      }
+    }
+
     const efficiency = calculateEfficiency(this.keystrokeCount, this.challenge.referenceKeystrokeCount)
     const speed = calculateSpeedScore(timeSeconds, this.challenge.timeLimit)
     const total = calculateTotalScore(efficiency, speed)
-    this.destroy()
     return {
       templateId: this.challenge.templateId,
       snippetId: this.challenge.snippetId,
@@ -76,7 +92,7 @@ export class ChallengeEngine {
       efficiencyScore: efficiency,
       speedScore: speed,
       totalScore: total,
-      timedOut,
+      timedOut: false,
     }
   }
 
