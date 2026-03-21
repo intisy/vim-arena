@@ -21,15 +21,17 @@ export function HomePage() {
         <div className="flex gap-4 mt-4">
           <Link
             to="/lessons"
-            className="px-8 py-4 bg-[var(--theme-primary)] text-[var(--theme-background)] font-bold rounded-lg text-lg hover:opacity-90 transition-opacity shadow-[0_0_15px_var(--theme-primary)]"
+            className="relative px-8 py-4 bg-[var(--theme-primary)] text-[var(--theme-background)] font-bold rounded-lg text-lg hover:opacity-90 transition-opacity shadow-[0_0_15px_var(--theme-primary)]"
           >
             Start Learning
+            <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">g l</kbd>
           </Link>
           <Link
             to="/challenges"
-            className="px-8 py-4 bg-transparent border-2 border-[var(--theme-primary)] text-[var(--theme-primary)] font-bold rounded-lg text-lg hover:bg-[var(--theme-muted)] transition-colors"
+            className="relative px-8 py-4 bg-transparent border-2 border-[var(--theme-primary)] text-[var(--theme-primary)] font-bold rounded-lg text-lg hover:bg-[var(--theme-muted)] transition-colors"
           >
             Try Challenges
+            <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">g c</kbd>
           </Link>
         </div>
       </section>

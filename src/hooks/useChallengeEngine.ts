@@ -21,10 +21,13 @@ export function useChallengeEngine(initialPracticeMode = false) {
   const [countdown, setCountdown] = useState(3)
   const [difficulty, setDifficulty] = useState<1 | 2 | 3 | 4 | 5>(1)
   const [practiceMode, setPracticeMode] = useState(initialPracticeMode)
+  const [isRetry, setIsRetry] = useState(false)
 
   const engineRef = useRef<ChallengeEngine | null>(null)
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const practiceModeRef = useRef(initialPracticeMode)
+  const isRetryRef = useRef(false)
+  const lastChallengeRef = useRef<GeneratedChallenge | null>(null)
   const { recordResult } = useChallengeStats()
   const { recordChallengeResult: recordElo, elo } = useEloRating()
 
@@ -52,25 +55,12 @@ export function useChallengeEngine(initialPracticeMode = false) {
     })
   }, [phase])
 
-  const startChallenge = useCallback((diff: 1 | 2 | 3 | 4 | 5) => {
+  const launchChallenge = useCallback((ch: GeneratedChallenge, retrying: boolean) => {
     cleanup()
-    setDifficulty(diff)
-    
-    const seed = Date.now()
-    const rng = new SeededRandom(seed)
-
-    const proceduralGen = new ProceduralSnippetGenerator(new SeededRandom(seed + 1))
-    const proceduralSnippets = proceduralGen.generateBatch(8)
-    const allSnippets = [...ALL_SNIPPETS, ...proceduralSnippets]
-
-    const weights = getDifficultyWeights(elo.rating)
-    const generator = new ChallengeGenerator(CHALLENGE_TEMPLATES, allSnippets, rng)
-    const newChallenge = generator.generate({
-      weights,
-      timeMultiplierFn: (challengeDiff) => getTimeMultiplier(diff, challengeDiff),
-    })
-    
-    setChallenge(newChallenge)
+    setIsRetry(retrying)
+    isRetryRef.current = retrying
+    setChallenge(ch)
+    lastChallengeRef.current = ch
     setResult(null)
     setElapsed(0)
     setKeystrokes(0)
@@ -88,16 +78,16 @@ export function useChallengeEngine(initialPracticeMode = false) {
           countdownIntervalRef.current = null
         }
         
-        const engine = new ChallengeEngine(newChallenge, (time) => {
+        const engine = new ChallengeEngine(ch, (time) => {
           setElapsed(time)
-          if (time >= newChallenge.timeLimit) {
+          if (time >= ch.timeLimit) {
             const res = engine.forceComplete()
             setResult(res)
             setPhase('complete')
-            if (!practiceModeRef.current) {
+            if (!practiceModeRef.current && !isRetryRef.current) {
               try {
                 recordResult(res)
-                recordElo(newChallenge.difficulty, res.totalScore, true)
+                recordElo(ch.difficulty, res.totalScore, true)
               } catch (_) { /* storage errors should not break UI */ }
             }
           }
@@ -107,11 +97,35 @@ export function useChallengeEngine(initialPracticeMode = false) {
         setPhase('active')
       }
     }, 1000)
-  }, [cleanup, recordResult, recordElo, elo.rating])
+  }, [cleanup, recordResult, recordElo])
+
+  const startChallenge = useCallback((diff: 1 | 2 | 3 | 4 | 5) => {
+    setDifficulty(diff)
+    
+    const seed = Date.now()
+    const rng = new SeededRandom(seed)
+
+    const proceduralGen = new ProceduralSnippetGenerator(new SeededRandom(seed + 1))
+    const proceduralSnippets = proceduralGen.generateBatch(8)
+    const allSnippets = [...ALL_SNIPPETS, ...proceduralSnippets]
+
+    const weights = getDifficultyWeights(elo.rating)
+    const generator = new ChallengeGenerator(CHALLENGE_TEMPLATES, allSnippets, rng)
+    const newChallenge = generator.generate({
+      weights,
+      timeMultiplierFn: (challengeDiff) => getTimeMultiplier(diff, challengeDiff),
+    })
+    
+    launchChallenge(newChallenge, false)
+  }, [launchChallenge, elo.rating])
 
   const retry = useCallback(() => {
-    startChallenge(difficulty)
-  }, [startChallenge, difficulty])
+    if (lastChallengeRef.current) {
+      launchChallenge(lastChallengeRef.current, !practiceModeRef.current)
+    } else {
+      startChallenge(difficulty)
+    }
+  }, [launchChallenge, startChallenge, difficulty])
 
   const nextChallenge = useCallback(() => {
     startChallenge(difficulty)
@@ -124,7 +138,7 @@ export function useChallengeEngine(initialPracticeMode = false) {
     if (res) {
       setResult(res)
       setPhase('complete')
-      if (!practiceModeRef.current) {
+      if (!practiceModeRef.current && !isRetryRef.current) {
         try {
           recordResult(res)
           recordElo(difficulty, res.totalScore, false)
@@ -148,6 +162,7 @@ export function useChallengeEngine(initialPracticeMode = false) {
     countdown,
     difficulty,
     practiceMode,
+    isRetry,
     togglePracticeMode,
     startChallenge,
     retry,

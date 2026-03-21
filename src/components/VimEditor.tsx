@@ -151,57 +151,61 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     [],
   )
 
-  const keystrokeTracker = useMemo(
-    () =>
-      EditorView.domEventHandlers({
-        keydown(event) {
-          if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false
-          if (event.ctrlKey || event.altKey || event.metaKey) return false
-          onKeystrokeRef.current?.()
-          return false
-        },
-      }),
-    [],
-  )
-
-    const keyFilter = useMemo(
+  const keyFilterAndTracker = useMemo(
     () =>
       Prec.highest(EditorView.domEventHandlers({
         keydown(event, view) {
-          const keys = allowedKeysRef.current
-          if (!keys) return false
-
           if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false
           if (event.ctrlKey || event.altKey || event.metaKey) return false
 
-          const cm = getCM(view)
-          const vs = cm?.state?.vim
-          if (vs) {
-            const inp = vs.inputState as { keyBuffer?: string[]; operator?: string | null }
-            if ((inp?.keyBuffer && inp.keyBuffer.length > 0) || inp?.operator) {
+          const keys = allowedKeysRef.current
+
+          if (keys) {
+            const cm = getCM(view)
+            const vs = cm?.state?.vim
+            if (vs) {
+              const inp = vs.inputState as { keyBuffer?: string[]; operator?: string | null }
+              if ((inp?.keyBuffer && inp.keyBuffer.length > 0) || inp?.operator) {
+                onKeystrokeRef.current?.()
+                return false
+              }
+            }
+
+            if (strictFilterRef.current) {
+              if (!keys.includes(event.key)) {
+                event.preventDefault()
+                event.stopPropagation()
+                return true
+              }
+              onKeystrokeRef.current?.()
               return false
             }
-          }
 
-          if (strictFilterRef.current) {
+            const currentMode = readVimMode(view)
+            if (currentMode === 'insert' || currentMode === 'replace') {
+              onKeystrokeRef.current?.()
+              return false
+            }
+            if (currentMode === 'visual' || currentMode === 'visual-line') {
+              onKeystrokeRef.current?.()
+              return false
+            }
+            if (event.key === 'Escape' || event.key === 'Enter' || event.key === 'Backspace' || event.key === 'Tab') {
+              onKeystrokeRef.current?.()
+              return false
+            }
+            if (event.key.startsWith('Arrow')) {
+              onKeystrokeRef.current?.()
+              return false
+            }
             if (!keys.includes(event.key)) {
               event.preventDefault()
               event.stopPropagation()
               return true
             }
-            return false
           }
 
-          const currentMode = readVimMode(view)
-          if (currentMode === 'insert' || currentMode === 'replace') return false
-          if (currentMode === 'visual' || currentMode === 'visual-line') return false
-          if (event.key === 'Escape' || event.key === 'Enter' || event.key === 'Backspace' || event.key === 'Tab') return false
-          if (event.key.startsWith('Arrow')) return false
-          if (!keys.includes(event.key)) {
-            event.preventDefault()
-            event.stopPropagation()
-            return true
-          }
+          onKeystrokeRef.current?.()
           return false
         },
       })),
@@ -318,8 +322,8 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
   )
 
   const extensions = useMemo(
-    () => [vim(), getLangExtension(language), stateTracker, keystrokeTracker, targetField, preventMouseSelection, keyFilter],
-    [language, stateTracker, keystrokeTracker, keyFilter],
+    () => [vim(), getLangExtension(language), stateTracker, targetField, preventMouseSelection, keyFilterAndTracker],
+    [language, stateTracker, keyFilterAndTracker],
   )
 
   return (

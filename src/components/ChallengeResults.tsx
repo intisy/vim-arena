@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Trophy, Star } from 'lucide-react'
 import type { ChallengeResult } from '@/types/challenge'
 
@@ -9,6 +9,7 @@ interface ChallengeResultsProps {
   onBack: () => void
   isPersonalBest: boolean
   isPractice?: boolean
+  isRetry?: boolean
 }
 
 export function ChallengeResults({
@@ -18,6 +19,7 @@ export function ChallengeResults({
   onBack,
   isPersonalBest,
   isPractice = false,
+  isRetry = false,
 }: ChallengeResultsProps) {
   const [displayScore, setDisplayScore] = useState(0)
 
@@ -41,6 +43,17 @@ export function ChallengeResults({
     return () => clearInterval(timer)
   }, [result.totalScore])
 
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'n') { e.preventDefault(); onNext() }
+    else if (e.key === 'r') { e.preventDefault(); onRetry() }
+    else if (e.key === 'b' || e.key === 'Escape') { e.preventDefault(); onBack() }
+  }, [onNext, onRetry, onBack])
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
+
   const getStarCount = (score: number) => {
     if (score >= 90) return 3
     if (score >= 70) return 2
@@ -59,6 +72,12 @@ export function ChallengeResults({
       {isPractice && (
         <div className="bg-amber-500/20 text-amber-400 px-4 py-1 rounded-full text-sm font-bold mb-4">
           Practice Mode — No elo change
+        </div>
+      )}
+
+      {isRetry && !isPractice && (
+        <div className="bg-blue-500/20 text-blue-400 px-4 py-1 rounded-full text-sm font-bold mb-4">
+          Retry — No elo change
         </div>
       )}
       
@@ -106,22 +125,25 @@ export function ChallengeResults({
       <div className="flex flex-col w-full gap-3">
         <button
           onClick={onNext}
-          className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors"
+          className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
         >
           Next Challenge
+          <kbd className="text-xs bg-green-700 px-1.5 py-0.5 rounded font-mono">n</kbd>
         </button>
         <div className="flex gap-3">
           <button
             onClick={onRetry}
-            className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition-colors"
+            className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             Retry
+            <kbd className="text-xs bg-gray-600 px-1.5 py-0.5 rounded font-mono">r</kbd>
           </button>
           <button
             onClick={onBack}
-            className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg transition-colors"
+            className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             Back
+            <kbd className="text-xs bg-gray-700 px-1.5 py-0.5 rounded font-mono">b</kbd>
           </button>
         </div>
       </div>

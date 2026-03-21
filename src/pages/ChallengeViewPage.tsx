@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef, useMemo, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useChallengeEngine } from '@/hooks/useChallengeEngine'
 import { ChallengeTimer } from '@/components/ChallengeTimer'
@@ -30,6 +30,7 @@ export default function ChallengeViewPage() {
     result,
     countdown,
     practiceMode,
+    isRetry,
     togglePracticeMode,
     startChallenge,
     retry,
@@ -52,9 +53,23 @@ export default function ChallengeViewPage() {
     }
   }, [phase, challenge])
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     navigate('/challenges')
-  }
+  }, [navigate])
+
+  const handleTimeoutKeyDown = useCallback((e: KeyboardEvent) => {
+    if (phase !== 'complete' || result) return
+    if (e.key === 'n') { e.preventDefault(); nextChallenge() }
+    else if (e.key === 'r') { e.preventDefault(); retry() }
+    else if (e.key === 'b' || e.key === 'Escape') { e.preventDefault(); handleBack() }
+  }, [phase, result, nextChallenge, retry, handleBack])
+
+  useEffect(() => {
+    if (phase === 'complete' && !result) {
+      window.addEventListener('keydown', handleTimeoutKeyDown)
+      return () => window.removeEventListener('keydown', handleTimeoutKeyDown)
+    }
+  }, [phase, result, handleTimeoutKeyDown])
 
   const allowedKeys = useMemo(() => {
     if (!practiceMode || !challenge?.optimalSolutions) return undefined
@@ -98,7 +113,9 @@ export default function ChallengeViewPage() {
           <p className="text-gray-400">
             {practiceMode
               ? 'Practice mode — follow the steps below. Only perfect keys are allowed. No elo change.'
-              : 'Navigate to the highlighted area and complete the task.'}
+              : isRetry
+                ? 'Retry — same challenge, no elo change. Navigate to the highlighted area and complete the task.'
+                : 'Navigate to the highlighted area and complete the task.'}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -195,6 +212,7 @@ export default function ChallengeViewPage() {
                 onBack={handleBack}
                 isPersonalBest={isPersonalBest}
                 isPractice={practiceMode}
+                isRetry={isRetry}
               />
             ) : (
               <div className="flex flex-col items-center justify-center p-8 bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-md mx-auto">
@@ -203,22 +221,25 @@ export default function ChallengeViewPage() {
                 <div className="flex flex-col w-full gap-3">
                   <button
                     onClick={nextChallenge}
-                    className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors"
+                    className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
                     Next Challenge
+                    <kbd className="text-xs bg-green-700 px-1.5 py-0.5 rounded font-mono">n</kbd>
                   </button>
                   <div className="flex gap-3">
                     <button
                       onClick={retry}
-                      className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition-colors"
+                      className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                       Retry
+                      <kbd className="text-xs bg-gray-600 px-1.5 py-0.5 rounded font-mono">r</kbd>
                     </button>
                     <button
                       onClick={handleBack}
-                      className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg transition-colors"
+                      className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                       Back
+                      <kbd className="text-xs bg-gray-700 px-1.5 py-0.5 rounded font-mono">b</kbd>
                     </button>
                   </div>
                 </div>

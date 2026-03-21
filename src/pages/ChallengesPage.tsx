@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useEloRating } from '@/hooks/useEloRating'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
@@ -28,9 +28,28 @@ export default function ChallengesPage() {
   const ratingColor = getRatingColor(elo.rating)
   const diffInfo = DIFFICULTY_LABELS[matchedDiff]
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     navigate('/challenges/active', { state: { difficulty: matchedDiff, practiceMode } })
-  }
+  }, [navigate, matchedDiff, practiceMode])
+
+  const handleTogglePractice = useCallback(() => {
+    setPracticeMode(prev => !prev)
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA'
+      ) return
+
+      if (e.key === 'Enter') { e.preventDefault(); handleStart() }
+      else if (e.key === 'p') { e.preventDefault(); handleTogglePractice() }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleStart, handleTogglePractice])
 
   const winRate = elo.gamesPlayed > 0
     ? Math.round((elo.wins / elo.gamesPlayed) * 100)
@@ -97,7 +116,7 @@ export default function ChallengesPage() {
           </div>
 
           <button
-            onClick={() => setPracticeMode(prev => !prev)}
+            onClick={handleTogglePractice}
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-colors border mb-3 ${
               practiceMode
                 ? 'bg-amber-900/50 text-amber-400 border-amber-700'
@@ -106,6 +125,7 @@ export default function ChallengesPage() {
           >
             {practiceMode ? <Target size={16} /> : <GraduationCap size={16} />}
             {practiceMode ? 'Practice Mode ON' : 'Practice Mode'}
+            <kbd className="text-xs bg-gray-700 px-1.5 py-0.5 rounded font-mono ml-1">p</kbd>
           </button>
           {practiceMode && (
             <p className="text-amber-500/70 text-xs text-center mb-3 -mt-1">
@@ -115,9 +135,10 @@ export default function ChallengesPage() {
 
           <button
             onClick={handleStart}
-            className="w-full py-4 bg-green-600 hover:bg-green-500 text-white text-xl font-bold rounded-xl transition-colors shadow-lg shadow-green-900/20"
+            className="w-full py-4 bg-green-600 hover:bg-green-500 text-white text-xl font-bold rounded-xl transition-colors shadow-lg shadow-green-900/20 flex items-center justify-center gap-2"
           >
             Start Challenge
+            <kbd className="text-sm bg-green-700 px-2 py-0.5 rounded font-mono">Enter</kbd>
           </button>
 
           {elo.gamesPlayed > 0 && (

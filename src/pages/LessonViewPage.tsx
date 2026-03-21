@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { LESSONS_BY_ID, ALL_LESSONS } from '@/data/lessons/index'
 import { useLessonEngine } from '@/hooks/useLessonEngine'
 import { useLessonProgress } from '@/hooks/useLessonProgress'
@@ -38,6 +38,7 @@ function computeEditorHeight(content: string): string {
 
 export default function LessonViewPage() {
   const { lessonId } = useParams<{ lessonId: string }>()
+  const navigate = useNavigate()
   const lesson = lessonId ? LESSONS_BY_ID.get(lessonId) : undefined
   
   useEffect(() => {
@@ -56,11 +57,38 @@ export default function LessonViewPage() {
   const engine = useLessonEngine(lesson || dummyLesson)
   const { markLessonComplete } = useLessonProgress()
 
+  const currentIndex = lesson ? ALL_LESSONS.findIndex(l => l.id === lesson.id) : -1
+  const prevLesson = currentIndex > 0 ? ALL_LESSONS[currentIndex - 1] : null
+  const nextLesson = currentIndex >= 0 && currentIndex < ALL_LESSONS.length - 1 
+    ? ALL_LESSONS[currentIndex + 1] 
+    : null
+
   useEffect(() => {
     if (engine.isComplete && lesson) {
       markLessonComplete(lesson.id)
     }
   }, [engine.isComplete, lesson, markLessonComplete])
+
+  useEffect(() => {
+    if (!engine.isComplete || !lesson) return
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'n' || e.key === 'Enter') {
+        e.preventDefault()
+        if (nextLesson) {
+          navigate(`/lessons/${nextLesson.id}`)
+        } else {
+          navigate('/')
+        }
+      } else if (e.key === 'b') {
+        e.preventDefault()
+        navigate('/lessons')
+      }
+    }
+
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [engine.isComplete, lesson, nextLesson, navigate])
 
   useEffect(() => {
     if (engine.currentStep) {
@@ -139,12 +167,6 @@ export default function LessonViewPage() {
     editorRef.current?.focus()
   }, [])
 
-  const currentIndex = ALL_LESSONS.findIndex(l => l.id === lesson.id)
-  const prevLesson = currentIndex > 0 ? ALL_LESSONS[currentIndex - 1] : null
-  const nextLesson = currentIndex >= 0 && currentIndex < ALL_LESSONS.length - 1 
-    ? ALL_LESSONS[currentIndex + 1] 
-    : null
-
   const targetCursor = engine.currentStep?.expectedCursor ?? undefined
   const editorHeight = engine.currentStep
     ? computeEditorHeight(engine.currentStep.initialContent)
@@ -162,18 +184,27 @@ export default function LessonViewPage() {
         {nextLesson ? (
           <Link 
             to={`/lessons/${nextLesson.id}`}
-            className="flex-1 px-6 py-3 rounded-lg bg-[var(--theme-primary)] text-black font-bold hover:bg-opacity-90 transition-colors shadow-lg shadow-primary/20"
+            className="relative flex-1 px-6 py-3 rounded-lg bg-[var(--theme-primary)] text-black font-bold hover:bg-opacity-90 transition-colors shadow-lg shadow-primary/20"
           >
             Next Lesson →
+            <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">n</kbd>
           </Link>
         ) : (
           <Link 
             to="/" 
-            className="flex-1 px-6 py-3 rounded-lg bg-[var(--theme-primary)] text-black font-bold hover:bg-opacity-90 transition-colors shadow-lg shadow-primary/20"
+            className="relative flex-1 px-6 py-3 rounded-lg bg-[var(--theme-primary)] text-black font-bold hover:bg-opacity-90 transition-colors shadow-lg shadow-primary/20"
           >
             Back to Home
+            <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">n</kbd>
           </Link>
         )}
+        <button
+          onClick={() => navigate('/lessons')}
+          className="relative flex-1 px-6 py-3 rounded-lg border border-[var(--theme-border)] text-[var(--theme-muted-foreground)] font-bold hover:bg-[var(--theme-muted)] transition-colors"
+        >
+          All Lessons
+          <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">b</kbd>
+        </button>
       </div>
     </div>
   )
