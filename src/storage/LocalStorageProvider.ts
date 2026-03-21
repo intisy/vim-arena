@@ -15,7 +15,6 @@ export class LocalStorageProvider implements IStorageProvider {
     try {
       localStorage.setItem(key, JSON.stringify(value))
     } catch {
-      // localStorage may be unavailable (private browsing, quota exceeded)
     }
   }
 
@@ -23,17 +22,14 @@ export class LocalStorageProvider implements IStorageProvider {
     try {
       localStorage.removeItem(key)
     } catch {
-      // ignore
     }
   }
 
   clear(): void {
     try {
-      // Only clear our own keys (prefix filter)
       const keysToRemove = this.getKeys()
       keysToRemove.forEach(key => localStorage.removeItem(key))
     } catch {
-      // ignore
     }
   }
 

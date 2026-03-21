@@ -14,7 +14,6 @@ export function useVimState(viewRef: React.RefObject<EditorView | null>) {
     const view = viewRef.current
     if (!view) return
 
-    // Listen for vim-mode-change events emitted by @replit/codemirror-vim
     const handleModeChange = (e: Event) => {
       const detail = (e as CustomEvent<{ mode: string; subMode?: string }>).detail
       const rawMode = detail?.mode ?? 'normal'

@@ -18,11 +18,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const html = document.documentElement
-    // Remove all theme classes
     themes.forEach(t => html.classList.remove(t.className))
-    // Add current
     html.classList.add(theme.className)
-    // Set CSS custom properties
     const colors = theme.colors
     Object.entries(colors).forEach(([key, value]) => {
       html.style.setProperty(`--theme-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`, value)

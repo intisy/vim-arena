@@ -1,6 +1,5 @@
 import { lazy } from 'react'
 
-// Lazy load pages for code splitting (good practice even in dev)
 const HomePage = lazy(() => import('@/pages/HomePage'))
 const LessonsPage = lazy(() => import('@/pages/LessonsPage'))
 const LessonViewPage = lazy(() => import('@/pages/LessonViewPage'))

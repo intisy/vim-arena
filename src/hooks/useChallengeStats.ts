@@ -21,7 +21,7 @@ export function useChallengeStats() {
         averageEfficiency: 0,
         recentResults: [],
       }
-      const newResults = [result, ...existing.recentResults].slice(0, 20) // keep last 20, newest first
+      const newResults = [result, ...existing.recentResults].slice(0, 20)
       const avgEfficiency =
         newResults.reduce((sum, r) => sum + r.efficiencyScore, 0) / newResults.length
       const updated: StatsMap = {

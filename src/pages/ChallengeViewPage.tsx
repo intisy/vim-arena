@@ -36,13 +36,11 @@ export default function ChallengeViewPage() {
     startChallenge(difficulty as 1 | 2 | 3 | 4 | 5)
   }, [difficulty, startChallenge])
 
-  // Reset editor when challenge changes or retries
   useEffect(() => {
     if (phase === 'countdown' && editorRef.current) {
       editorRef.current.reset()
     }
     if (phase === 'active' && editorRef.current) {
-      // Auto-focus so vim keybinds work without clicking
       editorRef.current.focus()
     }
   }, [phase, challenge])
