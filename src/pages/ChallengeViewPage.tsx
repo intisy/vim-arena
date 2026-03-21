@@ -7,6 +7,7 @@ import { VimEditor } from '@/components/VimEditor'
 import type { VimEditorRef } from '@/components/VimEditor'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
 import { buildPracticeKeys } from '@/engine/KeyFilter'
+import { Target, GraduationCap, ArrowRight } from 'lucide-react'
 import type { TargetRange } from '@/types/editor'
 
 export default function ChallengeViewPage() {
@@ -112,7 +113,7 @@ export default function ChallengeViewPage() {
                   : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200 hover:border-gray-500'
             }`}
           >
-            <span>{practiceMode ? '🎯' : '🎓'}</span>
+            {practiceMode ? <Target size={14} /> : <GraduationCap size={14} />}
             {practiceMode ? 'Practice ON' : 'Practice'}
           </button>
           <ChallengeTimer
@@ -136,7 +137,7 @@ export default function ChallengeViewPage() {
               <div className="flex flex-wrap gap-2">
                 {sol.steps.map((step, i) => (
                   <div key={i} className="flex items-center gap-1.5">
-                    {i > 0 && <span className="text-gray-600">→</span>}
+                    {i > 0 && <ArrowRight size={12} className="text-gray-600" />}
                     <div className="flex items-center gap-1 bg-amber-900/40 border border-amber-700 rounded px-2 py-1">
                       <kbd className="font-mono font-bold text-amber-300 text-sm">
                         {step.keys}

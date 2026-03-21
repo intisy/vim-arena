@@ -1,10 +1,11 @@
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { Suspense, useState, useRef, useEffect } from 'react'
+import { BookOpen, Zap, Swords, Settings, BarChart3 } from 'lucide-react'
 import { Avatar } from '@/components/Avatar'
 
 const NAV_LINKS = [
-  { to: '/lessons', label: '📚 Lessons', end: false },
-  { to: '/challenges', label: '⚡ Challenges', end: false },
+  { to: '/lessons', label: 'Lessons', icon: BookOpen, end: false },
+  { to: '/challenges', label: 'Challenges', icon: Zap, end: false },
 ]
 
 export function MainLayout() {
@@ -49,18 +50,23 @@ export function MainLayout() {
             fontWeight: 'bold',
             textDecoration: 'none',
             color: 'var(--theme-foreground, #ccc)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
           }}
         >
-          vim-arena ⚔️
+          vim-arena <Swords size={20} color="var(--theme-accent, #ff79c6)" />
         </Link>
 
-        {NAV_LINKS.map(({ to, label, end }) => (
+        {NAV_LINKS.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             style={({ isActive }) => ({
-              display: 'block',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
               padding: '0.5rem 0.75rem',
               borderRadius: '6px',
               textDecoration: 'none',
@@ -70,6 +76,7 @@ export function MainLayout() {
               fontWeight: isActive ? 'bold' : 'normal',
             })}
           >
+            <Icon size={16} />
             {label}
           </NavLink>
         ))}
@@ -114,10 +121,12 @@ export function MainLayout() {
               }}
             >
               <NavLink
-                to="/settings"
+                to="/stats"
                 onClick={() => setAvatarOpen(false)}
                 style={({ isActive }) => ({
-                  display: 'block',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
                   padding: '0.5rem 0.75rem',
                   textDecoration: 'none',
                   fontFamily: 'monospace',
@@ -126,7 +135,26 @@ export function MainLayout() {
                   backgroundColor: isActive ? 'var(--theme-muted, #0d1f0d)' : 'transparent',
                 })}
               >
-                ⚙️ Settings
+                <BarChart3 size={14} />
+                Stats
+              </NavLink>
+              <NavLink
+                to="/settings"
+                onClick={() => setAvatarOpen(false)}
+                style={({ isActive }) => ({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.5rem 0.75rem',
+                  textDecoration: 'none',
+                  fontFamily: 'monospace',
+                  fontSize: '0.85rem',
+                  color: isActive ? 'var(--theme-primary, #00ff41)' : 'var(--theme-foreground, #ccc)',
+                  backgroundColor: isActive ? 'var(--theme-muted, #0d1f0d)' : 'transparent',
+                })}
+              >
+                <Settings size={14} />
+                Settings
               </NavLink>
             </div>
           )}

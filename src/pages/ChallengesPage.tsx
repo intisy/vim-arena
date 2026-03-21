@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useEloRating } from '@/hooks/useEloRating'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
 import { getRatingLabel, getRatingColor } from '@/engine/EloRating'
+import { Target, GraduationCap, Star } from 'lucide-react'
 
 const DIFFICULTY_LABELS: Record<number, { label: string; desc: string }> = {
   1: { label: 'Beginner', desc: 'delete/replace single characters' },
@@ -83,8 +84,14 @@ export default function ChallengesPage() {
                 </span>
                 <p className="text-gray-400 text-sm mt-1">{diffInfo.desc}</p>
               </div>
-              <span className="text-yellow-500 text-xl">
-                {'★'.repeat(matchedDiff)}{'☆'.repeat(5 - matchedDiff)}
+              <span className="flex gap-0.5">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <Star
+                    key={i}
+                    size={20}
+                    className={i < matchedDiff ? 'text-yellow-500 fill-yellow-500' : 'text-gray-600'}
+                  />
+                ))}
               </span>
             </div>
           </div>
@@ -97,7 +104,7 @@ export default function ChallengesPage() {
                 : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200 hover:border-gray-500'
             }`}
           >
-            <span>{practiceMode ? '🎯' : '🎓'}</span>
+            {practiceMode ? <Target size={16} /> : <GraduationCap size={16} />}
             {practiceMode ? 'Practice Mode ON' : 'Practice Mode'}
           </button>
           {practiceMode && (

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { ArrowLeft, ChevronDown } from 'lucide-react'
 import { LESSON_CATEGORIES } from '@/data/categories'
 import { ALL_LESSONS } from '@/data/lessons/index'
 
 export function LessonSidebar() {
   const location = useLocation()
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
-    // Find the category of the current lesson to expand it by default
     const currentLessonId = location.pathname.split('/').pop()
     const currentLesson = ALL_LESSONS.find(l => l.id === currentLessonId)
     return new Set(currentLesson ? [currentLesson.categoryId] : [LESSON_CATEGORIES[0]?.id])
@@ -27,8 +27,8 @@ export function LessonSidebar() {
   return (
     <aside className="w-[280px] flex-shrink-0 border-r border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col h-screen overflow-y-auto">
       <div className="p-4 border-b border-[var(--theme-border)] sticky top-0 bg-[var(--theme-background)] z-10 flex items-center justify-between">
-        <Link to="/lessons" className="font-mono font-bold text-lg text-[var(--theme-foreground)] hover:text-[var(--theme-primary)] transition-colors">
-          &larr; Lessons
+        <Link to="/lessons" className="font-mono font-bold text-lg text-[var(--theme-foreground)] hover:text-[var(--theme-primary)] transition-colors flex items-center gap-1">
+          <ArrowLeft size={16} /> Lessons
         </Link>
       </div>
       
@@ -48,9 +48,11 @@ export function LessonSidebar() {
                 <span className="font-bold text-[var(--theme-primary)] text-sm uppercase tracking-wider">
                   {category.title}
                 </span>
-                <span className="text-[var(--theme-muted-foreground)] text-xs transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                  ▼
-                </span>
+                <ChevronDown
+                  size={14}
+                  className="text-[var(--theme-muted-foreground)] transition-transform duration-200"
+                  style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                />
               </button>
               
               {isExpanded && (

@@ -164,16 +164,26 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     [],
   )
 
-  const keyFilter = useMemo(
+    const keyFilter = useMemo(
     () =>
       Prec.highest(EditorView.domEventHandlers({
         keydown(event, view) {
           const keys = allowedKeysRef.current
           if (!keys) return false
 
+          if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false
+          if (event.ctrlKey || event.altKey || event.metaKey) return false
+
+          const cm = getCM(view)
+          const vs = cm?.state?.vim
+          if (vs) {
+            const inp = vs.inputState as { keyBuffer?: string[]; operator?: string | null }
+            if ((inp?.keyBuffer && inp.keyBuffer.length > 0) || inp?.operator) {
+              return false
+            }
+          }
+
           if (strictFilterRef.current) {
-            if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false
-            if (event.ctrlKey || event.altKey || event.metaKey) return false
             if (!keys.includes(event.key)) {
               event.preventDefault()
               event.stopPropagation()
@@ -187,8 +197,6 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
           if (currentMode === 'visual' || currentMode === 'visual-line') return false
           if (event.key === 'Escape' || event.key === 'Enter' || event.key === 'Backspace' || event.key === 'Tab') return false
           if (event.key.startsWith('Arrow')) return false
-          if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false
-          if (event.ctrlKey || event.altKey || event.metaKey) return false
           if (!keys.includes(event.key)) {
             event.preventDefault()
             event.stopPropagation()

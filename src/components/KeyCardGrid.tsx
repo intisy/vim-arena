@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronDown, ArrowDown } from 'lucide-react'
 import type { KeyCard } from '@/types/lesson'
 
 interface KeyCardGridProps {
@@ -69,9 +70,11 @@ function KeyCardItem({ card }: { card: KeyCard }) {
             className="text-xs font-medium text-[var(--theme-primary)] hover:underline flex items-center gap-1"
           >
             {showExample ? 'Hide Example' : 'Show Example'}
-            <span className="transition-transform duration-200 inline-block" style={{ transform: showExample ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-              ▼
-            </span>
+            <ChevronDown
+              size={12}
+              className="transition-transform duration-200"
+              style={{ transform: showExample ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            />
           </button>
           
           {showExample && (
@@ -81,7 +84,7 @@ function KeyCardItem({ card }: { card: KeyCard }) {
                 {renderCodeWithCursor(card.example.before, card.example.cursorBefore)}
               </div>
               <div className="flex justify-center">
-                <span className="text-[var(--theme-muted-foreground)] text-xs">↓</span>
+                <ArrowDown size={14} className="text-[var(--theme-muted-foreground)]" />
               </div>
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--theme-muted-foreground)] mb-1 block">After</span>

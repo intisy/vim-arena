@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Trophy, Star } from 'lucide-react'
 import type { ChallengeResult } from '@/types/challenge'
 
 interface ChallengeResultsProps {
@@ -40,12 +41,14 @@ export function ChallengeResults({
     return () => clearInterval(timer)
   }, [result.totalScore])
 
-  const getStars = (score: number) => {
-    if (score >= 90) return '★★★'
-    if (score >= 70) return '★★☆'
-    if (score >= 50) return '★☆☆'
-    return '☆☆☆'
+  const getStarCount = (score: number) => {
+    if (score >= 90) return 3
+    if (score >= 70) return 2
+    if (score >= 50) return 1
+    return 0
   }
+
+  const starCount = getStarCount(result.totalScore)
 
   return (
     <div className="flex flex-col items-center justify-center p-8 bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-md mx-auto">
@@ -60,8 +63,8 @@ export function ChallengeResults({
       )}
       
       {isPersonalBest && !result.timedOut && !isPractice && (
-        <div className="bg-yellow-500/20 text-yellow-400 px-4 py-1 rounded-full text-sm font-bold mb-6 animate-bounce">
-          Personal Best! 🏆
+        <div className="bg-yellow-500/20 text-yellow-400 px-4 py-1 rounded-full text-sm font-bold mb-6 animate-bounce flex items-center gap-1.5">
+          Personal Best! <Trophy size={16} className="fill-yellow-400" />
         </div>
       )}
 
@@ -69,8 +72,14 @@ export function ChallengeResults({
         {displayScore}
       </div>
       
-      <div className="text-3xl text-yellow-400 tracking-widest mb-8">
-        {getStars(result.totalScore)}
+      <div className="flex gap-1 mb-8">
+        {Array.from({ length: 3 }, (_, i) => (
+          <Star
+            key={i}
+            size={28}
+            className={i < starCount ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}
+          />
+        ))}
       </div>
 
       <div className="w-full space-y-4 mb-8">

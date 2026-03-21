@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react'
 import { StatsOverview } from '@/components/StatsOverview'
 import { vi } from 'vitest'
 
-// Mock hooks
 vi.mock('@/hooks/useUserStats', () => ({
   useUserStats: () => ({
     userStats: {
@@ -32,7 +31,7 @@ describe('StatsOverview', () => {
     expect(screen.getByText('85%')).toBeInTheDocument()
     expect(screen.getByText('Avg Score')).toBeInTheDocument()
     
-    expect(screen.getByText('🔥 7')).toBeInTheDocument()
+    expect(screen.getByText('7')).toBeInTheDocument()
     expect(screen.getByText('Day Streak')).toBeInTheDocument()
   })
 })

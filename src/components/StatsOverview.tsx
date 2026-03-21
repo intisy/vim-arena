@@ -1,3 +1,4 @@
+import { Flame } from 'lucide-react'
 import { useUserStats } from '@/hooks/useUserStats'
 import { useLessonProgress } from '@/hooks/useLessonProgress'
 
@@ -36,7 +37,7 @@ export function StatsOverview() {
 
       <div className="p-4 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-muted)] flex flex-col items-center justify-center text-center">
         <div className="text-3xl font-bold text-[var(--theme-success)] mb-1 flex items-center gap-2">
-          🔥 {userStats.streakDays}
+          <Flame size={28} className="text-orange-500" /> {userStats.streakDays}
         </div>
         <div className="text-sm text-[var(--theme-muted-foreground)] uppercase tracking-wider">
           Day Streak

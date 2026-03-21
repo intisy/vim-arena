@@ -1,8 +1,40 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  Target, Pencil, Move, Zap, ChevronsUp, Search,
+  Braces, Quote, Type, AlignLeft, Trophy, Eye, Check,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { LESSON_CATEGORIES } from '@/data/categories'
 import { ALL_LESSONS } from '@/data/lessons/index'
 import { useLessonProgress } from '@/hooks/useLessonProgress'
+
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Target, Pencil, Move, Zap, ChevronsUp, Search,
+  Braces, Quote, Type, AlignLeft, Trophy, Eye,
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Target: 'text-red-400',
+  Pencil: 'text-amber-400',
+  Move: 'text-blue-400',
+  Zap: 'text-yellow-400',
+  ChevronsUp: 'text-purple-400',
+  Search: 'text-cyan-400',
+  Braces: 'text-teal-400',
+  Quote: 'text-pink-400',
+  Type: 'text-indigo-400',
+  AlignLeft: 'text-emerald-400',
+  Trophy: 'text-orange-400',
+  Eye: 'text-violet-400',
+}
+
+function CategoryIcon({ name, size = 24 }: { name: string; size?: number }) {
+  const Icon = CATEGORY_ICONS[name]
+  if (!Icon) return null
+  const color = CATEGORY_COLORS[name] ?? 'text-[var(--theme-primary)]'
+  return <Icon size={size} className={color} />
+}
 
 export default function LessonsPage() {
   useEffect(() => {
@@ -33,7 +65,7 @@ export default function LessonsPage() {
             <div key={category.id} className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] overflow-hidden">
               <div className="p-5 border-b border-[var(--theme-border)] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{category.icon}</span>
+                  <CategoryIcon name={category.icon} />
                   <div>
                     <h2 className="text-lg font-bold text-[var(--theme-foreground)]">{category.title}</h2>
                     <p className="text-sm text-[var(--theme-muted-foreground)]">{category.description}</p>
@@ -77,7 +109,7 @@ export default function LessonsPage() {
                           : 'bg-[var(--theme-muted)] text-[var(--theme-muted-foreground)] border border-[var(--theme-border)]'
                         }
                       `}>
-                        {completed ? '✓' : lesson.order}
+                        {completed ? <Check size={14} /> : lesson.order}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-[var(--theme-foreground)] mb-1 truncate">

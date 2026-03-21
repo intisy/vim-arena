@@ -10,6 +10,7 @@ import {
   LessonViewPage,
   ChallengesPage,
   ChallengeViewPage,
+  StatsPage,
   SettingsPage,
   NotFoundPage,
 } from '@/router'
@@ -26,6 +27,7 @@ function App() {
               <Route path="lessons" element={<Suspense fallback={null}><LessonsPage /></Suspense>} />
               <Route path="challenges" element={<Suspense fallback={null}><ChallengesPage /></Suspense>} />
               <Route path="challenges/:challengeId" element={<Suspense fallback={null}><ChallengeViewPage /></Suspense>} />
+              <Route path="stats" element={<Suspense fallback={null}><StatsPage /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={null}><SettingsPage /></Suspense>} />
               <Route path="*" element={<Suspense fallback={null}><NotFoundPage /></Suspense>} />
             </Route>

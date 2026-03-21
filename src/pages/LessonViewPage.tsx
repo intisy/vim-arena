@@ -8,6 +8,7 @@ import { VimEditor } from '@/components/VimEditor'
 import { LessonSidebar } from '@/components/LessonSidebar'
 import { KeyCardGrid } from '@/components/KeyCardGrid'
 import { buildAllowedKeys } from '@/engine/KeyFilter'
+import { Search, PartyPopper, Check, Lightbulb, ArrowLeft, ArrowRight } from 'lucide-react'
 import type { VimEditorRef } from '@/components/VimEditor'
 import type { EditorState } from '@/types/editor'
 
@@ -84,7 +85,7 @@ export default function LessonViewPage() {
       <div className="flex h-screen overflow-hidden bg-[var(--theme-background)]">
         <LessonSidebar />
         <main className="flex-1 overflow-y-auto p-8 flex flex-col items-center justify-center">
-          <div className="text-6xl mb-6">🔍</div>
+          <div className="text-6xl mb-6"><Search size={64} className="text-[var(--theme-muted-foreground)]" /></div>
           <h1 className="text-3xl font-bold mb-4 text-[var(--theme-foreground)]">Lesson not found</h1>
           <p className="text-[var(--theme-muted-foreground)] mb-8">The lesson you're looking for doesn't exist or has been moved.</p>
           <Link 
@@ -151,7 +152,7 @@ export default function LessonViewPage() {
 
   const renderCompletionScreen = () => (
     <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in duration-500">
-      <div className="text-6xl mb-6 animate-bounce">🎉</div>
+      <div className="text-6xl mb-6 animate-bounce"><PartyPopper size={64} className="text-[var(--theme-primary)]" /></div>
       <h1 className="text-4xl font-bold text-[var(--theme-foreground)] mb-4">Lesson Complete!</h1>
       <p className="text-lg text-[var(--theme-muted-foreground)] mb-12 max-w-md">
         You've successfully completed <span className="font-semibold text-[var(--theme-foreground)]">"{lesson.title}"</span>.
@@ -163,7 +164,7 @@ export default function LessonViewPage() {
             to={`/lessons/${nextLesson.id}`}
             className="flex-1 px-6 py-3 rounded-lg bg-[var(--theme-primary)] text-black font-bold hover:bg-opacity-90 transition-colors shadow-lg shadow-primary/20"
           >
-            Next Lesson &rarr;
+            Next Lesson →
           </Link>
         ) : (
           <Link 
@@ -272,7 +273,7 @@ export default function LessonViewPage() {
                         {showSuccess && (
                           <div className="absolute inset-0 bg-green-500/10 backdrop-blur-[2px] flex items-center justify-center z-10 transition-all duration-300">
                             <div className="bg-green-500 text-white px-8 py-4 rounded-full font-bold shadow-xl flex items-center gap-3 transform scale-110 animate-in zoom-in duration-200">
-                              <span className="text-2xl leading-none">✓</span> 
+                              <Check size={20} className="text-white" /> 
                               <span className="text-lg">Correct!</span>
                             </div>
                           </div>
@@ -281,7 +282,7 @@ export default function LessonViewPage() {
 
                       {engine.hint && (
                         <div className="mb-6 flex items-start gap-3 text-amber-500 bg-amber-500/10 p-4 rounded-md border border-amber-500/20">
-                          <span className="text-xl leading-none">💡</span>
+                          <Lightbulb size={20} className="text-amber-500 flex-shrink-0" />
                           <div className="text-sm">
                             <span className="font-semibold block mb-1 text-amber-600">Hint (Attempt {engine.attempts})</span>
                             <span className="text-amber-700/90">{engine.hint}</span>
@@ -318,7 +319,7 @@ export default function LessonViewPage() {
                     className="flex flex-col items-start group"
                   >
                     <span className="text-xs font-bold text-[var(--theme-muted-foreground)] uppercase tracking-wider mb-1 group-hover:text-[var(--theme-foreground)] transition-colors">Previous</span>
-                    <span className="text-[var(--theme-primary)] font-medium group-hover:underline">&larr; {prevLesson.title}</span>
+                    <span className="text-[var(--theme-primary)] font-medium group-hover:underline flex items-center gap-1"><ArrowLeft size={14} /> {prevLesson.title}</span>
                   </Link>
                 ) : (
                   <div />
@@ -330,7 +331,7 @@ export default function LessonViewPage() {
                     className="flex flex-col items-end group"
                   >
                     <span className="text-xs font-bold text-[var(--theme-muted-foreground)] uppercase tracking-wider mb-1 group-hover:text-[var(--theme-foreground)] transition-colors">Next</span>
-                    <span className="text-[var(--theme-primary)] font-medium group-hover:underline">{nextLesson.title} &rarr;</span>
+                    <span className="text-[var(--theme-primary)] font-medium group-hover:underline flex items-center gap-1">{nextLesson.title} <ArrowRight size={14} /></span>
                   </Link>
                 ) : (
                   <div />

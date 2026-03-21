@@ -164,12 +164,12 @@ export const INSERT_LIKE_A_PRO_LESSONS: Lesson[] = [
       },
       {
         id: 'making-small-edits-step-2',
-        instruction: 'Replace `.` with `?.` to add optional chaining.',
-        initialContent: 'const name = user.profile.displayName',
-        initialCursor: { line: 0, column: 24 },
-        expectedContent: 'const name = user.profile?.displayName',
+        instruction: 'Fix the operator: replace `.` with `>=`.',
+        initialContent: 'const isValid = age . 18',
+        initialCursor: { line: 0, column: 20 },
+        expectedContent: 'const isValid = age >= 18',
         expectedCursor: undefined,
-        hints: ['Cursor is on the dot before displayName. Use s, type ?. then Esc.'],
+        hints: ['Cursor is on the dot. Use s, type >= then Esc.'],
         requiredCommands: ['s', 'Esc'],
       },
       {
