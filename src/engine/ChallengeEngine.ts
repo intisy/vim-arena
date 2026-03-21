@@ -52,11 +52,7 @@ export class ChallengeEngine {
   validateCompletion(currentState: EditorState): ChallengeResult | null {
     if (!this.isActive) return null
     const ch = this.challenge
-    const contentMatch = currentState.content === ch.expectedContent
-    const cursorMatch = ch.expectedCursor === undefined ||
-      (currentState.cursorLine === ch.expectedCursor.line &&
-       currentState.cursorColumn === ch.expectedCursor.column)
-    if (!contentMatch || !cursorMatch) return null
+    if (currentState.content !== ch.expectedContent) return null
     return this._buildResult(false)
   }
 

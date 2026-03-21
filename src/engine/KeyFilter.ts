@@ -201,6 +201,21 @@ export function buildAllowedKeys(requiredCommands: string[]): string[] | undefin
   return [...allAllowed]
 }
 
+export function buildPracticeKeys(requiredCommands: string[]): string[] | undefined {
+  if (requiredCommands.length === 0) return undefined
+
+  const keys = new Set<string>()
+  for (const cmd of requiredCommands) {
+    for (const ch of cmd) {
+      keys.add(ch)
+    }
+  }
+
+  keys.add('Escape')
+
+  return [...keys]
+}
+
 export function shouldBlockKey(key: string, allowedKeys: string[] | undefined): boolean {
   if (!allowedKeys) return false
   if (ALWAYS_ALLOWED_KEYS.has(key)) return false

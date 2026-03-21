@@ -76,17 +76,15 @@ describe('ChallengeEngine', () => {
     expect(result?.timedOut).toBe(false)
   })
 
-  test('validateCompletion checks cursor when expectedCursor is set', () => {
+  test('validateCompletion uses content-only check (cursor ignored)', () => {
     const challengeWithCursor: GeneratedChallenge = {
       ...mockChallenge,
       expectedCursor: { line: 0, column: 5 },
     }
     const engine = new ChallengeEngine(challengeWithCursor)
     engine.start()
-    // Wrong cursor
-    expect(engine.validateCompletion({ content: 'value = 42', cursorLine: 0, cursorColumn: 0 })).toBeNull()
-    // Right cursor
-    const result = engine.validateCompletion({ content: 'value = 42', cursorLine: 0, cursorColumn: 5 })
+    // Content matches — cursor position is irrelevant
+    const result = engine.validateCompletion({ content: 'value = 42', cursorLine: 0, cursorColumn: 0 })
     expect(result).not.toBeNull()
     expect(result?.templateId).toBe('delete-word')
   })

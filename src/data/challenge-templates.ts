@@ -17,12 +17,43 @@ function getDeleteWordRange(line: string, col: number): { start: number; end: nu
   return { start, end }
 }
 
+function pickOffsetCursor(
+  rng: SeededRandom,
+  targetLine: number,
+  totalLines: number,
+): { line: number; column: number; distance: number } {
+  if (totalLines <= 2) {
+    const offsetLine = targetLine === 0 ? 1 : 0
+    return { line: offsetLine, column: 0, distance: Math.abs(targetLine - offsetLine) }
+  }
+
+  const minDist = Math.min(2, Math.max(1, Math.floor(totalLines / 4)))
+  const maxDist = Math.min(6, Math.floor(totalLines / 2))
+  const dist = rng.nextInt(minDist, maxDist)
+
+  let offsetLine: number
+  if (targetLine - dist >= 0 && targetLine + dist < totalLines) {
+    offsetLine = rng.next() > 0.5 ? targetLine - dist : targetLine + dist
+  } else if (targetLine - dist >= 0) {
+    offsetLine = targetLine - dist
+  } else {
+    offsetLine = targetLine + dist
+  }
+
+  offsetLine = Math.max(0, Math.min(totalLines - 1, offsetLine))
+  if (offsetLine === targetLine) {
+    offsetLine = targetLine === 0 ? 1 : targetLine - 1
+  }
+
+  return { line: offsetLine, column: 0, distance: Math.abs(targetLine - offsetLine) }
+}
+
 export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
   {
     id: 'delete-char',
     type: 'delete',
     title: 'Delete Character',
-    description: 'Delete the character under the cursor using x',
+    description: 'Delete the highlighted character',
     difficulty: 1,
     requiredCommands: ['x'],
     timeLimitSeconds: 10,
@@ -42,15 +73,17 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       const newLines = [...lines]
       newLines[chosen.index] = newLine
 
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: chosen.index, column: col },
+        initialCursor: { line: offset.line, column: offset.column },
+        targetCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
-        expectedCursor: { line: chosen.index, column: Math.min(col, newLine.length - 1) },
-        referenceKeystrokeCount: 1,
-        description: `Delete the character at line ${chosen.index + 1}, column ${col + 1} using x`,
+        referenceKeystrokeCount: 1 + offset.distance,
+        description: 'Delete the highlighted character',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
@@ -68,7 +101,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     id: 'replace-char',
     type: 'change',
     title: 'Replace Character',
-    description: 'Replace the character under the cursor using r',
+    description: 'Replace the highlighted character',
     difficulty: 1,
     requiredCommands: ['r'],
     timeLimitSeconds: 10,
@@ -94,15 +127,17 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       const newLines = [...lines]
       newLines[chosen.index] = newLine
 
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: chosen.index, column: col },
+        initialCursor: { line: offset.line, column: offset.column },
+        targetCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
-        expectedCursor: { line: chosen.index, column: col },
-        referenceKeystrokeCount: 2,
-        description: `Replace '${chosen.line[col]}' with '${replacement}' at line ${chosen.index + 1}, col ${col + 1}`,
+        referenceKeystrokeCount: 2 + offset.distance,
+        description: `Replace the highlighted character with '${replacement}'`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
@@ -120,7 +155,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     id: 'delete-word',
     type: 'delete',
     title: 'Delete Word',
-    description: 'Delete from cursor to the start of the next word using dw',
+    description: 'Delete the highlighted word',
     difficulty: 2,
     requiredCommands: ['dw'],
     timeLimitSeconds: 15,
@@ -147,15 +182,17 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       const newLines = [...lines]
       newLines[chosen.index] = newLine
 
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: chosen.index, column: col },
+        initialCursor: { line: offset.line, column: offset.column },
+        targetCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
-        expectedCursor: { line: chosen.index, column: Math.min(col, Math.max(0, newLine.length - 1)) },
-        referenceKeystrokeCount: 2,
-        description: `Delete the word at line ${chosen.index + 1}, column ${col + 1} using dw`,
+        referenceKeystrokeCount: 2 + offset.distance,
+        description: 'Delete the highlighted word',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
@@ -173,7 +210,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     id: 'delete-line',
     type: 'delete',
     title: 'Delete Line',
-    description: 'Delete the entire current line using dd',
+    description: 'Delete the highlighted line',
     difficulty: 2,
     requiredCommands: ['dd'],
     timeLimitSeconds: 10,
@@ -184,20 +221,18 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
 
       const lineIdx = rng.nextInt(0, lines.length - 1)
       const newLines = lines.filter((_, i) => i !== lineIdx)
-      const newCursorLine = Math.min(lineIdx, newLines.length - 1)
-      const landingLine = newLines[newCursorLine] ?? ''
-      const firstNonBlank = landingLine.search(/\S/)
-      const cursorCol = firstNonBlank >= 0 ? firstNonBlank : 0
+
+      const offset = pickOffsetCursor(rng, lineIdx, lines.length)
 
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: lineIdx, column: 0 },
+        initialCursor: { line: offset.line, column: offset.column },
+        targetCursor: { line: lineIdx, column: 0 },
         expectedContent: newLines.join('\n'),
-        expectedCursor: { line: newCursorLine, column: cursorCol },
-        referenceKeystrokeCount: 2,
-        description: `Delete line ${lineIdx + 1} using dd`,
+        referenceKeystrokeCount: 2 + offset.distance,
+        description: 'Delete the highlighted line',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
@@ -215,7 +250,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     id: 'change-word',
     type: 'change',
     title: 'Change Word',
-    description: 'Change the word under the cursor using ciw and type a replacement',
+    description: 'Change the highlighted word',
     difficulty: 2,
     requiredCommands: ['ciw'],
     timeLimitSeconds: 20,
@@ -247,15 +282,17 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       const newLines = [...lines]
       newLines[chosen.index] = newLine
 
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: chosen.index, column: word.start },
+        initialCursor: { line: offset.line, column: offset.column },
+        targetCursor: { line: chosen.index, column: word.start },
         expectedContent: newLines.join('\n'),
-        expectedCursor: { line: chosen.index, column: word.start + replacement.length },
-        referenceKeystrokeCount: 3 + replacement.length,
-        description: `Change "${word.text}" to "${replacement}" at line ${chosen.index + 1}`,
+        referenceKeystrokeCount: 3 + replacement.length + offset.distance,
+        description: `Change the highlighted word to "${replacement}"`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
@@ -273,7 +310,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     id: 'delete-to-eol',
     type: 'delete',
     title: 'Delete to End of Line',
-    description: 'Delete from cursor to end of line using D',
+    description: 'Delete from the cursor to the end of the highlighted section',
     difficulty: 3,
     requiredCommands: ['D'],
     timeLimitSeconds: 12,
@@ -293,15 +330,17 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       const newLines = [...lines]
       newLines[chosen.index] = newLine
 
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: chosen.index, column: col },
+        initialCursor: { line: offset.line, column: offset.column },
+        targetCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
-        expectedCursor: { line: chosen.index, column: Math.max(0, col - 1) },
-        referenceKeystrokeCount: 1,
-        description: `Delete from column ${col + 1} to end of line ${chosen.index + 1} using D`,
+        referenceKeystrokeCount: 1 + offset.distance,
+        description: 'Delete everything after the cursor in the highlighted section',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
@@ -319,7 +358,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     id: 'yank-paste',
     type: 'yank-paste',
     title: 'Yank and Paste Line',
-    description: 'Duplicate a line by yanking it (yy) and pasting it below (p)',
+    description: 'Duplicate the highlighted line below it',
     difficulty: 3,
     requiredCommands: ['yy', 'p'],
     timeLimitSeconds: 15,
@@ -332,15 +371,17 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       const newLines = [...lines]
       newLines.splice(lineIdx + 1, 0, lines[lineIdx])
 
+      const offset = pickOffsetCursor(rng, lineIdx, lines.length)
+
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: lineIdx, column: 0 },
+        initialCursor: { line: offset.line, column: offset.column },
+        targetCursor: { line: lineIdx, column: 0 },
         expectedContent: newLines.join('\n'),
-        expectedCursor: { line: lineIdx + 1, column: 0 },
-        referenceKeystrokeCount: 3,
-        description: `Duplicate line ${lineIdx + 1} by yanking (yy) and pasting (p)`,
+        referenceKeystrokeCount: 3 + offset.distance,
+        description: 'Duplicate the highlighted line below it',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
@@ -358,7 +399,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     id: 'delete-inner-word',
     type: 'delete',
     title: 'Delete Inner Word',
-    description: 'Delete the word under the cursor using diw',
+    description: 'Delete the highlighted word',
     difficulty: 4,
     requiredCommands: ['diw'],
     timeLimitSeconds: 15,
@@ -380,21 +421,22 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       if (words.length === 0) return null
 
       const word = words[rng.nextInt(0, words.length - 1)]
-      const col = word.start + rng.nextInt(0, word.text.length - 1)
 
       const newLine = chosen.line.slice(0, word.start) + chosen.line.slice(word.end)
       const newLines = [...lines]
       newLines[chosen.index] = newLine
 
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length)
+
       return {
         templateId: this.id,
         snippetId: snippet.id,
         initialContent: snippet.content,
-        initialCursor: { line: chosen.index, column: col },
+        initialCursor: { line: offset.line, column: offset.column },
+        targetCursor: { line: chosen.index, column: word.start },
         expectedContent: newLines.join('\n'),
-        expectedCursor: { line: chosen.index, column: Math.min(word.start, Math.max(0, newLine.length - 1)) },
-        referenceKeystrokeCount: 3,
-        description: `Delete the word "${word.text}" at line ${chosen.index + 1} using diw`,
+        referenceKeystrokeCount: 3 + offset.distance,
+        description: 'Delete the highlighted word',
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,

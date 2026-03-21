@@ -6,7 +6,7 @@ import { ChallengeResults } from '@/components/ChallengeResults'
 import { VimEditor } from '@/components/VimEditor'
 import type { VimEditorRef } from '@/components/VimEditor'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
-import { buildAllowedKeys } from '@/engine/KeyFilter'
+import { buildPracticeKeys } from '@/engine/KeyFilter'
 import type { TargetRange } from '@/types/editor'
 
 export default function ChallengeViewPage() {
@@ -42,6 +42,7 @@ export default function ChallengeViewPage() {
 
   useEffect(() => {
     if (phase === 'countdown' && editorRef.current) {
+      editorRef.current.exitInsertMode()
       editorRef.current.reset()
     }
     if (phase === 'active' && editorRef.current) {
@@ -55,7 +56,7 @@ export default function ChallengeViewPage() {
 
   const allowedKeys = useMemo(() => {
     if (!practiceMode || !challenge?.requiredCommands) return undefined
-    return buildAllowedKeys(challenge.requiredCommands)
+    return buildPracticeKeys(challenge.requiredCommands)
   }, [practiceMode, challenge])
 
   if (!challenge) {
@@ -77,7 +78,7 @@ export default function ChallengeViewPage() {
       }
     : undefined
 
-  const targetCursor = !targetRange ? challenge.initialCursor : undefined
+  const editorTargetCursor = challenge.targetCursor ?? undefined
 
   return (
     <div className="max-w-5xl mx-auto p-6 h-full flex flex-col relative">
@@ -91,8 +92,8 @@ export default function ChallengeViewPage() {
           </div>
           <p className="text-gray-400">
             {practiceMode
-              ? 'Practice mode — only the optimal keys are allowed. No elo change.'
-              : 'Complete the task using the fewest keystrokes possible.'}
+              ? 'Practice mode — only the perfect keys are allowed. No elo change.'
+              : 'Navigate to the highlighted area and complete the task.'}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -137,7 +138,7 @@ export default function ChallengeViewPage() {
             ref={editorRef}
             initialContent={challenge.initialContent}
             initialCursor={challenge.initialCursor}
-            targetCursor={targetCursor}
+            targetCursor={editorTargetCursor}
             targetRange={targetRange}
             allowedKeys={allowedKeys}
             language="javascript"

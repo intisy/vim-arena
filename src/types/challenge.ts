@@ -20,6 +20,7 @@ export interface GeneratedChallenge {
   snippetId: string
   initialContent: string
   initialCursor: CursorPosition
+  targetCursor?: CursorPosition
   expectedContent: string
   expectedCursor?: CursorPosition
   referenceKeystrokeCount: number
