@@ -12,7 +12,7 @@ import type { EditorState } from '@/types/editor'
 
 export type ChallengePhase = 'idle' | 'countdown' | 'active' | 'complete'
 
-export function useChallengeEngine() {
+export function useChallengeEngine(initialPracticeMode = false) {
   const [challenge, setChallenge] = useState<GeneratedChallenge | null>(null)
   const [phase, setPhase] = useState<ChallengePhase>('idle')
   const [elapsed, setElapsed] = useState(0)
@@ -20,11 +20,11 @@ export function useChallengeEngine() {
   const [result, setResult] = useState<ChallengeResult | null>(null)
   const [countdown, setCountdown] = useState(3)
   const [difficulty, setDifficulty] = useState<1 | 2 | 3 | 4 | 5>(1)
-  const [practiceMode, setPracticeMode] = useState(false)
+  const [practiceMode, setPracticeMode] = useState(initialPracticeMode)
 
   const engineRef = useRef<ChallengeEngine | null>(null)
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const practiceModeRef = useRef(false)
+  const practiceModeRef = useRef(initialPracticeMode)
   const { recordResult } = useChallengeStats()
   const { recordChallengeResult: recordElo, elo } = useEloRating()
 

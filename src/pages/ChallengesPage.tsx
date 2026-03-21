@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useEloRating } from '@/hooks/useEloRating'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
@@ -20,6 +20,7 @@ export default function ChallengesPage() {
   const navigate = useNavigate()
   const { elo, getMatchedDifficulty, resetElo } = useEloRating()
   const { stats } = useChallengeStats()
+  const [practiceMode, setPracticeMode] = useState(false)
 
   const matchedDiff = getMatchedDifficulty()
   const ratingLabel = getRatingLabel(elo.rating)
@@ -27,7 +28,7 @@ export default function ChallengesPage() {
   const diffInfo = DIFFICULTY_LABELS[matchedDiff]
 
   const handleStart = () => {
-    navigate('/challenges/active', { state: { difficulty: matchedDiff } })
+    navigate('/challenges/active', { state: { difficulty: matchedDiff, practiceMode } })
   }
 
   const winRate = elo.gamesPlayed > 0
@@ -87,6 +88,23 @@ export default function ChallengesPage() {
               </span>
             </div>
           </div>
+
+          <button
+            onClick={() => setPracticeMode(prev => !prev)}
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-colors border mb-3 ${
+              practiceMode
+                ? 'bg-amber-900/50 text-amber-400 border-amber-700'
+                : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200 hover:border-gray-500'
+            }`}
+          >
+            <span>{practiceMode ? '🎯' : '🎓'}</span>
+            {practiceMode ? 'Practice Mode ON' : 'Practice Mode'}
+          </button>
+          {practiceMode && (
+            <p className="text-amber-500/70 text-xs text-center mb-3 -mt-1">
+              Shows optimal steps. Only correct keys allowed. No elo change.
+            </p>
+          )}
 
           <button
             onClick={handleStart}

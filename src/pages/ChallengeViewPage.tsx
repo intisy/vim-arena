@@ -17,6 +17,7 @@ export default function ChallengeViewPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const difficulty = location.state?.difficulty || 1
+  const initialPracticeMode = location.state?.practiceMode ?? false
   const editorRef = useRef<VimEditorRef>(null)
   const { getBestScore } = useChallengeStats()
 
@@ -34,7 +35,7 @@ export default function ChallengeViewPage() {
     nextChallenge,
     handleEditorStateChange,
     handleKeystroke,
-  } = useChallengeEngine()
+  } = useChallengeEngine(initialPracticeMode)
 
   useEffect(() => {
     startChallenge(difficulty as 1 | 2 | 3 | 4 | 5)
