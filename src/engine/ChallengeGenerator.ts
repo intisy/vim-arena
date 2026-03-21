@@ -50,7 +50,6 @@ export class ChallengeGenerator {
       throw new Error('No matching templates found for the given options')
     }
 
-    // Try generating a challenge, cycling through templates + snippets until one works
     const maxAttempts = candidates.length * this.snippets.length
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const template = this.rng.pick(candidates)
@@ -62,7 +61,6 @@ export class ChallengeGenerator {
       }
     }
 
-    // Fallback: try every combination
     for (const template of candidates) {
       for (const snippet of this.snippets) {
         const challenge = template.generateChallenge(snippet, 42)

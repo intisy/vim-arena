@@ -2,23 +2,21 @@ import type { ChallengeTemplate, CodeSnippet, GeneratedChallenge } from '@/types
 import { SeededRandom } from '@/engine/ChallengeGenerator'
 
 /**
- * Helper: find the extent of `dw` — delete from col to start of next word (or end of line).
+ * Helper: find the extent of `dw` - delete from col to start of next word (or end of line).
  * Vim `dw` deletes from cursor to the start of the next word. If at end of line, delete to EOL.
  */
 function getDeleteWordRange(line: string, col: number): { start: number; end: number } {
   const start = col
   let end = col
 
-  // Skip current word characters
   const isWordChar = (ch: string) => /\w/.test(ch)
   if (end < line.length && isWordChar(line[end])) {
     while (end < line.length && isWordChar(line[end])) end++
   } else if (end < line.length && !/\s/.test(line[end])) {
-    // Punctuation group
     while (end < line.length && !isWordChar(line[end]) && !/\s/.test(line[end])) end++
   }
 
-  // Also consume trailing whitespace (vim dw behavior)
+  // vim dw also consumes trailing whitespace
   while (end < line.length && /\s/.test(line[end])) end++
 
   return { start, end }
@@ -37,14 +35,12 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
       const rng = new SeededRandom(seed)
       const lines = snippet.content.split('\n')
-      // Pick a line that has content
       const nonEmptyLines = lines
         .map((l, i) => ({ line: l, index: i }))
         .filter(({ line }) => line.trim().length > 0)
       if (nonEmptyLines.length === 0) return null
 
       const chosen = nonEmptyLines[rng.nextInt(0, nonEmptyLines.length - 1)]
-      // Pick a column within the non-whitespace portion
       const trimStart = chosen.line.length - chosen.line.trimStart().length
       const col = rng.nextInt(trimStart, chosen.line.length - 1)
 
@@ -87,7 +83,6 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       const trimStart = chosen.line.length - chosen.line.trimStart().length
       const col = rng.nextInt(trimStart, chosen.line.length - 1)
 
-      // Pick a replacement char different from original
       const replacements = 'abcdefghijklmnopqrstuvwxyz0123456789'
       let replacement = replacements[rng.nextInt(0, replacements.length - 1)]
       if (replacement === chosen.line[col]) {
@@ -125,14 +120,12 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
       const rng = new SeededRandom(seed)
       const lines = snippet.content.split('\n')
-      // Find lines with at least one word
       const candidates = lines
         .map((l, i) => ({ line: l, index: i }))
         .filter(({ line }) => /\w/.test(line))
       if (candidates.length === 0) return null
 
       const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
-      // Find word starts in the line
       const wordStarts: number[] = []
       for (let i = 0; i < chosen.line.length; i++) {
         if (/\w/.test(chosen.line[i]) && (i === 0 || !/\w/.test(chosen.line[i - 1]))) {
@@ -173,7 +166,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
       const rng = new SeededRandom(seed)
       const lines = snippet.content.split('\n')
-      if (lines.length < 2) return null // Need at least 2 lines to delete one
+      if (lines.length < 2) return null
 
       const lineIdx = rng.nextInt(0, lines.length - 1)
       const newLines = lines.filter((_, i) => i !== lineIdx)
@@ -211,7 +204,6 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       if (candidates.length === 0) return null
 
       const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
-      // Find words of length >= 2
       const words: Array<{ start: number; end: number; text: string }> = []
       const regex = /\w{2,}/g
       let match: RegExpExecArray | null
@@ -258,14 +250,12 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
       const rng = new SeededRandom(seed)
       const lines = snippet.content.split('\n')
-      // Pick a line with enough content to cut at a meaningful position
       const candidates = lines
         .map((l, i) => ({ line: l, index: i }))
         .filter(({ line }) => line.length >= 4)
       if (candidates.length === 0) return null
 
       const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
-      // Pick a column somewhere in the first half of the line
       const maxCol = Math.max(1, Math.floor(chosen.line.length / 2))
       const col = rng.nextInt(1, maxCol)
 
@@ -339,7 +329,6 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       if (candidates.length === 0) return null
 
       const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
-      // Find words of length >= 2
       const words: Array<{ start: number; end: number; text: string }> = []
       const regex = /\w{2,}/g
       let match: RegExpExecArray | null
@@ -349,9 +338,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
       if (words.length === 0) return null
 
       const word = words[rng.nextInt(0, words.length - 1)]
-      // diw: delete word under cursor (but not surrounding space in all cases)
-      // Simplified: delete just the word text, cursor lands at start
-      const col = word.start + rng.nextInt(0, word.text.length - 1) // cursor anywhere in word
+      const col = word.start + rng.nextInt(0, word.text.length - 1)
 
       const newLine = chosen.line.slice(0, word.start) + chosen.line.slice(word.end)
       const newLines = [...lines]

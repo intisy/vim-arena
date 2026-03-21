@@ -1,4 +1,3 @@
-// Don't import EditorState — define what we need inline to avoid circular deps
 type CursorPosition = { line: number; column: number }
 
 export interface CodeSnippet {
