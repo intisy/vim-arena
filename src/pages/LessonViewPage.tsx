@@ -113,6 +113,7 @@ export default function LessonViewPage() {
 
     const isValid = engine.validateAndAdvance(state)
     if (isValid) {
+      editorRef.current?.exitInsertMode()
       setShowSuccess(true)
       setTimeout(() => {
         setShowSuccess(false)

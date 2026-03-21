@@ -29,6 +29,7 @@ export interface VimEditorRef {
   reset: () => void
   getState: () => VimEditorState
   focus: () => void
+  exitInsertMode: () => void
 }
 
 function getEditorState(view: EditorView): VimEditorState {
@@ -113,6 +114,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
   onStateChangeRef.current = onStateChange
   const allowedKeysRef = useRef(allowedKeys)
   allowedKeysRef.current = allowedKeys
+  const modeRef = useRef<VimMode>('normal')
 
   const stateTracker = useMemo(
     () =>
@@ -128,6 +130,8 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     () =>
       EditorView.domEventHandlers({
         keydown(event, _view) {
+          const currentMode = modeRef.current
+          if (currentMode === 'insert' || currentMode === 'replace') return false
           const keys = allowedKeysRef.current
           if (!keys) return false
           if (event.key === 'Escape' || event.key === 'Enter' || event.key === 'Backspace' || event.key === 'Tab') return false
@@ -214,6 +218,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
               : rawMode === 'replace'
                 ? 'replace'
                 : 'normal'
+        modeRef.current = vimMode
         setMode(vimMode)
         onModeChange?.(vimMode)
       })
@@ -254,6 +259,18 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
         const view = cmRef.current?.view
         if (!view) return { content: initialContent, cursorLine: 0, cursorColumn: 0 }
         return getEditorState(view)
+      },
+      exitInsertMode: () => {
+        const view = cmRef.current?.view
+        if (!view) return
+        const escEvent = new KeyboardEvent('keydown', {
+          key: 'Escape',
+          code: 'Escape',
+          keyCode: 27,
+          bubbles: true,
+          cancelable: true,
+        })
+        view.contentDOM.dispatchEvent(escEvent)
       },
     }),
     [initialContent, initialCursor, dispatchTargets],
