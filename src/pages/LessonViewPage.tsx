@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { LESSONS_BY_ID, ALL_LESSONS } from '@/data/lessons/index'
 import { useLessonEngine } from '@/hooks/useLessonEngine'
@@ -7,6 +7,7 @@ import { LessonStepper } from '@/components/LessonStepper'
 import { VimEditor } from '@/components/VimEditor'
 import { LessonSidebar } from '@/components/LessonSidebar'
 import { KeyCardGrid } from '@/components/KeyCardGrid'
+import { buildAllowedKeys } from '@/engine/KeyFilter'
 import type { VimEditorRef } from '@/components/VimEditor'
 import type { EditorState } from '@/types/editor'
 
@@ -72,6 +73,11 @@ export default function LessonViewPage() {
       editorRef.current?.focus()
     }
   }, [engine.stepIndex, engine.currentStep])
+
+  const allowedKeys = useMemo(() => {
+    if (!engine.currentStep?.requiredCommands) return undefined
+    return buildAllowedKeys(engine.currentStep.requiredCommands)
+  }, [engine.currentStep])
 
   if (!lesson) {
     return (
@@ -255,6 +261,8 @@ export default function LessonViewPage() {
                           initialContent={engine.currentStep.initialContent}
                           initialCursor={engine.currentStep.initialCursor}
                           targetCursor={targetCursor}
+                          trapFocus={true}
+                          allowedKeys={allowedKeys}
                           onStateChange={handleStateChange}
                           className="h-full"
                           height={editorHeight}

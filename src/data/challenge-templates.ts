@@ -1,10 +1,6 @@
 import type { ChallengeTemplate, CodeSnippet, GeneratedChallenge } from '@/types/challenge'
 import { SeededRandom } from '@/engine/ChallengeGenerator'
 
-/**
- * Helper: find the extent of `dw` - delete from col to start of next word (or end of line).
- * Vim `dw` deletes from cursor to the start of the next word. If at end of line, delete to EOL.
- */
 function getDeleteWordRange(line: string, col: number): { start: number; end: number } {
   const start = col
   let end = col
@@ -16,14 +12,12 @@ function getDeleteWordRange(line: string, col: number): { start: number; end: nu
     while (end < line.length && !isWordChar(line[end]) && !/\s/.test(line[end])) end++
   }
 
-  // vim dw also consumes trailing whitespace
   while (end < line.length && /\s/.test(line[end])) end++
 
   return { start, end }
 }
 
 export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
-  // ─── Difficulty 1 ───────────────────────────────────────
   {
     id: 'delete-char',
     type: 'delete',
@@ -59,6 +53,12 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         description: `Delete the character at line ${chosen.index + 1}, column ${col + 1} using x`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: col,
+          toLine: chosen.index,
+          toCol: col + 1,
+        },
       }
     },
   },
@@ -100,15 +100,20 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         initialCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
         expectedCursor: { line: chosen.index, column: col },
-        referenceKeystrokeCount: 2, // r + char
-        description: `Replace the character at line ${chosen.index + 1}, column ${col + 1} with '${replacement}' using r${replacement}`,
+        referenceKeystrokeCount: 2,
+        description: `Replace '${chosen.line[col]}' with '${replacement}' at line ${chosen.index + 1}, col ${col + 1}`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: col,
+          toLine: chosen.index,
+          toCol: col + 1,
+        },
       }
     },
   },
 
-  // ─── Difficulty 2 ───────────────────────────────────────
   {
     id: 'delete-word',
     type: 'delete',
@@ -147,10 +152,16 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         initialCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
         expectedCursor: { line: chosen.index, column: Math.min(col, Math.max(0, newLine.length - 1)) },
-        referenceKeystrokeCount: 2, // d + w
+        referenceKeystrokeCount: 2,
         description: `Delete the word at line ${chosen.index + 1}, column ${col + 1} using dw`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: range.start,
+          toLine: chosen.index,
+          toCol: range.end,
+        },
       }
     },
   },
@@ -179,10 +190,16 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         initialCursor: { line: lineIdx, column: 0 },
         expectedContent: newLines.join('\n'),
         expectedCursor: { line: newCursorLine, column: 0 },
-        referenceKeystrokeCount: 2, // d + d
+        referenceKeystrokeCount: 2,
         description: `Delete line ${lineIdx + 1} using dd`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        targetHighlight: {
+          fromLine: lineIdx,
+          fromCol: 0,
+          toLine: lineIdx,
+          toCol: lines[lineIdx].length,
+        },
       }
     },
   },
@@ -230,15 +247,20 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         initialCursor: { line: chosen.index, column: word.start },
         expectedContent: newLines.join('\n'),
         expectedCursor: { line: chosen.index, column: word.start + replacement.length },
-        referenceKeystrokeCount: 3 + replacement.length, // c + i + w + replacement chars
-        description: `Change the word "${word.text}" to "${replacement}" at line ${chosen.index + 1} using ciw`,
+        referenceKeystrokeCount: 3 + replacement.length,
+        description: `Change "${word.text}" to "${replacement}" at line ${chosen.index + 1}`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: word.start,
+          toLine: chosen.index,
+          toCol: word.end,
+        },
       }
     },
   },
 
-  // ─── Difficulty 3 ───────────────────────────────────────
   {
     id: 'delete-to-eol',
     type: 'delete',
@@ -270,10 +292,16 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         initialCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
         expectedCursor: { line: chosen.index, column: Math.max(0, col - 1) },
-        referenceKeystrokeCount: 1, // D
+        referenceKeystrokeCount: 1,
         description: `Delete from column ${col + 1} to end of line ${chosen.index + 1} using D`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: col,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
       }
     },
   },
@@ -293,7 +321,6 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
 
       const lineIdx = rng.nextInt(0, lines.length - 1)
       const newLines = [...lines]
-      // yy + p duplicates current line below
       newLines.splice(lineIdx + 1, 0, lines[lineIdx])
 
       return {
@@ -303,15 +330,20 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         initialCursor: { line: lineIdx, column: 0 },
         expectedContent: newLines.join('\n'),
         expectedCursor: { line: lineIdx + 1, column: 0 },
-        referenceKeystrokeCount: 3, // y + y + p
+        referenceKeystrokeCount: 3,
         description: `Duplicate line ${lineIdx + 1} by yanking (yy) and pasting (p)`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        targetHighlight: {
+          fromLine: lineIdx,
+          fromCol: 0,
+          toLine: lineIdx,
+          toCol: lines[lineIdx].length,
+        },
       }
     },
   },
 
-  // ─── Difficulty 4 ───────────────────────────────────────
   {
     id: 'delete-inner-word',
     type: 'delete',
@@ -351,10 +383,16 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         initialCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
         expectedCursor: { line: chosen.index, column: Math.min(word.start, Math.max(0, newLine.length - 1)) },
-        referenceKeystrokeCount: 3, // d + i + w
+        referenceKeystrokeCount: 3,
         description: `Delete the word "${word.text}" at line ${chosen.index + 1} using diw`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: word.start,
+          toLine: chosen.index,
+          toCol: word.end,
+        },
       }
     },
   },
