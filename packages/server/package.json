@@ -1,0 +1,14 @@
+{
+  "name": "@vim-arena/server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'server not yet implemented'",
+    "build": "echo 'server not yet implemented'"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  }
+}

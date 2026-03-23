@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+:root {
+  /* Default to terminal-green values (overridden by ThemeContext on mount) */
+  --theme-background: #0a0a0a;
+  --theme-foreground: #00ff41;
+  --theme-primary: #00ff41;
+  --theme-secondary: #00cc33;
+  --theme-accent: #39ff14;
+  --theme-muted: #0d1f0d;
+  --theme-muted-foreground: #00aa2b;
+  --theme-border: #003d12;
+  --theme-editor-bg: #050505;
+  --theme-editor-fg: #00ff41;
+  --theme-editor-cursor: #00ff41;
+  --theme-editor-selection: #003d12;
+  --theme-editor-gutter: #0a1a0a;
+  --theme-success: #00ff41;
+  --theme-error: #ff3333;
+  --theme-warning: #ffaa00;
+}
+
+body {
+  background-color: var(--theme-background);
+  color: var(--theme-foreground);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  margin: 0;
+  min-height: 100vh;
+}
