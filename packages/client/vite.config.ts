@@ -7,7 +7,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: '/vim-arena/',
   resolve: {
-    alias: { '@': path.resolve(__dirname, './src') }
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@vim-arena/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts')
+    }
   },
   test: {
     globals: true,

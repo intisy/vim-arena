@@ -1,2 +1,7 @@
-// @vim-arena/shared — placeholder, types and engine will be extracted here in Task 1.2 and 1.3
-export {};
+// @vim-arena/shared -- shared types and engine logic
+
+// Types
+export type * from "./types/stats"
+export type * from "./types/challenge"
+export type * from "./types/lesson"
+export type * from "./types/editor"

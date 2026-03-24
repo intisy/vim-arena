@@ -23,7 +23,10 @@
 
     /* Path alias */
     "baseUrl": ".",
-    "paths": { "@/*": ["./src/*"] },
+    "paths": {
+      "@/*": ["./src/*"],
+      "@vim-arena/shared": ["../../packages/shared/src/index.ts"]
+    },
 
     /* Vitest + testing-library types */
     "types": ["vitest/globals", "@testing-library/jest-dom"]
