@@ -6,6 +6,9 @@ export type * from "./types/challenge"
 export type * from "./types/lesson"
 export type * from "./types/editor"
 
+// Supabase DB types
+export * from "./supabase.types"
+
 // Engine
 export * from "./engine/Scoring"
 export * from "./engine/EloRating"

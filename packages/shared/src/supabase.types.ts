@@ -1,0 +1,157 @@
+// TypeScript types matching the Supabase DB schema (001_initial.sql)
+// These are the row-level types used throughout the app.
+
+export interface Profile {
+  id: string
+  username: string
+  avatar_seed: string
+  solo_elo: number
+  solo_peak_elo: number
+  solo_games_played: number
+  solo_wins: number
+  solo_losses: number
+  pvp_elo: number
+  pvp_peak_elo: number
+  pvp_games_played: number
+  pvp_wins: number
+  pvp_losses: number
+  theme: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SoloEloHistoryRow {
+  id: string
+  user_id: string
+  rating: number
+  difficulty: 1 | 2 | 3 | 4 | 5
+  score: number
+  created_at: string
+}
+
+export interface LessonProgressRow {
+  user_id: string
+  lesson_id: string
+  completed: boolean
+  completed_at: string | null
+  attempts: number
+  steps_completed: number
+}
+
+export interface ChallengeStatsRow {
+  user_id: string
+  template_id: string
+  attempts: number
+  best_score: number
+  best_time_seconds: number
+  average_efficiency: number
+}
+
+export interface ChallengeResultRow {
+  id: string
+  user_id: string
+  template_id: string
+  snippet_id: string
+  time_seconds: number
+  keystroke_count: number
+  reference_keystroke_count: number
+  efficiency_score: number
+  speed_score: number
+  total_score: number
+  timed_out: boolean
+  created_at: string
+}
+
+export interface UserStatsRow {
+  user_id: string
+  lessons_completed: number
+  challenges_attempted: number
+  challenges_completed: number
+  total_practice_time_seconds: number
+  average_challenge_score: number
+  best_challenge_score: number
+  streak_days: number
+  last_active_date: string
+  joined_date: string
+}
+
+export type PvpMatchStatus = 'active' | 'completed' | 'forfeit' | 'timeout'
+
+export interface PvpMatchRow {
+  id: string
+  player1_id: string
+  player2_id: string
+  winner_id: string | null
+  challenge_seed: number
+  challenge_template_id: string
+  challenge_difficulty: 1 | 2 | 3 | 4 | 5
+  player1_time_seconds: number | null
+  player1_keystrokes: number | null
+  player1_completed: boolean
+  player2_time_seconds: number | null
+  player2_keystrokes: number | null
+  player2_completed: boolean
+  player1_elo_before: number
+  player2_elo_before: number
+  player1_elo_after: number | null
+  player2_elo_after: number | null
+  status: PvpMatchStatus
+  time_limit: number
+  started_at: string
+  finished_at: string | null
+}
+
+export interface MatchmakingQueueRow {
+  id: string
+  user_id: string
+  pvp_elo: number
+  queued_at: string
+}
+
+// Supabase Database type map (for typed client usage)
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: Profile
+        Insert: Partial<Profile> & Pick<Profile, 'id' | 'username'>
+        Update: Partial<Omit<Profile, 'id' | 'created_at'>>
+      }
+      solo_elo_history: {
+        Row: SoloEloHistoryRow
+        Insert: Omit<SoloEloHistoryRow, 'id' | 'created_at'>
+        Update: Partial<Omit<SoloEloHistoryRow, 'id'>>
+      }
+      lesson_progress: {
+        Row: LessonProgressRow
+        Insert: Partial<LessonProgressRow> & Pick<LessonProgressRow, 'user_id' | 'lesson_id'>
+        Update: Partial<Omit<LessonProgressRow, 'user_id' | 'lesson_id'>>
+      }
+      challenge_stats: {
+        Row: ChallengeStatsRow
+        Insert: Partial<ChallengeStatsRow> & Pick<ChallengeStatsRow, 'user_id' | 'template_id'>
+        Update: Partial<Omit<ChallengeStatsRow, 'user_id' | 'template_id'>>
+      }
+      challenge_results: {
+        Row: ChallengeResultRow
+        Insert: Omit<ChallengeResultRow, 'id' | 'created_at'>
+        Update: Partial<Omit<ChallengeResultRow, 'id'>>
+      }
+      user_stats: {
+        Row: UserStatsRow
+        Insert: Partial<UserStatsRow> & Pick<UserStatsRow, 'user_id'>
+        Update: Partial<Omit<UserStatsRow, 'user_id'>>
+      }
+      pvp_matches: {
+        Row: PvpMatchRow
+        Insert: Omit<PvpMatchRow, 'id' | 'started_at' | 'finished_at' | 'winner_id' | 'player1_time_seconds' | 'player1_keystrokes' | 'player1_completed' | 'player2_time_seconds' | 'player2_keystrokes' | 'player2_completed' | 'player1_elo_after' | 'player2_elo_after' | 'status'> & Partial<Pick<PvpMatchRow, 'status' | 'time_limit'>>
+        Update: Partial<Omit<PvpMatchRow, 'id' | 'started_at'>>
+      }
+      matchmaking_queue: {
+        Row: MatchmakingQueueRow
+        Insert: Omit<MatchmakingQueueRow, 'id' | 'queued_at'>
+        Update: Partial<Omit<MatchmakingQueueRow, 'id'>>
+      }
+    }
+  }
+}
