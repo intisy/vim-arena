@@ -5,3 +5,12 @@ export type * from "./types/stats"
 export type * from "./types/challenge"
 export type * from "./types/lesson"
 export type * from "./types/editor"
+
+// Engine
+export * from "./engine/Scoring"
+export * from "./engine/EloRating"
+export * from "./engine/ChallengeGenerator"
+
+// Data
+export * from "./data/snippets/index"
+export * from "./data/challenge-templates"
