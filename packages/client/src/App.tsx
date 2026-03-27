@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Suspense } from 'react'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { DesktopGate } from '@/components/DesktopGate'
@@ -20,7 +20,7 @@ function App() {
     <ThemeProvider>
       <DesktopGate>
         <KeyboardHelp />
-        <HashRouter>
+        <BrowserRouter>
           <Routes>
             <Route element={<MainLayout />}>
               <Route index element={<Suspense fallback={null}><HomePage /></Suspense>} />
@@ -33,7 +33,7 @@ function App() {
             </Route>
             <Route path="lessons/:lessonId" element={<Suspense fallback={null}><LessonViewPage /></Suspense>} />
           </Routes>
-        </HashRouter>
+        </BrowserRouter>
       </DesktopGate>
     </ThemeProvider>
   )
