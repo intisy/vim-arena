@@ -8,6 +8,18 @@ vi.mock('@/components/StatsOverview', () => ({
   StatsOverview: () => <div data-testid="stats-overview">Stats Overview</div>
 }))
 
+// Mock useAuth to simulate logged-in user
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'test-user-id', email: 'test@test.com' },
+    session: null,
+    loading: false,
+    signInWithGitHub: vi.fn(),
+    signInWithGoogle: vi.fn(),
+    signOut: vi.fn(),
+  }),
+}))
+
 describe('HomePage', () => {
   beforeEach(() => {
     document.title = ''
