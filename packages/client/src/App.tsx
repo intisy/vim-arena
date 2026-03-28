@@ -28,7 +28,7 @@ function App() {
         <AuthProvider>
           <DesktopGate>
             <KeyboardHelp />
-            <BrowserRouter>
+            <BrowserRouter basename="/vim-arena">
               <Routes>
                 <Route element={<MainLayout />}>
                   <Route index element={<Suspense fallback={null}><HomePage /></Suspense>} />

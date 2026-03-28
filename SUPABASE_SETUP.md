@@ -73,10 +73,25 @@ Go to **Database → Functions** and verify these functions exist:
 
 ## 4. Get Your API Keys
 
-1. In Supabase dashboard → **Settings → API**
-2. Copy:
-   - **Project URL** (looks like `https://abcdefgh.supabase.co`)
-   - **anon public** key (a long JWT string)
+### Project URL
+
+1. In Supabase dashboard → **Settings → General**
+2. Copy your **Project URL** (looks like `https://abcdefgh.supabase.co`)
+
+### API Key (pick one option)
+
+**Option A — New API Keys (recommended)**
+
+1. Go to **Settings → API Keys**
+2. If no keys exist, click **Create new API Keys**
+3. Copy the **Publishable** key (starts with `sb_publishable_...`)
+
+**Option B — Legacy API Keys**
+
+1. Go to **Settings → API Keys → Legacy API Keys** tab
+2. Copy the **anon public** key (a long JWT string starting with `eyJ...`)
+
+> Both key types work identically with `supabase-js`. The publishable key is the newer format.
 
 ## 5. Configure the Client
 

@@ -13,6 +13,11 @@ const localStorageMock = (() => {
 })()
 Object.defineProperty(window, 'localStorage', { value: localStorageMock })
 
+beforeEach(() => {
+  // BrowserRouter basename="/vim-arena" requires URL to start with /vim-arena
+  window.history.pushState({}, '', '/vim-arena/')
+})
+
 test('renders main navigation', () => {
   render(<App />)
   // The MainLayout sidebar always renders — check for nav links
