@@ -5,6 +5,8 @@ import { authMiddleware } from './middleware/auth.js'
 import { healthRouter } from './routes/health.js'
 import { statsRouter } from './routes/stats.js'
 import { challengesRouter } from './routes/challenges.js'
+import { matchmakingRouter } from './routes/matchmaking.js'
+import { startMatchmaker } from './services/matchmaker.js'
 
 const app: Express = express()
 const PORT = parseInt(process.env.PORT || '3001', 10)
@@ -22,6 +24,7 @@ app.use('/api', healthRouter)
 // Protected routes (require valid Supabase JWT)
 app.use('/api', authMiddleware, statsRouter)
 app.use('/api', authMiddleware, challengesRouter)
+app.use('/api', authMiddleware, matchmakingRouter)
 
 // Error handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -31,6 +34,9 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 app.listen(PORT, () => {
   console.log(`[vim-arena server] listening on port ${PORT}`)
+
+  // Start matchmaking worker
+  startMatchmaker()
 })
 
 export { app }
