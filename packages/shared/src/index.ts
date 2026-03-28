@@ -9,6 +9,9 @@ export type * from "./types/editor"
 // Supabase DB types
 export * from "./supabase.types"
 
+// PvP types and Elo
+export * from "./pvp.types"
+
 // Engine
 export * from "./engine/Scoring"
 export * from "./engine/EloRating"
