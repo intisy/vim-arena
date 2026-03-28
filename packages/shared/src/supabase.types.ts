@@ -1,7 +1,9 @@
 // TypeScript types matching the Supabase DB schema (001_initial.sql)
 // These are the row-level types used throughout the app.
+// NOTE: All row types MUST be `type` aliases (not `interface`) so they satisfy
+// Record<string, unknown> required by @supabase/postgrest-js GenericTable.
 
-export interface Profile {
+export type Profile = {
   id: string
   username: string
   avatar_seed: string
@@ -20,7 +22,7 @@ export interface Profile {
   updated_at: string
 }
 
-export interface SoloEloHistoryRow {
+export type SoloEloHistoryRow = {
   id: string
   user_id: string
   rating: number
@@ -29,7 +31,7 @@ export interface SoloEloHistoryRow {
   created_at: string
 }
 
-export interface LessonProgressRow {
+export type LessonProgressRow = {
   user_id: string
   lesson_id: string
   completed: boolean
@@ -38,7 +40,7 @@ export interface LessonProgressRow {
   steps_completed: number
 }
 
-export interface ChallengeStatsRow {
+export type ChallengeStatsRow = {
   user_id: string
   template_id: string
   attempts: number
@@ -47,7 +49,7 @@ export interface ChallengeStatsRow {
   average_efficiency: number
 }
 
-export interface ChallengeResultRow {
+export type ChallengeResultRow = {
   id: string
   user_id: string
   template_id: string
@@ -62,7 +64,7 @@ export interface ChallengeResultRow {
   created_at: string
 }
 
-export interface UserStatsRow {
+export type UserStatsRow = {
   user_id: string
   lessons_completed: number
   challenges_attempted: number
@@ -77,7 +79,7 @@ export interface UserStatsRow {
 
 export type PvpMatchStatus = 'active' | 'completed' | 'forfeit' | 'timeout'
 
-export interface PvpMatchRow {
+export type PvpMatchRow = {
   id: string
   player1_id: string
   player2_id: string
@@ -101,7 +103,7 @@ export interface PvpMatchRow {
   finished_at: string | null
 }
 
-export interface MatchmakingQueueRow {
+export type MatchmakingQueueRow = {
   id: string
   user_id: string
   pvp_elo: number
@@ -109,49 +111,125 @@ export interface MatchmakingQueueRow {
 }
 
 // Supabase Database type map (for typed client usage)
-export interface Database {
+// Includes Relationships, Views, Functions required by @supabase/postgrest-js GenericSchema.
+export type Database = {
   public: {
     Tables: {
       profiles: {
         Row: Profile
         Insert: Partial<Profile> & Pick<Profile, 'id' | 'username'>
         Update: Partial<Omit<Profile, 'id' | 'created_at'>>
+        Relationships: []
       }
       solo_elo_history: {
         Row: SoloEloHistoryRow
         Insert: Omit<SoloEloHistoryRow, 'id' | 'created_at'>
         Update: Partial<Omit<SoloEloHistoryRow, 'id'>>
+        Relationships: [
+          {
+            foreignKeyName: "solo_elo_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lesson_progress: {
         Row: LessonProgressRow
         Insert: Partial<LessonProgressRow> & Pick<LessonProgressRow, 'user_id' | 'lesson_id'>
         Update: Partial<Omit<LessonProgressRow, 'user_id' | 'lesson_id'>>
+        Relationships: [
+          {
+            foreignKeyName: "lesson_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       challenge_stats: {
         Row: ChallengeStatsRow
         Insert: Partial<ChallengeStatsRow> & Pick<ChallengeStatsRow, 'user_id' | 'template_id'>
         Update: Partial<Omit<ChallengeStatsRow, 'user_id' | 'template_id'>>
+        Relationships: [
+          {
+            foreignKeyName: "challenge_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       challenge_results: {
         Row: ChallengeResultRow
         Insert: Omit<ChallengeResultRow, 'id' | 'created_at'>
         Update: Partial<Omit<ChallengeResultRow, 'id'>>
+        Relationships: [
+          {
+            foreignKeyName: "challenge_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_stats: {
         Row: UserStatsRow
         Insert: Partial<UserStatsRow> & Pick<UserStatsRow, 'user_id'>
         Update: Partial<Omit<UserStatsRow, 'user_id'>>
+        Relationships: [
+          {
+            foreignKeyName: "user_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pvp_matches: {
         Row: PvpMatchRow
         Insert: Omit<PvpMatchRow, 'id' | 'started_at' | 'finished_at' | 'winner_id' | 'player1_time_seconds' | 'player1_keystrokes' | 'player1_completed' | 'player2_time_seconds' | 'player2_keystrokes' | 'player2_completed' | 'player1_elo_after' | 'player2_elo_after' | 'status'> & Partial<Pick<PvpMatchRow, 'status' | 'time_limit'>>
         Update: Partial<Omit<PvpMatchRow, 'id' | 'started_at'>>
+        Relationships: [
+          {
+            foreignKeyName: "pvp_matches_player1_id_fkey"
+            columns: ["player1_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pvp_matches_player2_id_fkey"
+            columns: ["player2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       matchmaking_queue: {
         Row: MatchmakingQueueRow
         Insert: Omit<MatchmakingQueueRow, 'id' | 'queued_at'>
         Update: Partial<Omit<MatchmakingQueueRow, 'id'>>
+        Relationships: [
+          {
+            foreignKeyName: "matchmaking_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }
