@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Swords, Loader2, X, Clock, Zap, Trophy } from 'lucide-react'
+import { Swords, Loader2, X, Clock, Zap, Trophy, History, Eye } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useEloRating } from '@/hooks/useEloRating'
-import type { MatchFoundMessage, PvpRaceConfig } from '@vim-arena/shared'
+import type { MatchFoundMessage, PvpRaceConfig, MatchHistoryEntry } from '@vim-arena/shared'
 
 type QueueState = 'idle' | 'joining' | 'queued' | 'matched' | 'error'
 
@@ -18,10 +18,36 @@ export function PvPPage() {
   const [elapsed, setElapsed] = useState(0)
   const [matchConfig, setMatchConfig] = useState<PvpRaceConfig | null>(null)
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const [history, setHistory] = useState<MatchHistoryEntry[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   useEffect(() => {
     document.title = 'PvP Arena | vim-arena'
   }, [])
+
+  // Load match history
+  useEffect(() => {
+    if (!session?.user?.id) return
+
+    async function loadHistory() {
+      setHistoryLoading(true)
+      try {
+        const { data, error } = await supabase.rpc('get_pvp_history', { p_limit: 20 })
+        if (error) {
+          console.error('[pvp/history]', error.message)
+          return
+        }
+        const entries = (data as MatchHistoryEntry[] | null) ?? []
+        setHistory(entries)
+      } catch {
+        // Non-fatal
+      } finally {
+        setHistoryLoading(false)
+      }
+    }
+
+    void loadHistory()
+  }, [session?.user?.id])
 
   // Elapsed time counter while queued
   useEffect(() => {
@@ -299,6 +325,77 @@ export function PvPPage() {
           <div className="text-2xl font-bold text-[var(--theme-warning)]">{elo.peakRating}</div>
           <div className="text-xs text-[var(--theme-muted-foreground)] mt-1">Peak Elo</div>
         </div>
+      </div>
+
+      {/* Match History */}
+      <div className="w-full max-w-md">
+        <div className="flex items-center gap-2 mb-4">
+          <History size={18} className="text-[var(--theme-muted-foreground)]" />
+          <h2 className="text-lg font-bold text-[var(--theme-foreground)]">Match History</h2>
+        </div>
+
+        {historyLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={24} className="animate-spin text-[var(--theme-muted-foreground)]" />
+          </div>
+        ) : history.length === 0 ? (
+          <div className="text-center py-8 text-sm text-[var(--theme-muted-foreground)] border border-[var(--theme-border)] rounded-xl">
+            No matches yet. Find a match to get started!
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {history.map(match => {
+              const won = match.winnerId === match.myId
+              const draw = match.winnerId === null
+              const eloDelta = (match.myEloAfter ?? match.myEloBefore) - match.myEloBefore
+
+              return (
+                <div
+                  key={match.matchId}
+                  className={`p-4 rounded-xl border bg-[var(--theme-background)] ${won ? 'border-[var(--theme-success)]/30' : draw ? 'border-[var(--theme-warning)]/30' : 'border-[var(--theme-error)]/30'}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-bold ${won ? 'text-[var(--theme-success)]' : draw ? 'text-[var(--theme-warning)]' : 'text-[var(--theme-error)]'}`}>
+                        {won ? 'W' : draw ? 'D' : 'L'}
+                      </span>
+                      <span className="text-sm text-[var(--theme-foreground)]">
+                        vs <span className="font-bold">{match.opponentUsername}</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-mono font-bold ${eloDelta >= 0 ? 'text-[var(--theme-success)]' : 'text-[var(--theme-error)]'}`}>
+                        {eloDelta >= 0 ? '+' : ''}{eloDelta}
+                      </span>
+                      {match.hasReplay && (
+                        <button
+                          onClick={() => navigate(`/pvp/replay/${match.matchId}`)}
+                          className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-[var(--theme-muted)] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] transition-colors"
+                          title="Watch Replay"
+                        >
+                          <Eye size={12} />
+                          Replay
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-[var(--theme-muted-foreground)]">
+                    <div className="flex items-center gap-3">
+                      {match.myTimeSeconds !== null && (
+                        <span className="font-mono">{match.myTimeSeconds.toFixed(1)}s</span>
+                      )}
+                      {match.myKeystrokes !== null && (
+                        <span className="font-mono">{match.myKeystrokes} keys</span>
+                      )}
+                      <span className="capitalize">{match.status}</span>
+                    </div>
+                    <span>{new Date(match.startedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
