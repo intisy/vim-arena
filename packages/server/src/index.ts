@@ -6,6 +6,7 @@ import { healthRouter } from './routes/health.js'
 import { statsRouter } from './routes/stats.js'
 import { challengesRouter } from './routes/challenges.js'
 import { matchmakingRouter } from './routes/matchmaking.js'
+import { raceRouter } from './routes/race.js'
 import { startMatchmaker } from './services/matchmaker.js'
 
 const app: Express = express()
@@ -25,6 +26,7 @@ app.use('/api', healthRouter)
 app.use('/api', authMiddleware, statsRouter)
 app.use('/api', authMiddleware, challengesRouter)
 app.use('/api', authMiddleware, matchmakingRouter)
+app.use('/api', authMiddleware, raceRouter)
 
 // Error handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
