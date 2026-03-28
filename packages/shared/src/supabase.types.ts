@@ -3,6 +3,8 @@
 // NOTE: All row types MUST be `type` aliases (not `interface`) so they satisfy
 // Record<string, unknown> required by @supabase/postgrest-js GenericTable.
 
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
 export type Profile = {
   id: string
   username: string
@@ -228,7 +230,29 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      join_matchmaking_queue: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      leave_matchmaking_queue: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      get_matchmaking_status: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      submit_race_result: {
+        Args: {
+          p_match_id: string
+          p_time_seconds?: number | null
+          p_keystroke_count?: number
+          p_completed?: boolean
+        }
+        Returns: Json
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

@@ -12,8 +12,6 @@ import type { PvpRaceConfig, RaceProgressMessage, RaceResultMessage } from '@vim
 import type { GeneratedChallenge } from '@/types/challenge'
 import type { EditorState } from '@/types/editor'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-
 type RacePhase = 'loading' | 'countdown' | 'racing' | 'finished'
 
 interface OpponentProgress {
@@ -193,7 +191,7 @@ export function PvPRace() {
 
   // Handle race completion (success or timeout)
   const handleRaceComplete = useCallback(async (timedOut = false) => {
-    if (completedRef.current || !session?.access_token || !matchId) return
+    if (completedRef.current || !matchId) return
     completedRef.current = true
 
     if (timerRef.current) clearInterval(timerRef.current)
@@ -201,32 +199,38 @@ export function PvPRace() {
     const timeSeconds = (Date.now() - startTimeRef.current) / 1000
 
     try {
-      const res = await fetch(`${API_BASE}/api/race/complete`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          matchId,
-          timeSeconds: timedOut ? null : timeSeconds,
-          keystrokeCount: keystrokes,
-          completed: !timedOut,
-        }),
+      const { data, error: rpcError } = await supabase.rpc('submit_race_result', {
+        p_match_id: matchId,
+        p_time_seconds: timedOut ? null : timeSeconds,
+        p_keystroke_count: keystrokes,
+        p_completed: !timedOut,
       })
 
-      if (res.ok) {
-        const data = await res.json()
-        if (data.result) {
-          setRaceResult(data.result)
-          setPhase('finished')
-        }
-        // If no result yet, opponent hasn't finished — wait for broadcast
+      if (rpcError) {
+        console.error('[race/complete rpc error]', rpcError.message)
+        return
       }
+
+      const result = data as { status: string; result?: RaceResultMessage } | null
+
+      if (result?.status === 'completed' && result.result) {
+        // Both players done — broadcast result to both via Realtime
+        const channel = supabase.channel(`race:${matchId}`)
+        await channel.send({
+          type: 'broadcast',
+          event: 'race_result',
+          payload: result.result,
+        })
+        supabase.removeChannel(channel)
+
+        setRaceResult(result.result)
+        setPhase('finished')
+      }
+      // If 'waiting_for_opponent', the other player's submit will finalize and broadcast
     } catch {
-      // If the request fails, we'll still get the result via Realtime
+      // If the request fails, we'll still get the result via Realtime from opponent
     }
-  }, [session?.access_token, matchId, keystrokes])
+  }, [matchId, keystrokes])
 
   // Editor state change handler — check for completion
   const handleEditorStateChange = useCallback((state: EditorState) => {

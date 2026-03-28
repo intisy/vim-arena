@@ -5,8 +5,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import type { MatchFoundMessage, PvpRaceConfig } from '@vim-arena/shared'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-
 type QueueState = 'idle' | 'joining' | 'queued' | 'matched' | 'error'
 
 export function PvPPage() {
@@ -32,7 +30,7 @@ export function PvPPage() {
     return () => clearInterval(interval)
   }, [queueState, queuedAt])
 
-  // Subscribe to Realtime for match_found
+  // Subscribe to Realtime for match_found (opponent's client broadcasts this)
   useEffect(() => {
     if (!session?.user?.id || queueState !== 'queued') return
 
@@ -54,24 +52,24 @@ export function PvPPage() {
     }
   }, [session?.user?.id, queueState])
 
-  // Poll for match as fallback (in case Realtime misses)
+  // Poll for match as fallback via RPC (in case Realtime misses)
   useEffect(() => {
-    if (queueState !== 'queued' || !session?.access_token) return
+    if (queueState !== 'queued') return
 
     const poll = setInterval(async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/matchmaking/status`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.match) {
-            setMatchConfig(data.match)
-            setQueueState('matched')
-          } else if (!data.inQueue) {
-            // We got removed from queue without a match (edge case)
-            setQueueState('idle')
-          }
+        const { data, error: rpcError } = await supabase.rpc('get_matchmaking_status')
+        if (rpcError) return
+
+        const result = data as { inQueue: boolean; match: PvpRaceConfig | null; justMatched: boolean } | null
+        if (!result) return
+
+        if (result.match) {
+          setMatchConfig(result.match)
+          setQueueState('matched')
+        } else if (!result.inQueue) {
+          // Removed from queue without a match (edge case)
+          setQueueState('idle')
         }
       } catch {
         // Polling failure is non-fatal
@@ -79,7 +77,7 @@ export function PvPPage() {
     }, 5000)
 
     return () => clearInterval(poll)
-  }, [queueState, session?.access_token])
+  }, [queueState])
 
   // Navigate to race screen after match found (brief delay for UX)
   useEffect(() => {
@@ -91,39 +89,59 @@ export function PvPPage() {
   }, [queueState, matchConfig, navigate])
 
   const joinQueue = useCallback(async () => {
-    if (!session?.access_token) return
+    if (!session?.user?.id) return
     setError(null)
     setQueueState('joining')
 
     try {
-      const res = await fetch(`${API_BASE}/api/matchmaking/queue`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      if (!res.ok) {
-        const body = await res.json()
-        throw new Error(body.error || 'Failed to join queue')
+      const { data, error: rpcError } = await supabase.rpc('join_matchmaking_queue')
+
+      if (rpcError) {
+        throw new Error(rpcError.message || 'Failed to join queue')
       }
-      setQueuedAt(Date.now())
-      setElapsed(0)
-      setQueueState('queued')
+
+      const result = data as { matched: boolean; config?: PvpRaceConfig & { opponentUserId?: string }; error?: string } | null
+      if (!result) throw new Error('Empty response from matchmaking')
+
+      if (result.error) {
+        throw new Error(result.error)
+      }
+
+      if (result.matched && result.config) {
+        // Instant match found — broadcast to opponent via Realtime
+        const opponentId = result.config.opponentUserId
+        if (opponentId) {
+          const message: MatchFoundMessage = {
+            type: 'match_found',
+            matchId: result.config.matchId,
+            config: result.config,
+          }
+          const ch = supabase.channel(`matchmaking:${opponentId}`)
+          await ch.send({
+            type: 'broadcast',
+            event: 'match_found',
+            payload: message,
+          })
+          supabase.removeChannel(ch)
+        }
+
+        setMatchConfig(result.config)
+        setQueueState('matched')
+      } else {
+        // No instant match — wait in queue
+        setQueuedAt(Date.now())
+        setElapsed(0)
+        setQueueState('queued')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join queue')
       setQueueState('error')
     }
-  }, [session?.access_token])
+  }, [session?.user?.id])
 
   const leaveQueue = useCallback(async () => {
-    if (!session?.access_token) return
-
     try {
-      await fetch(`${API_BASE}/api/matchmaking/queue`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      })
+      await supabase.rpc('leave_matchmaking_queue')
     } catch {
       // Best-effort
     }
@@ -131,19 +149,16 @@ export function PvPPage() {
     setQueueState('idle')
     setQueuedAt(null)
     setElapsed(0)
-  }, [session?.access_token])
+  }, [])
 
-  // Cleanup on unmount — leave queue
+  // Cleanup on unmount — leave queue (fire-and-forget, no .catch on PostgrestFilterBuilder)
   useEffect(() => {
     return () => {
-      if (queueState === 'queued' && session?.access_token) {
-        fetch(`${API_BASE}/api/matchmaking/queue`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        }).catch(() => {})
+      if (queueState === 'queued') {
+        void supabase.rpc('leave_matchmaking_queue')
       }
     }
-  }, [queueState, session?.access_token])
+  }, [queueState])
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60)
