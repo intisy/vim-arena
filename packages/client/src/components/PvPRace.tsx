@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { ChallengeGenerator, SeededRandom } from '@/engine/ChallengeGenerator'
 import { CHALLENGE_TEMPLATES } from '@/data/challenge-templates'
 import { ALL_SNIPPETS } from '@/data/snippets'
-import type { PvpRaceConfig, RaceProgressMessage, RaceResultMessage } from '@vim-arena/shared'
+import type { PvpRaceConfig, RaceProgressMessage, RaceResultMessage, ReplaySnapshot } from '@vim-arena/shared'
 import type { GeneratedChallenge } from '@/types/challenge'
 import type { EditorState } from '@/types/editor'
 
@@ -25,7 +25,16 @@ export function PvPRace() {
   const navigate = useNavigate()
   const { session } = useAuth()
 
-  const config = (location.state as { config?: PvpRaceConfig } | null)?.config ?? null
+  // Recover config from sessionStorage on refresh (location.state is lost)
+  const [config] = useState<PvpRaceConfig | null>(() => {
+    const fromState = (location.state as { config?: PvpRaceConfig } | null)?.config ?? null
+    if (fromState) {
+      sessionStorage.setItem(`pvp-config-${matchId}`, JSON.stringify(fromState))
+      return fromState
+    }
+    const saved = matchId ? sessionStorage.getItem(`pvp-config-${matchId}`) : null
+    return saved ? (JSON.parse(saved) as PvpRaceConfig) : null
+  })
   const userId = session?.user?.id
 
   const [phase, setPhase] = useState<RacePhase>('loading')
@@ -43,6 +52,9 @@ export function PvPRace() {
   const broadcastThrottleRef = useRef<number>(0)
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const completedRef = useRef(false)
+  const replaySnapshotsRef = useRef<ReplaySnapshot[]>([])
+  const lastSnapshotTimeRef = useRef<number>(0)
+  const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Determine who I am in the match
   const isPlayer1 = config ? userId === config.player1Id : false
@@ -147,6 +159,18 @@ export function PvPRace() {
         const msg = payload.payload as RaceResultMessage
         setRaceResult(msg)
         setPhase('finished')
+        // Stop retry polling — we got the result via Realtime
+        if (retryTimerRef.current) {
+          clearInterval(retryTimerRef.current)
+          retryTimerRef.current = null
+        }
+        // Submit replay data (fire-and-forget)
+        if (replaySnapshotsRef.current.length > 0 && matchId) {
+          void supabase.rpc('submit_replay_data', {
+            p_match_id: matchId,
+            p_replay_data: JSON.stringify(replaySnapshotsRef.current),
+          })
+        }
       })
       .subscribe()
 
@@ -155,6 +179,10 @@ export function PvPRace() {
     return () => {
       supabase.removeChannel(channel)
       channelRef.current = null
+      if (retryTimerRef.current) {
+        clearInterval(retryTimerRef.current)
+        retryTimerRef.current = null
+      }
     }
   }, [matchId, userId])
 
@@ -212,40 +240,63 @@ export function PvPRace() {
 
     const timeSeconds = (Date.now() - startTimeRef.current) / 1000
 
-    try {
-      const { data, error: rpcError } = await supabase.rpc('submit_race_result', {
-        p_match_id: matchId,
-        p_time_seconds: timedOut ? null : timeSeconds,
-        p_keystroke_count: keystrokes,
-        p_completed: !timedOut,
-      })
-
-      if (rpcError) {
-        console.error('[race/complete rpc error]', rpcError.message)
-        return
-      }
-
-      const result = data as { status: string; result?: RaceResultMessage } | null
-
-      if (result?.status === 'completed' && result.result) {
-        // Both players done — broadcast result to both via Realtime
-        const channel = supabase.channel(`race:${matchId}`)
-        await channel.send({
-          type: 'broadcast',
-          event: 'race_result',
-          payload: result.result,
+    const submitAndCheck = async () => {
+      try {
+        const { data, error: rpcError } = await supabase.rpc('submit_race_result', {
+          p_match_id: matchId,
+          p_time_seconds: timedOut ? null : timeSeconds,
+          p_keystroke_count: keystrokes,
+          p_completed: !timedOut,
         })
-        supabase.removeChannel(channel)
 
-        setRaceResult(result.result)
+        if (rpcError) {
+          console.error('[race/complete rpc error]', rpcError.message)
+          return false
+        }
+
+        const result = data as { status: string; result?: RaceResultMessage } | null
+
+        if (result?.status === 'completed' && result.result) {
+          // Both players done — broadcast result + submit replay
+          const channel = supabase.channel(`race:${matchId}`)
+          await channel.send({
+            type: 'broadcast',
+            event: 'race_result',
+            payload: result.result,
+          })
+          supabase.removeChannel(channel)
+
+          setRaceResult(result.result)
+
+          // Submit replay data (fire-and-forget)
+          if (replaySnapshotsRef.current.length > 0) {
+            void supabase.rpc('submit_replay_data', {
+              p_match_id: matchId,
+              p_replay_data: JSON.stringify(replaySnapshotsRef.current),
+            })
+          }
+          return true
+        }
+        return false // still waiting
+      } catch {
+        return false
       }
-      // If 'waiting_for_opponent', the other player's submit will finalize and broadcast
-    } catch {
-      // If the request fails, we'll still get the result via Realtime from opponent
     }
+
+    const completed = await submitAndCheck()
+    if (completed) return
+
+    // Start retry polling — handles opponent quit / auto-forfeit
+    retryTimerRef.current = setInterval(async () => {
+      const done = await submitAndCheck()
+      if (done && retryTimerRef.current) {
+        clearInterval(retryTimerRef.current)
+        retryTimerRef.current = null
+      }
+    }, 3000)
   }, [matchId, keystrokes])
 
-  // Editor state change handler — check for completion
+  // Editor state change handler — check for completion + record replay
   const handleEditorStateChange = useCallback((state: EditorState) => {
     if (phase !== 'racing' || !challenge || completedRef.current) return
 
@@ -253,8 +304,29 @@ export function PvPRace() {
     setCompletionPercent(pct)
     broadcastProgress(keystrokes, pct)
 
+    // Record replay snapshot every 500ms (content + cursor)
+    const now = Date.now()
+    if (now - lastSnapshotTimeRef.current >= 500 && startTimeRef.current > 0) {
+      lastSnapshotTimeRef.current = now
+      replaySnapshotsRef.current.push({
+        t: parseFloat(((now - startTimeRef.current) / 1000).toFixed(2)),
+        c: state.content,
+        l: state.cursorLine,
+        col: state.cursorColumn,
+      })
+    }
+
     // Check if challenge is complete
     if (state.content === challenge.expectedContent) {
+      // Record final snapshot
+      if (startTimeRef.current > 0) {
+        replaySnapshotsRef.current.push({
+          t: parseFloat(((Date.now() - startTimeRef.current) / 1000).toFixed(2)),
+          c: state.content,
+          l: state.cursorLine,
+          col: state.cursorColumn,
+        })
+      }
       handleRaceComplete(false)
     }
   }, [phase, challenge, keystrokes, calcCompletionPercent, broadcastProgress, handleRaceComplete])
