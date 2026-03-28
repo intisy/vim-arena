@@ -17,10 +17,13 @@
 5. Create another new query
 6. Copy the entire contents of `packages/server/supabase/migrations/002_serverless_rpc.sql` and paste it
 7. Click **Run** — this creates the 4 RPC functions for matchmaking and race finalization
+8. Create another new query
+9. Copy the entire contents of `packages/server/supabase/migrations/003_pvp_history_replays.sql` and paste it
+10. Click **Run** — this adds replay storage, match history RPCs, auto-forfeit logic, and stale match cleanup
 
 ### Verify
 
-After running both migrations, go to **Table Editor** in the sidebar. You should see these tables:
+After running all migrations, go to **Table Editor** in the sidebar. You should see these tables:
 - `profiles`
 - `solo_elo_history`
 - `lesson_progress`
@@ -35,6 +38,9 @@ Go to **Database → Functions** and verify these functions exist:
 - `leave_matchmaking_queue`
 - `get_matchmaking_status`
 - `submit_race_result`
+- `submit_replay_data`
+- `get_pvp_history`
+- `get_match_replay`
 
 ## 3. Configure OAuth Providers
 
