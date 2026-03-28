@@ -17,6 +17,7 @@ import {
   StatsPage,
   SettingsPage,
   NotFoundPage,
+  PvPPage,
 } from '@/router'
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
                   <Route path="lessons" element={<ProtectedRoute><Suspense fallback={null}><LessonsPage /></Suspense></ProtectedRoute>} />
                   <Route path="challenges" element={<ProtectedRoute><Suspense fallback={null}><ChallengesPage /></Suspense></ProtectedRoute>} />
                   <Route path="challenges/:challengeId" element={<ProtectedRoute><Suspense fallback={null}><ChallengeViewPage /></Suspense></ProtectedRoute>} />
+                  <Route path="pvp" element={<ProtectedRoute><Suspense fallback={null}><PvPPage /></Suspense></ProtectedRoute>} />
                   <Route path="stats" element={<ProtectedRoute><Suspense fallback={null}><StatsPage /></Suspense></ProtectedRoute>} />
                   <Route path="settings" element={<ProtectedRoute><Suspense fallback={null}><SettingsPage /></Suspense></ProtectedRoute>} />
                   <Route path="*" element={<Suspense fallback={null}><NotFoundPage /></Suspense>} />

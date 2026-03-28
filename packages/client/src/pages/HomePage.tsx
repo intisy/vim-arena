@@ -62,6 +62,7 @@ export function HomePage() {
 
     if (e.key === '1') { e.preventDefault(); navigate('/lessons') }
     else if (e.key === '2') { e.preventDefault(); navigate('/challenges') }
+    else if (e.key === '3') { e.preventDefault(); navigate('/pvp') }
   }, [navigate, user])
 
   useEffect(() => {
@@ -98,6 +99,13 @@ export function HomePage() {
                 Try Challenges
                 <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">2</kbd>
               </Link>
+              <Link
+                to="/pvp"
+                className="relative px-8 py-4 bg-[var(--theme-warning)] text-[var(--theme-background)] font-bold rounded-lg text-lg hover:opacity-90 transition-opacity shadow-[0_0_15px_var(--theme-warning)]"
+              >
+                PvP Arena
+                <kbd className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-mono bg-black/80 text-white rounded shadow">3</kbd>
+              </Link>
             </div>
           </section>
 
@@ -129,10 +137,7 @@ export function HomePage() {
               </Link>
             </div>
 
-            <div className="p-6 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-muted)] flex flex-col gap-4 relative overflow-hidden opacity-80">
-              <div className="absolute top-4 right-4 bg-[var(--theme-warning)] text-[var(--theme-background)] text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
-                Coming Soon
-              </div>
+            <div className="p-6 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col gap-4 hover:border-[var(--theme-warning)] transition-colors">
               <div className="w-12 h-12 rounded-lg bg-[var(--theme-warning)]/10 flex items-center justify-center">
                 <Swords size={28} className="text-[var(--theme-warning)]" />
               </div>
@@ -140,9 +145,9 @@ export function HomePage() {
               <p className="text-[var(--theme-muted-foreground)] flex-1">
                 Go head-to-head against other developers in real-time Vim battles.
               </p>
-              <span className="text-[var(--theme-muted-foreground)] font-bold mt-2 cursor-not-allowed flex items-center gap-1">
-                Join Waitlist <ArrowRight size={16} />
-              </span>
+              <Link to="/pvp" className="text-[var(--theme-warning)] font-bold hover:underline mt-2 flex items-center gap-1">
+                Enter Arena <ArrowRight size={16} />
+              </Link>
             </div>
           </section>
 

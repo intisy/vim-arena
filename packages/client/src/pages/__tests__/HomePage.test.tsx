@@ -40,8 +40,9 @@ describe('HomePage', () => {
     // Feature cards
     expect(screen.getByText('Lessons')).toBeInTheDocument()
     expect(screen.getByText('Challenges')).toBeInTheDocument()
-    expect(screen.getByText('PvP Arena')).toBeInTheDocument()
-    expect(screen.getByText('Coming Soon')).toBeInTheDocument()
+    // PvP Arena appears in both hero button and feature card
+    expect(screen.getAllByText('PvP Arena')).toHaveLength(2)
+    expect(screen.getByText('Enter Arena')).toBeInTheDocument()
     
     // Stats overview
     expect(screen.getByTestId('stats-overview')).toBeInTheDocument()
