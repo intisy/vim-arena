@@ -3,6 +3,8 @@ import express, { type Express } from 'express'
 import cors from 'cors'
 import { authMiddleware } from './middleware/auth.js'
 import { healthRouter } from './routes/health.js'
+import { statsRouter } from './routes/stats.js'
+import { challengesRouter } from './routes/challenges.js'
 
 const app: Express = express()
 const PORT = parseInt(process.env.PORT || '3001', 10)
@@ -18,7 +20,8 @@ app.use(express.json())
 app.use('/api', healthRouter)
 
 // Protected routes (require valid Supabase JWT)
-app.use('/api/protected', authMiddleware)
+app.use('/api', authMiddleware, statsRouter)
+app.use('/api', authMiddleware, challengesRouter)
 
 // Error handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
