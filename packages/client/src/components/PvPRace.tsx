@@ -67,9 +67,9 @@ export function PvPRace() {
   const myElo = config ? (isPlayer1 ? config.player1Elo : config.player2Elo) : 0
   const opponentElo = config ? (isPlayer1 ? config.player2Elo : config.player1Elo) : 0
 
-  // Generate challenge deterministically from seed
+  // Generate challenge deterministically from seed, then check if match is still active
   useEffect(() => {
-    if (!config) return
+    if (!config || !matchId) return
 
     const rng = new SeededRandom(config.challengeSeed)
     const gen = new ChallengeGenerator(CHALLENGE_TEMPLATES, ALL_SNIPPETS, rng)
@@ -79,14 +79,35 @@ export function PvPRace() {
     })
     setChallenge(ch)
 
-    // Skip countdown if we already counted down for this match (e.g. page refresh)
-    const key = `pvp-started-${config.matchId}`
-    if (sessionStorage.getItem(key)) {
-      setPhase('racing')
-    } else {
-      setPhase('countdown')
+    // Check DB to see if match is already finished before starting
+    const checkAndStart = async () => {
+      try {
+        const { data } = await supabase.rpc('get_match_replay', {
+          p_match_id: matchId,
+        })
+        const replayData = data as { status?: string; match?: { status?: string } } | null
+        if (replayData?.status === 'ok' && replayData.match?.status && replayData.match.status !== 'active') {
+          // Match already finished — clean up sessionStorage and redirect to replay
+          sessionStorage.removeItem(`pvp-config-${matchId}`)
+          sessionStorage.removeItem(`pvp-started-${config.matchId}`)
+          navigate(`/pvp/replay/${matchId}`, { replace: true })
+          return
+        }
+      } catch {
+        // If check fails (e.g. migration not applied), proceed normally
+      }
+
+      // Match is active or check unavailable — start normally
+      const key = `pvp-started-${config.matchId}`
+      if (sessionStorage.getItem(key)) {
+        setPhase('racing')
+      } else {
+        setPhase('countdown')
+      }
     }
-  }, [config])
+
+    void checkAndStart()
+  }, [config, matchId, navigate])
 
   // Countdown → racing
   useEffect(() => {
