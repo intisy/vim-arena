@@ -206,48 +206,66 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     id: 'delete-char',
     type: 'delete',
     title: 'Delete Character',
-    description: 'Delete the highlighted character',
+    description: 'Delete the extra character to fix the typo',
     difficulty: 1,
     requiredCommands: ['x'],
     timeLimitSeconds: 10,
     generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
       const rng = new SeededRandom(seed)
       const lines = snippet.content.split('\n')
-      const nonEmptyLines = lines
+
+      // Find lines with identifiers of 3+ chars where we can duplicate a character
+      const candidates = lines
         .map((l, i) => ({ line: l, index: i }))
-        .filter(({ line }) => line.trim().length > 0)
-      if (nonEmptyLines.length === 0) return null
+        .filter(({ line }) => /[a-zA-Z]{3,}/.test(line))
+      if (candidates.length === 0) return null
 
-      const chosen = nonEmptyLines[rng.nextInt(0, nonEmptyLines.length - 1)]
-      const trimStart = chosen.line.length - chosen.line.trimStart().length
-      const col = rng.nextInt(trimStart, chosen.line.length - 1)
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
 
-      const newLine = chosen.line.slice(0, col) + chosen.line.slice(col + 1)
-      const newLines = [...lines]
-      newLines[chosen.index] = newLine
+      // Find words with 3+ letters
+      const words: Array<{ start: number; end: number; text: string }> = []
+      const regex = /[a-zA-Z]{3,}/g
+      let match: RegExpExecArray | null
+      while ((match = regex.exec(chosen.line)) !== null) {
+        words.push({ start: match.index, end: match.index + match[0].length, text: match[0] })
+      }
+      if (words.length === 0) return null
 
-      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
+      const word = words[rng.nextInt(0, words.length - 1)]
+      // Pick a position within the word to duplicate a character
+      const charIdx = rng.nextInt(0, word.text.length - 1)
+      const dupChar = word.text[charIdx]
+      const insertCol = word.start + charIdx
+
+      // Create corrupted line with duplicated character
+      const corruptedLine = chosen.line.slice(0, insertCol) + dupChar + chosen.line.slice(insertCol)
+      const corruptedLines = [...lines]
+      corruptedLines[chosen.index] = corruptedLine
+
+      const corruptedWord = word.text.slice(0, charIdx) + dupChar + word.text.slice(charIdx)
+
+      const offset = pickOffsetCursor(rng, chosen.index, corruptedLines.length, corruptedLines)
       const actionSteps: SolutionStep[] = [{ keys: 'x', description: 'Delete character' }]
-      const solutions = computeSolutions(offset.line, offset.column, chosen.index, col, chosen.line, actionSteps)
+      const solutions = computeSolutions(offset.line, offset.column, chosen.index, insertCol, corruptedLine, actionSteps)
 
       return {
         templateId: this.id,
         snippetId: snippet.id,
-        initialContent: snippet.content,
+        initialContent: corruptedLines.join('\n'),
         initialCursor: offset,
-        targetCursor: { line: chosen.index, column: col },
-        expectedContent: newLines.join('\n'),
+        targetCursor: { line: chosen.index, column: insertCol },
+        expectedContent: snippet.content,
         referenceKeystrokeCount: solutions[0].totalKeystrokes,
-        description: `Remove the stray '${chosen.line[col]}' character from the code`,
+        description: `Remove the extra '${dupChar}' from '${corruptedWord}'`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
         optimalSolutions: solutions,
         targetHighlight: {
           fromLine: chosen.index,
-          fromCol: col,
+          fromCol: insertCol,
           toLine: chosen.index,
-          toCol: col + 1,
+          toCol: insertCol + 1,
         },
       }
     },
@@ -257,45 +275,65 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     id: 'replace-char',
     type: 'change',
     title: 'Replace Character',
-    description: 'Replace the highlighted character',
+    description: 'Fix the typo by replacing the wrong character',
     difficulty: 1,
     requiredCommands: ['r'],
     timeLimitSeconds: 10,
     generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
       const rng = new SeededRandom(seed)
       const lines = snippet.content.split('\n')
-      const nonEmptyLines = lines
+
+      // Find lines with identifiers of 3+ letters
+      const candidates = lines
         .map((l, i) => ({ line: l, index: i }))
-        .filter(({ line }) => line.trim().length > 0)
-      if (nonEmptyLines.length === 0) return null
+        .filter(({ line }) => /[a-zA-Z]{3,}/.test(line))
+      if (candidates.length === 0) return null
 
-      const chosen = nonEmptyLines[rng.nextInt(0, nonEmptyLines.length - 1)]
-      const trimStart = chosen.line.length - chosen.line.trimStart().length
-      const col = rng.nextInt(trimStart, chosen.line.length - 1)
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
 
-      const replacements = 'abcdefghijklmnopqrstuvwxyz0123456789'
-      let replacement = replacements[rng.nextInt(0, replacements.length - 1)]
-      if (replacement === chosen.line[col]) {
-        replacement = replacement === 'z' ? 'a' : String.fromCharCode(replacement.charCodeAt(0) + 1)
+      const words: Array<{ start: number; end: number; text: string }> = []
+      const regex = /[a-zA-Z]{3,}/g
+      let match: RegExpExecArray | null
+      while ((match = regex.exec(chosen.line)) !== null) {
+        words.push({ start: match.index, end: match.index + match[0].length, text: match[0] })
       }
+      if (words.length === 0) return null
 
-      const newLine = chosen.line.slice(0, col) + replacement + chosen.line.slice(col + 1)
-      const newLines = [...lines]
-      newLines[chosen.index] = newLine
+      const word = words[rng.nextInt(0, words.length - 1)]
+      const charIdx = rng.nextInt(0, word.text.length - 1)
+      const originalChar = word.text[charIdx]
+      const col = word.start + charIdx
 
-      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
-      const actionSteps: SolutionStep[] = [{ keys: `r${replacement}`, description: `Replace with '${replacement}'` }]
-      const solutions = computeSolutions(offset.line, offset.column, chosen.index, col, chosen.line, actionSteps)
+      // Pick a different letter as the "typo"
+      const isUpper = originalChar === originalChar.toUpperCase() && originalChar !== originalChar.toLowerCase()
+      const base = originalChar.toLowerCase()
+      const letters = 'abcdefghijklmnopqrstuvwxyz'
+      let typoChar: string
+      do {
+        typoChar = letters[rng.nextInt(0, letters.length - 1)]
+      } while (typoChar === base)
+      if (isUpper) typoChar = typoChar.toUpperCase()
+
+      // Create corrupted line with the typo character
+      const corruptedLine = chosen.line.slice(0, col) + typoChar + chosen.line.slice(col + 1)
+      const corruptedLines = [...lines]
+      corruptedLines[chosen.index] = corruptedLine
+
+      const corruptedWord = word.text.slice(0, charIdx) + typoChar + word.text.slice(charIdx + 1)
+
+      const offset = pickOffsetCursor(rng, chosen.index, corruptedLines.length, corruptedLines)
+      const actionSteps: SolutionStep[] = [{ keys: `r${originalChar}`, description: `Replace with '${originalChar}'` }]
+      const solutions = computeSolutions(offset.line, offset.column, chosen.index, col, corruptedLine, actionSteps)
 
       return {
         templateId: this.id,
         snippetId: snippet.id,
-        initialContent: snippet.content,
+        initialContent: corruptedLines.join('\n'),
         initialCursor: offset,
         targetCursor: { line: chosen.index, column: col },
-        expectedContent: newLines.join('\n'),
+        expectedContent: snippet.content,
         referenceKeystrokeCount: solutions[0].totalKeystrokes,
-        description: `Fix the typo: replace '${chosen.line[col]}' with '${replacement}'`,
+        description: `Fix the typo in '${corruptedWord}': replace '${typoChar}' with '${originalChar}'`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,
@@ -354,7 +392,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
         targetCursor: { line: chosen.index, column: col },
         expectedContent: newLines.join('\n'),
         referenceKeystrokeCount: solutions[0].totalKeystrokes,
-        description: `Remove the unnecessary '${deletedWord}' token`,
+        description: `Delete the word '${deletedWord}'`,
         timeLimit: this.timeLimitSeconds,
         difficulty: this.difficulty,
         requiredCommands: this.requiredCommands,

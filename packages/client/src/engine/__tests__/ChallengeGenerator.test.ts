@@ -199,7 +199,9 @@ describe('Challenge Templates', () => {
     const challenge = template.generateChallenge(testSnippet, 42)
     expect(challenge).not.toBeNull()
     expect(challenge!.templateId).toBe('delete-char')
-    expect(challenge!.expectedContent.length).toBe(testSnippet.content.length - 1)
+    // Corrupted input has 1 extra char; expected content is the original snippet
+    expect(challenge!.expectedContent).toBe(testSnippet.content)
+    expect(challenge!.initialContent.length).toBe(testSnippet.content.length + 1)
   })
 
   test('replace-char template generates valid challenge', () => {
@@ -207,8 +209,10 @@ describe('Challenge Templates', () => {
     const challenge = template.generateChallenge(testSnippet, 42)
     expect(challenge).not.toBeNull()
     expect(challenge!.templateId).toBe('replace-char')
-    // Content length stays the same for replace
-    expect(challenge!.expectedContent.length).toBe(testSnippet.content.length)
+    // Corrupted input has a wrong letter; expected content is the original snippet
+    expect(challenge!.expectedContent).toBe(testSnippet.content)
+    expect(challenge!.initialContent.length).toBe(testSnippet.content.length)
+    expect(challenge!.initialContent).not.toBe(testSnippet.content)
   })
 
   test('delete-word template generates valid challenge', () => {

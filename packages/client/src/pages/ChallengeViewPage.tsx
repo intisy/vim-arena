@@ -7,7 +7,7 @@ import { VimEditor } from '@/components/VimEditor'
 import type { VimEditorRef } from '@/components/VimEditor'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
 import { buildPracticeKeys } from '@/engine/KeyFilter'
-import { Target, GraduationCap, ArrowRight, LogIn } from 'lucide-react'
+import { Target, GraduationCap, ArrowRight, LogIn, Pause, Play } from 'lucide-react'
 import type { TargetRange } from '@/types/editor'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -34,6 +34,7 @@ export default function ChallengeViewPage() {
     practiceMode,
     isRetry,
     togglePracticeMode,
+    togglePause,
     startChallenge,
     retry,
     nextChallenge,
@@ -92,6 +93,16 @@ export default function ChallengeViewPage() {
     return () => window.removeEventListener('keydown', handler)
   }, [phase, togglePracticeMode])
 
+  // Escape to pause/resume during active phase (practice mode only)
+  useEffect(() => {
+    if (phase !== 'active' && phase !== 'paused') return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); togglePause() }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [phase, togglePause])
+
   const allowedKeys = useMemo(() => {
     if (!practiceMode || !challenge?.optimalSolutions) return undefined
     return buildPracticeKeys(challenge.optimalSolutions)
@@ -123,7 +134,7 @@ export default function ChallengeViewPage() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 h-full flex flex-col relative">
-      {!user && phase !== 'active' && phase !== 'countdown' && (
+      {!user && phase !== 'active' && phase !== 'countdown' && phase !== 'paused' && (
         <div className="mb-4 px-4 py-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-muted)] flex items-center gap-3">
           <LogIn size={18} className="text-[var(--theme-primary)] shrink-0" />
           <p className="text-sm text-[var(--theme-muted-foreground)] flex-1">
@@ -149,11 +160,25 @@ export default function ChallengeViewPage() {
           </p>
         </div>
         <div className="flex items-center gap-4">
+          {practiceMode && (phase === 'active' || phase === 'paused') && (
+            <button
+              onClick={togglePause}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border ${
+                phase === 'paused'
+                  ? 'bg-blue-900/50 text-blue-400 border-blue-700'
+                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200 hover:border-gray-500'
+              }`}
+            >
+              {phase === 'paused' ? <Play size={14} /> : <Pause size={14} />}
+              {phase === 'paused' ? 'Resume' : 'Pause'}
+              <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-1">Esc</kbd>
+            </button>
+          )}
           <button
             onClick={togglePracticeMode}
-            disabled={phase === 'active' || phase === 'countdown'}
+            disabled={phase === 'active' || phase === 'countdown' || phase === 'paused'}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border ${
-              phase === 'active' || phase === 'countdown'
+              phase === 'active' || phase === 'countdown' || phase === 'paused'
                 ? 'bg-gray-800/50 text-gray-600 border-gray-800 cursor-not-allowed'
                 : practiceMode
                   ? 'bg-amber-900/50 text-amber-400 border-amber-700'
@@ -172,7 +197,7 @@ export default function ChallengeViewPage() {
         </div>
       </div>
 
-      {practiceMode && equalSolutions.length > 0 && (
+      {practiceMode && equalSolutions.length > 0 && phase !== 'countdown' && (
         <div className="mb-4 bg-amber-900/20 border border-amber-800/50 rounded-lg px-4 py-3 space-y-3">
           {equalSolutions.map((sol, si) => (
             <div key={si}>
@@ -229,6 +254,16 @@ export default function ChallengeViewPage() {
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl z-10">
             <div className="text-9xl font-black text-white animate-bounce drop-shadow-[0_0_30px_rgba(0,255,65,0.5)]">
               {countdown > 0 ? countdown : 'GO!'}
+            </div>
+          </div>
+        )}
+
+        {phase === 'paused' && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm rounded-xl z-10">
+            <div className="flex flex-col items-center gap-4">
+              <Pause size={64} className="text-blue-400" />
+              <h2 className="text-4xl font-bold text-white">Paused</h2>
+              <p className="text-gray-400">Press <kbd className="bg-gray-700 px-2 py-1 rounded font-mono text-sm text-white">Esc</kbd> to resume</p>
             </div>
           </div>
         )}

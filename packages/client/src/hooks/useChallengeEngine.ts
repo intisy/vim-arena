@@ -10,7 +10,7 @@ import { getDifficultyWeights, getTimeMultiplier } from '@/engine/EloRating'
 import type { GeneratedChallenge, ChallengeResult } from '@/types/challenge'
 import type { EditorState } from '@/types/editor'
 
-export type ChallengePhase = 'idle' | 'countdown' | 'active' | 'complete'
+export type ChallengePhase = 'idle' | 'countdown' | 'active' | 'paused' | 'complete'
 
 export function useChallengeEngine(initialPracticeMode = false) {
   const [challenge, setChallenge] = useState<GeneratedChallenge | null>(null)
@@ -61,6 +61,17 @@ export function useChallengeEngine(initialPracticeMode = false) {
       practiceModeRef.current = next
       return next
     })
+  }, [phase])
+
+  const togglePause = useCallback(() => {
+    if (!practiceModeRef.current || !engineRef.current) return
+    if (phase === 'active') {
+      engineRef.current.pause()
+      setPhase('paused')
+    } else if (phase === 'paused') {
+      engineRef.current.resume()
+      setPhase('active')
+    }
   }, [phase])
 
   const launchChallenge = useCallback((ch: GeneratedChallenge, retrying: boolean) => {
@@ -173,6 +184,7 @@ export function useChallengeEngine(initialPracticeMode = false) {
     practiceMode,
     isRetry,
     togglePracticeMode,
+    togglePause,
     startChallenge,
     retry,
     nextChallenge,

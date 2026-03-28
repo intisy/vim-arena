@@ -7,6 +7,8 @@ export class ChallengeEngine {
   private startTime: number = 0
   private keystrokeCount: number = 0
   private isActive: boolean = false
+  private isPaused: boolean = false
+  private accumulatedTime: number = 0
   private timerInterval: ReturnType<typeof setInterval> | null = null
   private onTick?: (elapsed: number) => void
 
@@ -19,6 +21,8 @@ export class ChallengeEngine {
     if (this.isActive) return
     this.startTime = Date.now()
     this.isActive = true
+    this.isPaused = false
+    this.accumulatedTime = 0
     this.keystrokeCount = 0
     if (this.onTick) {
       this.timerInterval = setInterval(() => {
@@ -27,14 +31,40 @@ export class ChallengeEngine {
     }
   }
 
+  pause(): void {
+    if (!this.isActive || this.isPaused) return
+    this.accumulatedTime += (Date.now() - this.startTime) / 1000
+    this.isPaused = true
+    if (this.timerInterval !== null) {
+      clearInterval(this.timerInterval)
+      this.timerInterval = null
+    }
+  }
+
+  resume(): void {
+    if (!this.isActive || !this.isPaused) return
+    this.isPaused = false
+    this.startTime = Date.now()
+    if (this.onTick) {
+      this.timerInterval = setInterval(() => {
+        this.onTick?.(this.getElapsedSeconds())
+      }, 100)
+    }
+  }
+
+  getIsPaused(): boolean {
+    return this.isPaused
+  }
+
   recordKeystroke(): void {
-    if (!this.isActive) return
+    if (!this.isActive || this.isPaused) return
     this.keystrokeCount++
   }
 
   getElapsedSeconds(): number {
-    if (!this.isActive || this.startTime === 0) return 0
-    return (Date.now() - this.startTime) / 1000
+    if (!this.isActive || this.startTime === 0) return this.accumulatedTime
+    if (this.isPaused) return this.accumulatedTime
+    return this.accumulatedTime + (Date.now() - this.startTime) / 1000
   }
 
   getKeystrokeCount(): number {
@@ -50,7 +80,7 @@ export class ChallengeEngine {
   }
 
   validateCompletion(currentState: EditorState): ChallengeResult | null {
-    if (!this.isActive) return null
+    if (!this.isActive || this.isPaused) return null
     const ch = this.challenge
     if (currentState.content !== ch.expectedContent) return null
     return this._buildResult(false)
@@ -101,6 +131,8 @@ export class ChallengeEngine {
     this.startTime = 0
     this.keystrokeCount = 0
     this.isActive = false
+    this.isPaused = false
+    this.accumulatedTime = 0
   }
 
   destroy(): void {
