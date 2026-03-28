@@ -1,47 +1,120 @@
-import { useState, useCallback } from 'react'
-import { storageProvider } from '@/storage/LocalStorageProvider'
-import { STORAGE_KEYS } from '@/storage/keys'
+import { useCallback } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import type { ChallengeStats } from '@/types/stats'
 import type { ChallengeResult } from '@/types/challenge'
 
 type StatsMap = Record<string, ChallengeStats>
 
+const QUERY_KEY = ['challenge-stats']
+
+async function fetchStats(userId: string): Promise<StatsMap> {
+  const { data: statsRows, error: statsError } = await supabase
+    .from('challenge_stats')
+    .select('*')
+    .eq('user_id', userId)
+  if (statsError) throw statsError
+
+  const { data: resultsRows, error: resultsError } = await supabase
+    .from('challenge_results')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(200)
+  if (resultsError) throw resultsError
+
+  const map: StatsMap = {}
+  for (const row of statsRows ?? []) {
+    const recentResults: ChallengeResult[] = (resultsRows ?? [])
+      .filter(r => r.template_id === row.template_id)
+      .slice(0, 20)
+      .map(r => ({
+        templateId: r.template_id,
+        snippetId: r.snippet_id,
+        completedAt: new Date(r.created_at).getTime(),
+        timeSeconds: r.time_seconds,
+        keystrokeCount: r.keystroke_count,
+        referenceKeystrokeCount: r.reference_keystroke_count,
+        efficiencyScore: r.efficiency_score,
+        speedScore: r.speed_score,
+        totalScore: r.total_score,
+        timedOut: r.timed_out,
+      }))
+
+    map[row.template_id] = {
+      templateId: row.template_id,
+      attempts: row.attempts,
+      bestScore: row.best_score,
+      bestTimeSeconds: row.best_time_seconds,
+      averageEfficiency: row.average_efficiency,
+      recentResults,
+    }
+  }
+  return map
+}
+
 export function useChallengeStats() {
-  const [stats, setStats] = useState<StatsMap>(() => {
-    return storageProvider.get<StatsMap>(STORAGE_KEYS.CHALLENGE_STATS) ?? {}
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const userId = user?.id
+
+  const { data: stats = {}, isLoading } = useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: () => fetchStats(userId!),
+    enabled: !!userId,
+  })
+
+  const recordMutation = useMutation({
+    mutationFn: async (result: ChallengeResult) => {
+      if (!userId) throw new Error('Not authenticated')
+
+      // Insert challenge result
+      const { error: resultError } = await supabase
+        .from('challenge_results')
+        .insert({
+          user_id: userId,
+          template_id: result.templateId,
+          snippet_id: result.snippetId,
+          time_seconds: result.timeSeconds,
+          keystroke_count: result.keystrokeCount,
+          reference_keystroke_count: result.referenceKeystrokeCount,
+          efficiency_score: result.efficiencyScore,
+          speed_score: result.speedScore,
+          total_score: result.totalScore,
+          timed_out: result.timedOut,
+        })
+      if (resultError) throw resultError
+
+      // Upsert challenge stats
+      const existing = stats[result.templateId]
+      const newAttempts = (existing?.attempts ?? 0) + 1
+      const newBestScore = Math.max(existing?.bestScore ?? 0, result.totalScore)
+      const bestTime = existing?.bestTimeSeconds ?? result.timeSeconds
+      const newBestTime = Math.min(bestTime, result.timeSeconds)
+
+      // Compute average efficiency from recent results
+      const recentEfficiencies = [...(existing?.recentResults ?? []).map(r => r.efficiencyScore), result.efficiencyScore].slice(0, 20)
+      const avgEfficiency = Math.round(recentEfficiencies.reduce((s, e) => s + e, 0) / recentEfficiencies.length)
+
+      const { error: statsError } = await supabase
+        .from('challenge_stats')
+        .upsert({
+          user_id: userId,
+          template_id: result.templateId,
+          attempts: newAttempts,
+          best_score: newBestScore,
+          best_time_seconds: newBestTime,
+          average_efficiency: avgEfficiency,
+        }, { onConflict: 'user_id,template_id' })
+      if (statsError) throw statsError
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   })
 
   const recordResult = useCallback((result: ChallengeResult) => {
-    setStats(prev => {
-      const existing: ChallengeStats = prev[result.templateId] ?? {
-        templateId: result.templateId,
-        attempts: 0,
-        bestScore: 0,
-        bestTimeSeconds: Infinity,
-        averageEfficiency: 0,
-        recentResults: [],
-      }
-      const newResults = [result, ...existing.recentResults].slice(0, 20)
-      const avgEfficiency =
-        newResults.reduce((sum, r) => sum + r.efficiencyScore, 0) / newResults.length
-      const updated: StatsMap = {
-        ...prev,
-        [result.templateId]: {
-          ...existing,
-          attempts: existing.attempts + 1,
-          bestScore: Math.max(existing.bestScore, result.totalScore),
-          bestTimeSeconds: Math.min(
-            existing.bestTimeSeconds === Infinity ? result.timeSeconds : existing.bestTimeSeconds,
-            result.timeSeconds,
-          ),
-          averageEfficiency: Math.round(avgEfficiency),
-          recentResults: newResults,
-        },
-      }
-      storageProvider.set(STORAGE_KEYS.CHALLENGE_STATS, updated)
-      return updated
-    })
-  }, [])
+    recordMutation.mutate(result)
+  }, [recordMutation])
 
   const getStats = useCallback(
     (templateId: string): ChallengeStats | null => {
@@ -57,5 +130,5 @@ export function useChallengeStats() {
     [stats],
   )
 
-  return { stats, recordResult, getStats, getBestScore }
+  return { stats, recordResult, getStats, getBestScore, isLoading }
 }
