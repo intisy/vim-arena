@@ -1,16 +1,25 @@
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { Suspense, useState, useRef, useEffect } from 'react'
-import { BookOpen, Zap, Swords, Settings, BarChart3 } from 'lucide-react'
+import { BookOpen, Zap, Swords, Settings, BarChart3, LogOut, Menu, X } from 'lucide-react'
 import { Avatar } from '@/components/Avatar'
+import { useAuth } from '@/contexts/AuthContext'
 
 const NAV_LINKS = [
   { to: '/lessons', label: 'Lessons', icon: BookOpen, end: false, hint: 'g l' },
   { to: '/challenges', label: 'Challenges', icon: Zap, end: false, hint: 'g c' },
+  { to: '/pvp', label: 'PvP Arena', icon: Swords, end: false, hint: 'g p' },
+]
+
+const PROFILE_LINKS = [
+  { to: '/stats', label: 'Stats', icon: BarChart3, hint: 'g t' },
+  { to: '/settings', label: 'Settings', icon: Settings, hint: 'g s' },
 ]
 
 export function MainLayout() {
   const [avatarOpen, setAvatarOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const { user, signOut } = useAuth()
 
   useEffect(() => {
     if (!avatarOpen) return
@@ -23,175 +32,157 @@ export function MainLayout() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [avatarOpen])
 
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <nav
-        aria-label="Main navigation"
-        style={{
-          width: '220px',
-          flexShrink: 0,
-          borderRight: '1px solid var(--theme-border, #333)',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '1.5rem 1rem',
-          gap: '0.5rem',
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          overflowY: 'auto',
-        }}
-      >
-        <Link
-          to="/"
-          style={{
-            marginBottom: '2rem',
-            fontFamily: 'monospace',
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            textDecoration: 'none',
-            color: 'var(--theme-foreground, #ccc)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
-          vim-arena <Swords size={20} color="var(--theme-accent, #ff79c6)" />
-        </Link>
+  // Close mobile nav on route change
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [])
 
+  const sidebarContent = (
+    <>
+      {/* Logo */}
+      <Link
+        to="/"
+        className="flex items-center gap-2 px-3 py-2 mb-6 text-[var(--theme-foreground)] hover:text-[var(--theme-primary)] transition-colors"
+        onClick={() => setMobileOpen(false)}
+      >
+        <Swords size={22} className="text-[var(--theme-accent)]" />
+        <span className="text-lg font-bold tracking-tight">vim-arena</span>
+      </Link>
+
+      {/* Section label */}
+      <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">
+        Train
+      </div>
+
+      {/* Nav links */}
+      <div className="flex flex-col gap-1 mb-6">
         {NAV_LINKS.map(({ to, label, icon: Icon, end, hint }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              textDecoration: 'none',
-              fontFamily: 'monospace',
-              color: isActive ? 'var(--theme-primary, #00ff41)' : 'var(--theme-foreground, #ccc)',
-              backgroundColor: isActive ? 'var(--theme-muted, #0d1f0d)' : 'transparent',
-              fontWeight: isActive ? 'bold' : 'normal',
-            })}
+            onClick={() => setMobileOpen(false)}
+            className={({ isActive }) =>
+              `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                isActive
+                  ? 'bg-[var(--theme-primary)]/10 text-[var(--theme-primary)] shadow-sm'
+                  : 'text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)]'
+              }`
+            }
           >
-            <Icon size={16} />
-            <span style={{ flex: 1 }}>{label}</span>
-            <kbd style={{
-              fontSize: '10px',
-              fontFamily: 'monospace',
-              padding: '1px 5px',
-              borderRadius: '3px',
-              backgroundColor: 'rgba(0,0,0,0.4)',
-              color: 'var(--theme-muted-foreground, #666)',
-              border: '1px solid var(--theme-border, #333)',
-            }}>{hint}</kbd>
+            <Icon size={18} />
+            <span className="flex-1">{label}</span>
+            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--theme-background)] border border-[var(--theme-border)] text-[var(--theme-muted-foreground)] opacity-50 group-hover:opacity-100 transition-opacity">
+              {hint}
+            </kbd>
           </NavLink>
         ))}
+      </div>
 
-        <div style={{ flex: 1 }} />
+      {/* Spacer */}
+      <div className="flex-1" />
 
-        <div ref={dropdownRef} style={{ position: 'relative' }}>
-          <button
-            onClick={() => setAvatarOpen(prev => !prev)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              border: 'none',
-              background: avatarOpen ? 'var(--theme-muted, #0d1f0d)' : 'transparent',
-              cursor: 'pointer',
-              width: '100%',
-              fontFamily: 'monospace',
-              fontSize: '0.85rem',
-              color: 'var(--theme-foreground, #ccc)',
-            }}
-          >
-            <Avatar seed="vim-arena-user" size={5} pixelSize={6} />
-            <span>Profile</span>
-          </button>
-
-          {avatarOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '100%',
-                left: 0,
-                right: 0,
-                marginBottom: '4px',
-                background: 'var(--theme-background, #0d1117)',
-                border: '1px solid var(--theme-border, #333)',
-                borderRadius: '6px',
-                overflow: 'hidden',
-                zIndex: 50,
-              }}
+      {/* Profile section */}
+      <div className="border-t border-[var(--theme-border)] pt-3 mt-3">
+        {user ? (
+          <div ref={dropdownRef} className="relative">
+            <button
+              onClick={() => setAvatarOpen(prev => !prev)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                avatarOpen
+                  ? 'bg-[var(--theme-muted)] text-[var(--theme-foreground)]'
+                  : 'text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)]'
+              }`}
             >
-              <NavLink
-                to="/stats"
-                onClick={() => setAvatarOpen(false)}
-                style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.5rem 0.75rem',
-                  textDecoration: 'none',
-                  fontFamily: 'monospace',
-                  fontSize: '0.85rem',
-                  color: isActive ? 'var(--theme-primary, #00ff41)' : 'var(--theme-foreground, #ccc)',
-                  backgroundColor: isActive ? 'var(--theme-muted, #0d1f0d)' : 'transparent',
-                })}
-              >
-                <BarChart3 size={14} />
-                <span style={{ flex: 1 }}>Stats</span>
-                <kbd style={{
-                  fontSize: '10px',
-                  fontFamily: 'monospace',
-                  padding: '1px 5px',
-                  borderRadius: '3px',
-                  backgroundColor: 'rgba(0,0,0,0.4)',
-                  color: 'var(--theme-muted-foreground, #666)',
-                  border: '1px solid var(--theme-border, #333)',
-                }}>g t</kbd>
-              </NavLink>
-              <NavLink
-                to="/settings"
-                onClick={() => setAvatarOpen(false)}
-                style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.5rem 0.75rem',
-                  textDecoration: 'none',
-                  fontFamily: 'monospace',
-                  fontSize: '0.85rem',
-                  color: isActive ? 'var(--theme-primary, #00ff41)' : 'var(--theme-foreground, #ccc)',
-                  backgroundColor: isActive ? 'var(--theme-muted, #0d1f0d)' : 'transparent',
-                })}
-              >
-                <Settings size={14} />
-                <span style={{ flex: 1 }}>Settings</span>
-                <kbd style={{
-                  fontSize: '10px',
-                  fontFamily: 'monospace',
-                  padding: '1px 5px',
-                  borderRadius: '3px',
-                  backgroundColor: 'rgba(0,0,0,0.4)',
-                  color: 'var(--theme-muted-foreground, #666)',
-                  border: '1px solid var(--theme-border, #333)',
-                }}>g s</kbd>
-              </NavLink>
-            </div>
-          )}
-        </div>
+              <Avatar seed="vim-arena-user" size={5} pixelSize={6} />
+              <span className="flex-1 text-left truncate">{user.email?.split('@')[0] ?? 'Profile'}</span>
+            </button>
+
+            {avatarOpen && (
+              <div className="absolute bottom-full left-0 right-0 mb-1 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-background)] shadow-lg shadow-black/20 overflow-hidden z-50">
+                {PROFILE_LINKS.map(({ to, label, icon: Icon, hint }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    onClick={() => { setAvatarOpen(false); setMobileOpen(false) }}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'text-[var(--theme-primary)] bg-[var(--theme-muted)]'
+                          : 'text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)]'
+                      }`
+                    }
+                  >
+                    <Icon size={16} />
+                    <span className="flex-1">{label}</span>
+                    <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--theme-background)] border border-[var(--theme-border)] text-[var(--theme-muted-foreground)]">
+                      {hint}
+                    </kbd>
+                  </NavLink>
+                ))}
+                <button
+                  onClick={() => { signOut(); setAvatarOpen(false); setMobileOpen(false) }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-[var(--theme-error)] hover:bg-[var(--theme-muted)] transition-colors border-t border-[var(--theme-border)]"
+                >
+                  <LogOut size={16} />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Link
+            to="/"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--theme-primary)] hover:bg-[var(--theme-muted)] transition-colors"
+          >
+            <Avatar seed="guest" size={5} pixelSize={6} />
+            <span>Sign In</span>
+          </Link>
+        )}
+      </div>
+    </>
+  )
+
+  return (
+    <div className="flex min-h-screen bg-[var(--theme-background)]">
+      {/* Mobile menu button */}
+      <button
+        onClick={() => setMobileOpen(prev => !prev)}
+        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-[var(--theme-muted)] border border-[var(--theme-border)] text-[var(--theme-foreground)]"
+      >
+        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <nav
+        aria-label="Main navigation"
+        className={`fixed lg:sticky top-0 left-0 h-screen w-[240px] flex-shrink-0 flex flex-col p-4 border-r border-[var(--theme-border)] bg-[var(--theme-background)] z-40 overflow-y-auto transition-transform duration-200 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        {sidebarContent}
       </nav>
 
-      <main style={{ flex: 1, overflow: 'auto', padding: '2rem' }}>
-        <Suspense fallback={<div style={{ fontFamily: 'monospace' }}>Loading...</div>}>
-          <Outlet />
-        </Suspense>
+      {/* Main content */}
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-[1200px] mx-auto p-6 lg:p-8">
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-64 text-[var(--theme-muted-foreground)] font-mono animate-pulse">
+              Loading...
+            </div>
+          }>
+            <Outlet />
+          </Suspense>
+        </div>
       </main>
     </div>
   )

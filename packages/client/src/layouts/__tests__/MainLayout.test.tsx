@@ -1,6 +1,19 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { MainLayout } from '@/layouts/MainLayout'
+import { vi } from 'vitest'
+
+// Mock useAuth since MainLayout uses it
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'test-user-id', email: 'test@test.com' },
+    session: null,
+    loading: false,
+    signInWithGitHub: vi.fn(),
+    signInWithGoogle: vi.fn(),
+    signOut: vi.fn(),
+  }),
+}))
 
 function renderWithRouter(initialPath: string = '/') {
   return render(
@@ -23,7 +36,6 @@ describe('MainLayout', () => {
     const nav = screen.getByRole('navigation', { name: /main navigation/i })
     expect(within(nav).getByText(/lessons/i)).toBeInTheDocument()
     expect(within(nav).getByText(/challenges/i)).toBeInTheDocument()
-    expect(within(nav).getByText(/profile/i)).toBeInTheDocument()
   })
 
   test('renders the vim-arena logo/title as home link', () => {
