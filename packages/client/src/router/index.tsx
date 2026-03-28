@@ -9,6 +9,7 @@ const StatsPage = lazy(() => import('@/pages/StatsPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 const PvPPage = lazy(() => import('@/pages/PvPPage'))
+const PvPRace = lazy(() => import('@/components/PvPRace'))
 
 export {
   HomePage,
@@ -20,4 +21,5 @@ export {
   SettingsPage,
   NotFoundPage,
   PvPPage,
+  PvPRace,
 }

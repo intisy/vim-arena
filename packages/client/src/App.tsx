@@ -18,6 +18,7 @@ import {
   SettingsPage,
   NotFoundPage,
   PvPPage,
+  PvPRace,
 } from '@/router'
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
                   <Route path="challenges" element={<ProtectedRoute><Suspense fallback={null}><ChallengesPage /></Suspense></ProtectedRoute>} />
                   <Route path="challenges/:challengeId" element={<ProtectedRoute><Suspense fallback={null}><ChallengeViewPage /></Suspense></ProtectedRoute>} />
                   <Route path="pvp" element={<ProtectedRoute><Suspense fallback={null}><PvPPage /></Suspense></ProtectedRoute>} />
+                  <Route path="pvp/race/:matchId" element={<ProtectedRoute><Suspense fallback={null}><PvPRace /></Suspense></ProtectedRoute>} />
                   <Route path="stats" element={<ProtectedRoute><Suspense fallback={null}><StatsPage /></Suspense></ProtectedRoute>} />
                   <Route path="settings" element={<ProtectedRoute><Suspense fallback={null}><SettingsPage /></Suspense></ProtectedRoute>} />
                   <Route path="*" element={<Suspense fallback={null}><NotFoundPage /></Suspense>} />
