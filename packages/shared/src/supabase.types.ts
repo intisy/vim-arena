@@ -252,6 +252,25 @@ export type Database = {
         }
         Returns: Json
       }
+      submit_replay_data: {
+        Args: {
+          p_match_id: string
+          p_replay_data: string
+        }
+        Returns: Json
+      }
+      get_pvp_history: {
+        Args: {
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      get_match_replay: {
+        Args: {
+          p_match_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

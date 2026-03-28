@@ -84,6 +84,70 @@ export type PvpRealtimeMessage =
   | RaceResultMessage
   | MatchFoundMessage
 
+// Replay snapshot — recorded periodically during a race
+export interface ReplaySnapshot {
+  /** Seconds since race start */
+  t: number
+  /** Editor content at this moment */
+  c: string
+  /** Cursor line (0-based) */
+  l: number
+  /** Cursor column (0-based) */
+  col: number
+}
+
+// Match history entry returned by get_pvp_history RPC
+export interface MatchHistoryEntry {
+  matchId: string
+  status: 'completed' | 'forfeit' | 'timeout'
+  winnerId: string | null
+  startedAt: string
+  finishedAt: string | null
+  challengeTemplateId: string
+  challengeDifficulty: number
+  myId: string
+  myUsername: string
+  opponentId: string
+  opponentUsername: string
+  myTimeSeconds: number | null
+  myKeystrokes: number | null
+  myCompleted: boolean
+  myEloBefore: number
+  myEloAfter: number | null
+  opponentTimeSeconds: number | null
+  opponentKeystrokes: number | null
+  opponentCompleted: boolean
+  opponentEloBefore: number
+  opponentEloAfter: number | null
+  hasReplay: boolean
+}
+
+// Full replay data returned by get_match_replay RPC
+export interface MatchReplayPlayer {
+  id: string
+  username: string
+  timeSeconds: number | null
+  keystrokeCount: number | null
+  completed: boolean
+  eloBefore: number
+  eloAfter: number | null
+  replay: ReplaySnapshot[] | null
+}
+
+export interface MatchReplayData {
+  matchId: string
+  status: 'completed' | 'forfeit' | 'timeout'
+  winnerId: string | null
+  challengeSeed: number
+  challengeTemplateId: string
+  challengeDifficulty: 1 | 2 | 3 | 4 | 5
+  timeLimit: number
+  startedAt: string
+  finishedAt: string | null
+  player1: MatchReplayPlayer
+  player2: MatchReplayPlayer
+}
+
 // PvP Elo calculation (2-player, symmetric)
 const PVP_K_FACTOR = 32
 const PVP_MIN_RATING = 100
