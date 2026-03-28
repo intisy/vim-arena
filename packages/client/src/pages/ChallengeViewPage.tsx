@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo, useCallback } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useChallengeEngine } from '@/hooks/useChallengeEngine'
 import { ChallengeTimer } from '@/components/ChallengeTimer'
 import { ChallengeResults } from '@/components/ChallengeResults'
@@ -7,8 +7,9 @@ import { VimEditor } from '@/components/VimEditor'
 import type { VimEditorRef } from '@/components/VimEditor'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
 import { buildPracticeKeys } from '@/engine/KeyFilter'
-import { Target, GraduationCap, ArrowRight } from 'lucide-react'
+import { Target, GraduationCap, ArrowRight, LogIn } from 'lucide-react'
 import type { TargetRange } from '@/types/editor'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function ChallengeViewPage() {
   useEffect(() => {
@@ -17,6 +18,7 @@ export default function ChallengeViewPage() {
 
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const difficulty = location.state?.difficulty || 1
   const initialPracticeMode = location.state?.practiceMode ?? false
   const editorRef = useRef<VimEditorRef>(null)
@@ -121,6 +123,15 @@ export default function ChallengeViewPage() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 h-full flex flex-col relative">
+      {!user && phase !== 'active' && phase !== 'countdown' && (
+        <div className="mb-4 px-4 py-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-muted)] flex items-center gap-3">
+          <LogIn size={18} className="text-[var(--theme-primary)] shrink-0" />
+          <p className="text-sm text-[var(--theme-muted-foreground)] flex-1">
+            <Link to="/" className="text-[var(--theme-primary)] font-bold hover:underline">Sign in</Link> to save your scores and track your Elo rating.
+          </p>
+        </div>
+      )}
+
       <div className="flex justify-between items-start mb-6 bg-gray-800/50 p-6 rounded-xl border border-gray-700">
         <div className="flex-1 pr-8">
           <div className="flex items-center gap-3 mb-2">

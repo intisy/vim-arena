@@ -33,8 +33,8 @@ function App() {
                 <Route element={<MainLayout />}>
                   <Route index element={<Suspense fallback={null}><HomePage /></Suspense>} />
                   <Route path="lessons" element={<ProtectedRoute><Suspense fallback={null}><LessonsPage /></Suspense></ProtectedRoute>} />
-                  <Route path="challenges" element={<ProtectedRoute><Suspense fallback={null}><ChallengesPage /></Suspense></ProtectedRoute>} />
-                  <Route path="challenges/:challengeId" element={<ProtectedRoute><Suspense fallback={null}><ChallengeViewPage /></Suspense></ProtectedRoute>} />
+                  <Route path="challenges" element={<Suspense fallback={null}><ChallengesPage /></Suspense>} />
+                  <Route path="challenges/:challengeId" element={<Suspense fallback={null}><ChallengeViewPage /></Suspense>} />
                   <Route path="pvp" element={<ProtectedRoute><Suspense fallback={null}><PvPPage /></Suspense></ProtectedRoute>} />
                   <Route path="pvp/race/:matchId" element={<ProtectedRoute><Suspense fallback={null}><PvPRace /></Suspense></ProtectedRoute>} />
                   <Route path="stats" element={<ProtectedRoute><Suspense fallback={null}><StatsPage /></Suspense></ProtectedRoute>} />

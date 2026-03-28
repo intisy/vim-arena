@@ -51,7 +51,7 @@ export function useEloRating() {
 
   const recordMutation = useMutation({
     mutationFn: async ({ difficulty, score, timedOut }: { difficulty: 1 | 2 | 3 | 4 | 5; score: number; timedOut: boolean }) => {
-      if (!userId) throw new Error('Not authenticated')
+      if (!userId) return // silently skip when not authenticated
       const updated = updateElo(elo, difficulty, score, timedOut)
 
       // Update profile
@@ -78,7 +78,9 @@ export function useEloRating() {
         })
       if (histError) throw histError
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+    onSuccess: () => {
+      if (userId) queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+    },
   })
 
   const recordChallengeResult = useCallback(
@@ -94,7 +96,7 @@ export function useEloRating() {
 
   const resetMutation = useMutation({
     mutationFn: async () => {
-      if (!userId) throw new Error('Not authenticated')
+      if (!userId) return // silently skip when not authenticated
       const initial = createInitialElo()
       const { error } = await supabase
         .from('profiles')
@@ -115,7 +117,9 @@ export function useEloRating() {
         .eq('user_id', userId)
       if (histError) throw histError
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+    onSuccess: () => {
+      if (userId) queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+    },
   })
 
   const resetElo = useCallback(() => {

@@ -31,6 +31,14 @@ export function useChallengeEngine(initialPracticeMode = false) {
   const { recordResult } = useChallengeStats()
   const { recordChallengeResult: recordElo, elo } = useEloRating()
 
+  // Stabilize callback refs so launchChallenge/startChallenge never change identity
+  const recordResultRef = useRef(recordResult)
+  recordResultRef.current = recordResult
+  const recordEloRef = useRef(recordElo)
+  recordEloRef.current = recordElo
+  const eloRatingRef = useRef(elo.rating)
+  eloRatingRef.current = elo.rating
+
   const cleanup = useCallback(() => {
     if (countdownIntervalRef.current) {
       clearInterval(countdownIntervalRef.current)
@@ -86,8 +94,8 @@ export function useChallengeEngine(initialPracticeMode = false) {
             setPhase('complete')
             if (!practiceModeRef.current && !isRetryRef.current) {
               try {
-                recordResult(res)
-                recordElo(ch.difficulty, res.totalScore, true)
+                recordResultRef.current(res)
+                recordEloRef.current(ch.difficulty, res.totalScore, true)
               } catch (_) { /* storage errors should not break UI */ }
             }
           }
@@ -97,7 +105,7 @@ export function useChallengeEngine(initialPracticeMode = false) {
         setPhase('active')
       }
     }, 1000)
-  }, [cleanup, recordResult, recordElo])
+  }, [cleanup])
 
   const startChallenge = useCallback((diff: 1 | 2 | 3 | 4 | 5) => {
     setDifficulty(diff)
@@ -109,7 +117,8 @@ export function useChallengeEngine(initialPracticeMode = false) {
     const proceduralSnippets = proceduralGen.generateBatch(8)
     const allSnippets = [...ALL_SNIPPETS, ...proceduralSnippets]
 
-    const weights = getDifficultyWeights(elo.rating)
+    const rating = eloRatingRef.current
+    const weights = getDifficultyWeights(rating)
     const generator = new ChallengeGenerator(CHALLENGE_TEMPLATES, allSnippets, rng)
     const newChallenge = generator.generate({
       weights,
@@ -117,7 +126,7 @@ export function useChallengeEngine(initialPracticeMode = false) {
     })
     
     launchChallenge(newChallenge, false)
-  }, [launchChallenge, elo.rating])
+  }, [launchChallenge])
 
   const retry = useCallback(() => {
     if (lastChallengeRef.current) {
@@ -140,12 +149,12 @@ export function useChallengeEngine(initialPracticeMode = false) {
       setPhase('complete')
       if (!practiceModeRef.current && !isRetryRef.current) {
         try {
-          recordResult(res)
-          recordElo(difficulty, res.totalScore, false)
+          recordResultRef.current(res)
+          recordEloRef.current(difficulty, res.totalScore, false)
         } catch (_) { /* storage errors should not break UI */ }
       }
     }
-  }, [phase, recordResult, recordElo, difficulty])
+  }, [phase, difficulty])
 
   const handleKeystroke = useCallback(() => {
     if (phase !== 'active' || !engineRef.current) return

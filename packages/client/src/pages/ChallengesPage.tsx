@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useEloRating } from '@/hooks/useEloRating'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
 import { getRatingLabel, getRatingColor } from '@/engine/EloRating'
-import { Target, GraduationCap, Star } from 'lucide-react'
+import { Target, GraduationCap, Star, LogIn } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 const DIFFICULTY_LABELS: Record<number, { label: string; desc: string }> = {
   1: { label: 'Beginner', desc: 'delete/replace single characters' },
@@ -19,6 +20,7 @@ export default function ChallengesPage() {
   }, [])
 
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { elo, getMatchedDifficulty, resetElo } = useEloRating()
   const { stats } = useChallengeStats()
   const [practiceMode, setPracticeMode] = useState(false)
@@ -58,6 +60,15 @@ export default function ChallengesPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-8">
+      {!user && (
+        <div className="mb-6 px-4 py-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-muted)] flex items-center gap-3">
+          <LogIn size={18} className="text-[var(--theme-primary)] shrink-0" />
+          <p className="text-sm text-[var(--theme-muted-foreground)] flex-1">
+            <Link to="/" className="text-[var(--theme-primary)] font-bold hover:underline">Sign in</Link> to save your progress, track Elo rating, and compete on leaderboards.
+          </p>
+        </div>
+      )}
+
       <h1 className="text-4xl font-bold text-white mb-4">Vim Challenges</h1>
       <p className="text-gray-400 mb-12 text-lg">
         Test your vim skills against the clock. Difficulty adapts to your skill level.
@@ -142,7 +153,7 @@ export default function ChallengesPage() {
             <kbd className="text-sm bg-green-700 px-2 py-0.5 rounded font-mono">Enter</kbd>
           </button>
 
-          {elo.gamesPlayed > 0 && (
+          {user && elo.gamesPlayed > 0 && (
             <button
               onClick={resetElo}
               className="w-full mt-3 py-2 text-sm text-gray-500 hover:text-gray-300 transition-colors flex items-center justify-center gap-2"

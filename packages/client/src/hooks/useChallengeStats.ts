@@ -67,7 +67,7 @@ export function useChallengeStats() {
 
   const recordMutation = useMutation({
     mutationFn: async (result: ChallengeResult) => {
-      if (!userId) throw new Error('Not authenticated')
+      if (!userId) return // silently skip when not authenticated
 
       // Insert challenge result
       const { error: resultError } = await supabase
@@ -109,7 +109,9 @@ export function useChallengeStats() {
         }, { onConflict: 'user_id,template_id' })
       if (statsError) throw statsError
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+    onSuccess: () => {
+      if (userId) queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+    },
   })
 
   const recordResult = useCallback((result: ChallengeResult) => {
