@@ -21,18 +21,17 @@ function pickOffsetCursor(
   rng: SeededRandom,
   targetLine: number,
   totalLines: number,
-  lines: string[],
+  _lines: string[],
 ): { line: number; column: number } {
   if (totalLines <= 2) {
     const offsetLine = targetLine === 0 ? 1 : 0
-    const lineLen = lines[offsetLine]?.length ?? 0
-    const col = lineLen > 1 ? rng.nextInt(0, lineLen - 1) : 0
-    return { line: offsetLine, column: col }
+    // Always start at column 0 so solutions use word motions (w/f) not raw counting (14l)
+    return { line: offsetLine, column: 0 }
   }
 
-  const minDist = Math.min(2, Math.max(1, Math.floor(totalLines / 4)))
-  const maxDist = Math.min(6, Math.floor(totalLines / 2))
-  const dist = rng.nextInt(minDist, maxDist)
+  // Keep distance small (1-3 lines) so solutions stay realistic
+  const maxDist = Math.min(3, Math.max(1, Math.floor(totalLines / 3)))
+  const dist = rng.nextInt(1, maxDist)
 
   let offsetLine: number
   if (targetLine - dist >= 0 && targetLine + dist < totalLines) {
@@ -48,10 +47,8 @@ function pickOffsetCursor(
     offsetLine = targetLine === 0 ? 1 : targetLine - 1
   }
 
-  const lineLen = lines[offsetLine]?.length ?? 0
-  const col = lineLen > 1 ? rng.nextInt(0, lineLen - 1) : 0
-
-  return { line: offsetLine, column: col }
+  // Always start at column 0 - navigation uses w/f/^ instead of raw l-counts
+  return { line: offsetLine, column: 0 }
 }
 
 function countStepKeys(step: SolutionStep): number {

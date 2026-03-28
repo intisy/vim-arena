@@ -21,7 +21,7 @@ export default function ChallengesPage() {
 
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { elo, getMatchedDifficulty, resetElo } = useEloRating()
+  const { elo, getMatchedDifficulty } = useEloRating()
   const { stats } = useChallengeStats()
   const [practiceMode, setPracticeMode] = useState(false)
 
@@ -47,7 +47,6 @@ export default function ChallengesPage() {
 
       if (e.key === 'Enter') { e.preventDefault(); handleStart() }
       else if (e.key === 'p') { e.preventDefault(); handleTogglePractice() }
-      else if (e.key === 'Backspace' && e.ctrlKey) { e.preventDefault(); resetElo() }
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -152,16 +151,6 @@ export default function ChallengesPage() {
             Start Challenge
             <kbd className="text-sm bg-green-700 px-2 py-0.5 rounded font-mono">Enter</kbd>
           </button>
-
-          {user && elo.gamesPlayed > 0 && (
-            <button
-              onClick={resetElo}
-              className="w-full mt-3 py-2 text-sm text-gray-500 hover:text-gray-300 transition-colors flex items-center justify-center gap-2"
-            >
-              Reset Rating
-              <kbd className="text-xs bg-gray-700 px-1.5 py-0.5 rounded font-mono">Ctrl+⌫</kbd>
-            </button>
-          )}
         </div>
 
         <div>

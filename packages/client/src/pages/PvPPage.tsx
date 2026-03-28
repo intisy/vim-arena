@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Swords, Loader2, X, Clock, Zap } from 'lucide-react'
+import { Swords, Loader2, X, Clock, Zap, Trophy } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { useEloRating } from '@/hooks/useEloRating'
 import type { MatchFoundMessage, PvpRaceConfig } from '@vim-arena/shared'
 
 type QueueState = 'idle' | 'joining' | 'queued' | 'matched' | 'error'
@@ -10,6 +11,7 @@ type QueueState = 'idle' | 'joining' | 'queued' | 'matched' | 'error'
 export function PvPPage() {
   const { session } = useAuth()
   const navigate = useNavigate()
+  const { elo } = useEloRating()
   const [queueState, setQueueState] = useState<QueueState>('idle')
   const [error, setError] = useState<string | null>(null)
   const [queuedAt, setQueuedAt] = useState<number | null>(null)
@@ -181,6 +183,24 @@ export function PvPPage() {
         </p>
       </div>
 
+      {/* Your Rating Card */}
+      <div className="w-full max-w-md p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-muted)] flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Trophy size={20} className="text-[var(--theme-warning)]" />
+          <span className="font-bold text-[var(--theme-foreground)]">Your Rating</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-2xl font-black font-mono text-[var(--theme-warning)]">{elo.rating}</div>
+          </div>
+          <div className="text-xs text-[var(--theme-muted-foreground)] text-right leading-tight">
+            <div>{elo.gamesPlayed} games</div>
+            <div className="text-[var(--theme-success)]">{elo.wins}W</div>
+            <div className="text-[var(--theme-error)]">{elo.losses}L</div>
+          </div>
+        </div>
+      </div>
+
       {/* Queue Card */}
       <div className="w-full max-w-md p-8 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center gap-6">
         {queueState === 'idle' && (
@@ -276,8 +296,8 @@ export function PvPPage() {
           <div className="text-xs text-[var(--theme-muted-foreground)] mt-1">Head to Head</div>
         </div>
         <div className="p-4 rounded-lg border border-[var(--theme-border)]">
-          <div className="text-2xl font-bold text-[var(--theme-warning)]">Elo</div>
-          <div className="text-xs text-[var(--theme-muted-foreground)] mt-1">Ranked</div>
+          <div className="text-2xl font-bold text-[var(--theme-warning)]">{elo.peakRating}</div>
+          <div className="text-xs text-[var(--theme-muted-foreground)] mt-1">Peak Elo</div>
         </div>
       </div>
     </div>

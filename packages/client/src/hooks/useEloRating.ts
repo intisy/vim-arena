@@ -94,37 +94,5 @@ export function useEloRating() {
     return ratingToDifficulty(elo.rating)
   }, [elo.rating])
 
-  const resetMutation = useMutation({
-    mutationFn: async () => {
-      if (!userId) return // silently skip when not authenticated
-      const initial = createInitialElo()
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          solo_elo: initial.rating,
-          solo_peak_elo: initial.peakRating,
-          solo_games_played: initial.gamesPlayed,
-          solo_wins: initial.wins,
-          solo_losses: initial.losses,
-        })
-        .eq('id', userId)
-      if (error) throw error
-
-      // Clear history
-      const { error: histError } = await supabase
-        .from('solo_elo_history')
-        .delete()
-        .eq('user_id', userId)
-      if (histError) throw histError
-    },
-    onSuccess: () => {
-      if (userId) queryClient.invalidateQueries({ queryKey: QUERY_KEY })
-    },
-  })
-
-  const resetElo = useCallback(() => {
-    resetMutation.mutate()
-  }, [resetMutation])
-
-  return { elo, recordChallengeResult, getMatchedDifficulty, resetElo, isLoading }
+  return { elo, recordChallengeResult, getMatchedDifficulty, isLoading }
 }

@@ -66,7 +66,14 @@ export function PvPRace() {
       difficulty: config.challengeDifficulty,
     })
     setChallenge(ch)
-    setPhase('countdown')
+
+    // Skip countdown if we already counted down for this match (e.g. page refresh)
+    const key = `pvp-started-${config.matchId}`
+    if (sessionStorage.getItem(key)) {
+      setPhase('racing')
+    } else {
+      setPhase('countdown')
+    }
   }, [config])
 
   // Countdown → racing
@@ -78,6 +85,10 @@ export function PvPRace() {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(interval)
+          // Mark countdown as done so refresh skips it
+          if (config?.matchId) {
+            sessionStorage.setItem(`pvp-started-${config.matchId}`, '1')
+          }
           setPhase('racing')
           return 0
         }
@@ -86,7 +97,7 @@ export function PvPRace() {
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [phase])
+  }, [phase, config?.matchId])
 
   // Start timer when racing begins
   useEffect(() => {
@@ -196,6 +207,9 @@ export function PvPRace() {
 
     if (timerRef.current) clearInterval(timerRef.current)
 
+    // Immediately show "waiting for results" overlay
+    setPhase('finished')
+
     const timeSeconds = (Date.now() - startTimeRef.current) / 1000
 
     try {
@@ -224,7 +238,6 @@ export function PvPRace() {
         supabase.removeChannel(channel)
 
         setRaceResult(result.result)
-        setPhase('finished')
       }
       // If 'waiting_for_opponent', the other player's submit will finalize and broadcast
     } catch {

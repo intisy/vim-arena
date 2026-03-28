@@ -1,49 +1,31 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
-import { storageProvider } from '@/storage/LocalStorageProvider'
 
 export function SettingsPage() {
   const { theme, setTheme, themes } = useTheme()
-  const [resetMessage, setResetMessage] = useState<string | null>(null)
 
   useEffect(() => {
     document.title = 'Settings | vim-arena'
   }, [])
 
-  const handleReset = useCallback(() => {
-    if (window.confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
-      storageProvider.clear()
-      setResetMessage('Progress has been reset. Reloading...')
-      setTimeout(() => {
-        window.location.reload()
-      }, 1500)
-    }
-  }, [])
-
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (
-      document.activeElement?.tagName === 'INPUT' ||
-      document.activeElement?.tagName === 'TEXTAREA'
-    ) return
-
-    // Number keys 1-N select themes
-    const num = parseInt(e.key, 10)
-    if (num >= 1 && num <= themes.length) {
-      e.preventDefault()
-      setTheme(themes[num - 1].className)
-      return
-    }
-
-    if (e.key === 'Backspace' && e.ctrlKey) {
-      e.preventDefault()
-      handleReset()
-    }
-  }, [themes, setTheme, handleReset])
-
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA'
+      ) return
+
+      // Number keys 1-N select themes
+      const num = parseInt(e.key, 10)
+      if (num >= 1 && num <= themes.length) {
+        e.preventDefault()
+        setTheme(themes[num - 1].className)
+      }
+    }
+
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleKeyDown])
+  }, [themes, setTheme])
 
   return (
     <div className="max-w-4xl mx-auto py-8 flex flex-col gap-12">
@@ -113,32 +95,6 @@ export function SettingsPage() {
             )
           })}
         </div>
-      </section>
-
-      <section>
-        <h2 className="text-2xl font-bold text-[var(--theme-error)] mb-6 border-b border-[var(--theme-border)] pb-2">
-          Danger Zone
-        </h2>
-        <div className="p-6 rounded-xl border border-[var(--theme-error)] bg-[var(--theme-background)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-bold text-[var(--theme-foreground)]">Reset Progress</h3>
-            <p className="text-[var(--theme-muted-foreground)]">
-              Permanently delete all lesson progress, challenge stats, and history.
-            </p>
-          </div>
-          <button
-            onClick={handleReset}
-            className="px-6 py-3 bg-[var(--theme-error)] text-white font-bold rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap flex items-center gap-2"
-          >
-            Reset All Data
-            <kbd className="text-xs bg-red-900 px-1.5 py-0.5 rounded font-mono">Ctrl+⌫</kbd>
-          </button>
-        </div>
-        {resetMessage && (
-          <div className="mt-4 p-4 rounded bg-[var(--theme-success)] text-[var(--theme-background)] font-bold text-center">
-            {resetMessage}
-          </div>
-        )}
       </section>
     </div>
   )
