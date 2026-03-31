@@ -271,6 +271,27 @@ export type Database = {
         }
         Returns: Json
       }
+      submit_solo_result: {
+        Args: {
+          p_template_id: string
+          p_snippet_id: string
+          p_time_seconds: number
+          p_keystroke_count: number
+          p_reference_keystroke_count: number
+          p_difficulty: number
+          p_timed_out: boolean
+          p_time_limit: number
+          p_is_practice?: boolean
+          p_is_retry?: boolean
+        }
+        Returns: Json
+      }
+      record_lesson_completed: {
+        Args: {
+          p_lesson_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
