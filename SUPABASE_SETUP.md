@@ -20,6 +20,9 @@
 8. Create another new query
 9. Copy the entire contents of `packages/server/supabase/migrations/003_pvp_history_replays.sql` and paste it
 10. Click **Run** — this adds replay storage, match history RPCs, auto-forfeit logic, and stale match cleanup
+11. Create another new query
+12. Copy the entire contents of `packages/server/supabase/migrations/004_security_hardening.sql` and paste it
+13. Click **Run** — this moves all scoring server-side, adds server-side PvP timing, locks down direct table writes on competitive data, and adds a profile guard trigger
 
 ### Verify
 
@@ -41,6 +44,14 @@ Go to **Database → Functions** and verify these functions exist:
 - `submit_replay_data`
 - `get_pvp_history`
 - `get_match_replay`
+- `submit_solo_result`
+- `record_lesson_completed`
+- `solo_calc_efficiency`
+- `solo_calc_speed_score`
+- `solo_calc_total_score`
+- `solo_difficulty_to_rating`
+- `solo_expected_score`
+- `guard_profile_competitive_fields`
 
 ## 3. Configure OAuth Providers
 
