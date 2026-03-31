@@ -1,11 +1,11 @@
 import { useCallback } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { EloRating } from '@/types/stats'
-import { createInitialElo, updateElo, ratingToDifficulty } from '@/engine/EloRating'
+import { createInitialElo, ratingToDifficulty, getDifficultyWeights, getTimeMultiplier } from '@/engine/EloRating'
 
-const QUERY_KEY = ['elo-rating']
+export const ELO_QUERY_KEY = ['elo-rating']
 
 async function fetchElo(userId: string): Promise<EloRating> {
   const { data: profile, error } = await supabase
@@ -38,61 +38,20 @@ async function fetchElo(userId: string): Promise<EloRating> {
   }
 }
 
+// Read-only hook — all elo writes go through submit_solo_result RPC (called by useChallengeEngine)
 export function useEloRating() {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
   const userId = user?.id
 
   const { data: elo = createInitialElo(), isLoading } = useQuery({
-    queryKey: QUERY_KEY,
+    queryKey: ELO_QUERY_KEY,
     queryFn: () => fetchElo(userId!),
     enabled: !!userId,
   })
-
-  const recordMutation = useMutation({
-    mutationFn: async ({ difficulty, score, timedOut }: { difficulty: 1 | 2 | 3 | 4 | 5; score: number; timedOut: boolean }) => {
-      if (!userId) return // silently skip when not authenticated
-      const updated = updateElo(elo, difficulty, score, timedOut)
-
-      // Update profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          solo_elo: updated.rating,
-          solo_peak_elo: updated.peakRating,
-          solo_games_played: updated.gamesPlayed,
-          solo_wins: updated.wins,
-          solo_losses: updated.losses,
-        })
-        .eq('id', userId)
-      if (profileError) throw profileError
-
-      // Insert history entry
-      const { error: histError } = await supabase
-        .from('solo_elo_history')
-        .insert({
-          user_id: userId,
-          rating: updated.rating,
-          difficulty,
-          score,
-        })
-      if (histError) throw histError
-    },
-    onSuccess: () => {
-      if (userId) queryClient.invalidateQueries({ queryKey: QUERY_KEY })
-    },
-  })
-
-  const recordChallengeResult = useCallback(
-    (difficulty: 1 | 2 | 3 | 4 | 5, score: number, timedOut: boolean) => {
-      recordMutation.mutate({ difficulty, score, timedOut })
-    },
-    [recordMutation],
-  )
 
   const getMatchedDifficulty = useCallback((): 1 | 2 | 3 | 4 | 5 => {
     return ratingToDifficulty(elo.rating)
   }, [elo.rating])
 
-  return { elo, recordChallengeResult, getMatchedDifficulty, isLoading }
+  return { elo, getMatchedDifficulty, getDifficultyWeights, getTimeMultiplier, isLoading }
 }
