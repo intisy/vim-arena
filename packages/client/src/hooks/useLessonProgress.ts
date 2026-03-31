@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { USER_STATS_QUERY_KEY } from '@/hooks/useUserStats'
 import type { LessonProgress } from '@/types/stats'
 
 type ProgressMap = Record<string, LessonProgress>
@@ -40,39 +41,19 @@ export function useLessonProgress() {
     enabled: !!userId,
   })
 
+  // Use server-side RPC to mark lesson complete (handles lesson_progress + user_stats atomically)
   const markCompleteMutation = useMutation({
     mutationFn: async (lessonId: string) => {
       if (!userId) throw new Error('Not authenticated')
-      const { error } = await supabase
-        .from('lesson_progress')
-        .upsert({
-          user_id: userId,
-          lesson_id: lessonId,
-          completed: true,
-          completed_at: new Date().toISOString(),
-          attempts: (progress[lessonId]?.attempts ?? 0) + 1,
-          steps_completed: progress[lessonId]?.stepsCompleted ?? 0,
-        }, { onConflict: 'user_id,lesson_id' })
+      const { error } = await supabase.rpc('record_lesson_completed', {
+        p_lesson_id: lessonId,
+      })
       if (error) throw error
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
-  })
-
-  const incrementAttemptMutation = useMutation({
-    mutationFn: async (lessonId: string) => {
-      if (!userId) throw new Error('Not authenticated')
-      const { error } = await supabase
-        .from('lesson_progress')
-        .upsert({
-          user_id: userId,
-          lesson_id: lessonId,
-          completed: progress[lessonId]?.completed ?? false,
-          attempts: (progress[lessonId]?.attempts ?? 0) + 1,
-          steps_completed: progress[lessonId]?.stepsCompleted ?? 0,
-        }, { onConflict: 'user_id,lesson_id' })
-      if (error) throw error
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: USER_STATS_QUERY_KEY })
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   })
 
   const getLessonProgress = useCallback((lessonId: string): LessonProgress | null => {
@@ -83,15 +64,11 @@ export function useLessonProgress() {
     markCompleteMutation.mutate(lessonId)
   }, [markCompleteMutation])
 
-  const incrementAttempt = useCallback((lessonId: string) => {
-    incrementAttemptMutation.mutate(lessonId)
-  }, [incrementAttemptMutation])
-
   const isCompleted = useCallback((lessonId: string): boolean => {
     return progress[lessonId]?.completed ?? false
   }, [progress])
 
   const completedCount = Object.values(progress).filter(p => p.completed).length
 
-  return { progress, getLessonProgress, markLessonComplete, incrementAttempt, isCompleted, completedCount, isLoading }
+  return { progress, getLessonProgress, markLessonComplete, isCompleted, completedCount, isLoading }
 }

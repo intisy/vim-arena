@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { ChallengeEngine } from '@/engine/ChallengeEngine'
 import { ChallengeGenerator, SeededRandom } from '@/engine/ChallengeGenerator'
 import { ProceduralSnippetGenerator } from '@/engine/ProceduralSnippetGenerator'
 import { CHALLENGE_TEMPLATES } from '@/data/challenge-templates'
 import { ALL_SNIPPETS } from '@/data/snippets'
-import { useChallengeStats } from '@/hooks/useChallengeStats'
-import { useEloRating } from '@/hooks/useEloRating'
+import { CHALLENGE_STATS_QUERY_KEY } from '@/hooks/useChallengeStats'
+import { useEloRating, ELO_QUERY_KEY } from '@/hooks/useEloRating'
+import { USER_STATS_QUERY_KEY } from '@/hooks/useUserStats'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 import { getDifficultyWeights, getTimeMultiplier } from '@/engine/EloRating'
 import type { GeneratedChallenge, ChallengeResult } from '@/types/challenge'
 import type { EditorState } from '@/types/editor'
@@ -28,14 +32,11 @@ export function useChallengeEngine(initialPracticeMode = false) {
   const practiceModeRef = useRef(initialPracticeMode)
   const isRetryRef = useRef(false)
   const lastChallengeRef = useRef<GeneratedChallenge | null>(null)
-  const { recordResult } = useChallengeStats()
-  const { recordChallengeResult: recordElo, elo } = useEloRating()
+  const { elo } = useEloRating()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
 
-  // Stabilize callback refs so launchChallenge/startChallenge never change identity
-  const recordResultRef = useRef(recordResult)
-  recordResultRef.current = recordResult
-  const recordEloRef = useRef(recordElo)
-  recordEloRef.current = recordElo
+  // Stabilize refs
   const eloRatingRef = useRef(elo.rating)
   eloRatingRef.current = elo.rating
 
@@ -74,6 +75,31 @@ export function useChallengeEngine(initialPracticeMode = false) {
     }
   }, [phase])
 
+  // Submit result to server via RPC — single call handles scoring, elo, stats, history
+  const submitToServer = useCallback(async (ch: GeneratedChallenge, res: ChallengeResult, isPractice: boolean, isRetryAttempt: boolean) => {
+    if (!user) return
+    try {
+      await supabase.rpc('submit_solo_result', {
+        p_template_id: ch.templateId,
+        p_snippet_id: ch.snippetId,
+        p_time_seconds: res.timeSeconds,
+        p_keystroke_count: res.keystrokeCount,
+        p_reference_keystroke_count: ch.referenceKeystrokeCount,
+        p_difficulty: ch.difficulty,
+        p_timed_out: res.timedOut,
+        p_time_limit: ch.timeLimit,
+        p_is_practice: isPractice,
+        p_is_retry: isRetryAttempt,
+      })
+      // Invalidate all data that the RPC may have changed
+      queryClient.invalidateQueries({ queryKey: CHALLENGE_STATS_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: ELO_QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: USER_STATS_QUERY_KEY })
+    } catch (_) {
+      // Server errors should not break UI
+    }
+  }, [user, queryClient])
+
   const launchChallenge = useCallback((ch: GeneratedChallenge, retrying: boolean) => {
     cleanup()
     setIsRetry(retrying)
@@ -103,12 +129,7 @@ export function useChallengeEngine(initialPracticeMode = false) {
             const res = engine.forceComplete()
             setResult(res)
             setPhase('complete')
-            if (!practiceModeRef.current && !isRetryRef.current) {
-              try {
-                recordResultRef.current(res)
-                recordEloRef.current(ch.difficulty, res.totalScore, true)
-              } catch (_) { /* storage errors should not break UI */ }
-            }
+            void submitToServer(ch, res, practiceModeRef.current, isRetryRef.current)
           }
         })
         engineRef.current = engine
@@ -116,7 +137,7 @@ export function useChallengeEngine(initialPracticeMode = false) {
         setPhase('active')
       }
     }, 1000)
-  }, [cleanup])
+  }, [cleanup, submitToServer])
 
   const startChallenge = useCallback((diff: 1 | 2 | 3 | 4 | 5) => {
     setDifficulty(diff)
@@ -158,14 +179,10 @@ export function useChallengeEngine(initialPracticeMode = false) {
     if (res) {
       setResult(res)
       setPhase('complete')
-      if (!practiceModeRef.current && !isRetryRef.current) {
-        try {
-          recordResultRef.current(res)
-          recordEloRef.current(difficulty, res.totalScore, false)
-        } catch (_) { /* storage errors should not break UI */ }
-      }
+      const ch = engineRef.current.getChallenge()
+      void submitToServer(ch, res, practiceModeRef.current, isRetryRef.current)
     }
-  }, [phase, difficulty])
+  }, [phase, submitToServer])
 
   const handleKeystroke = useCallback(() => {
     if (phase !== 'active' || !engineRef.current) return
