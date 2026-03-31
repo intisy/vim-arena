@@ -132,11 +132,20 @@ export function PvPRace() {
     return () => clearInterval(interval)
   }, [phase, config?.matchId])
 
-  // Start timer when racing begins
+  // Start timer when racing begins — anchored to sessionStorage so refresh doesn't reset it
   useEffect(() => {
-    if (phase !== 'racing') return
+    if (phase !== 'racing' || !matchId) return
 
-    startTimeRef.current = Date.now()
+    // Recover or set race start timestamp
+    const storageKey = `pvp-race-start-${matchId}`
+    const saved = sessionStorage.getItem(storageKey)
+    if (saved) {
+      startTimeRef.current = parseInt(saved, 10)
+    } else {
+      startTimeRef.current = Date.now()
+      sessionStorage.setItem(storageKey, String(startTimeRef.current))
+    }
+
     if (editorRef.current) {
       editorRef.current.exitInsertMode()
       editorRef.current.reset()
@@ -158,7 +167,7 @@ export function PvPRace() {
       if (timerRef.current) clearInterval(timerRef.current)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase])
+  }, [phase, matchId])
 
   // Subscribe to Realtime for opponent progress + race results
   useEffect(() => {
