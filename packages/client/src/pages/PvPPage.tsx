@@ -25,7 +25,6 @@ export function PvPPage() {
     document.title = 'PvP Arena | vim-arena'
   }, [])
 
-  // Load match history
   useEffect(() => {
     if (!session?.user?.id) return
 
@@ -40,7 +39,6 @@ export function PvPPage() {
         const entries = (data as MatchHistoryEntry[] | null) ?? []
         setHistory(entries)
       } catch {
-        // Non-fatal
       } finally {
         setHistoryLoading(false)
       }
@@ -49,7 +47,6 @@ export function PvPPage() {
     void loadHistory()
   }, [session?.user?.id])
 
-  // Elapsed time counter while queued
   useEffect(() => {
     if (queueState !== 'queued' || !queuedAt) return
     const interval = setInterval(() => {
@@ -58,7 +55,6 @@ export function PvPPage() {
     return () => clearInterval(interval)
   }, [queueState, queuedAt])
 
-  // Subscribe to Realtime for match_found (opponent's client broadcasts this)
   useEffect(() => {
     if (!session?.user?.id || queueState !== 'queued') return
 
@@ -80,7 +76,6 @@ export function PvPPage() {
     }
   }, [session?.user?.id, queueState])
 
-  // Poll for match as fallback via RPC (in case Realtime misses)
   useEffect(() => {
     if (queueState !== 'queued') return
 
@@ -96,18 +91,15 @@ export function PvPPage() {
           setMatchConfig(result.match)
           setQueueState('matched')
         } else if (!result.inQueue) {
-          // Removed from queue without a match (edge case)
           setQueueState('idle')
         }
       } catch {
-        // Polling failure is non-fatal
       }
     }, 5000)
 
     return () => clearInterval(poll)
   }, [queueState])
 
-  // Navigate to race screen after match found (brief delay for UX)
   useEffect(() => {
     if (queueState !== 'matched' || !matchConfig) return
     const timer = setTimeout(() => {
@@ -136,7 +128,6 @@ export function PvPPage() {
       }
 
       if (result.matched && result.config) {
-        // Instant match found — broadcast to opponent via Realtime
         const opponentId = result.config.opponentUserId
         if (opponentId) {
           const message: MatchFoundMessage = {
@@ -156,7 +147,6 @@ export function PvPPage() {
         setMatchConfig(result.config)
         setQueueState('matched')
       } else {
-        // No instant match — wait in queue
         setQueuedAt(Date.now())
         setElapsed(0)
         setQueueState('queued')
@@ -171,7 +161,6 @@ export function PvPPage() {
     try {
       await supabase.rpc('leave_matchmaking_queue')
     } catch {
-      // Best-effort
     }
 
     setQueueState('idle')
@@ -179,7 +168,6 @@ export function PvPPage() {
     setElapsed(0)
   }, [])
 
-  // Cleanup on unmount — leave queue (fire-and-forget, no .catch on PostgrestFilterBuilder)
   useEffect(() => {
     return () => {
       if (queueState === 'queued') {

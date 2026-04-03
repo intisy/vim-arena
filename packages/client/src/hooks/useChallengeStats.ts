@@ -54,7 +54,6 @@ async function fetchStats(userId: string): Promise<StatsMap> {
   return map
 }
 
-// Read-only hook — all writes go through submit_solo_result RPC (called by useChallengeEngine)
 export function useChallengeStats() {
   const { user } = useAuth()
   const userId = user?.id

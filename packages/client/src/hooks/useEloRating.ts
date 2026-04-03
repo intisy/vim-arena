@@ -38,7 +38,6 @@ async function fetchElo(userId: string): Promise<EloRating> {
   }
 }
 
-// Read-only hook — all elo writes go through submit_solo_result RPC (called by useChallengeEngine)
 export function useEloRating() {
   const { user } = useAuth()
   const userId = user?.id

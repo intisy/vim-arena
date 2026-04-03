@@ -41,7 +41,6 @@ export function useLessonProgress() {
     enabled: !!userId,
   })
 
-  // Use server-side RPC to mark lesson complete (handles lesson_progress + user_stats atomically)
   const markCompleteMutation = useMutation({
     mutationFn: async (lessonId: string) => {
       if (!userId) throw new Error('Not authenticated')

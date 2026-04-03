@@ -28,14 +28,13 @@ async function fetchUserStats(userId: string): Promise<UserStats> {
     .single()
 
   if (error) {
-    // Row may not exist yet (race with trigger)
     if (error.code === 'PGRST116') return DEFAULT_STATS
     throw error
   }
 
   return {
     lessonsCompleted: data.lessons_completed,
-    totalLessons: 0, // computed client-side
+    totalLessons: 0,
     challengesAttempted: data.challenges_attempted,
     challengesCompleted: data.challenges_completed,
     totalPracticeTimeSeconds: data.total_practice_time_seconds,
@@ -47,9 +46,6 @@ async function fetchUserStats(userId: string): Promise<UserStats> {
   }
 }
 
-// Read-only hook — all writes go through server-side RPCs:
-//   submit_solo_result  → updates challenges_attempted, challenges_completed, etc.
-//   record_lesson_completed → updates lessons_completed
 export function useUserStats() {
   const { user } = useAuth()
   const userId = user?.id

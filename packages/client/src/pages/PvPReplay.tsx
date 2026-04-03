@@ -15,7 +15,6 @@ function getSnapshotAtTime(snapshots: ReplaySnapshot[], time: number, initialCon
   if (snapshots.length === 0) return { content: initialContent, line: 0, col: 0 }
   if (time <= 0) return { content: initialContent, line: 0, col: 0 }
 
-  // Find last snapshot <= time
   let best = { content: initialContent, line: 0, col: 0 }
   for (const snap of snapshots) {
     if (snap.t <= time) {
@@ -36,14 +35,12 @@ export function PvPReplay() {
   const [replay, setReplay] = useState<MatchReplayData | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
 
-  // Playback state
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [speed, setSpeed] = useState(1)
   const animFrameRef = useRef<number | null>(null)
   const lastTickRef = useRef<number>(0)
 
-  // Load replay data
   useEffect(() => {
     if (!matchId || !session?.user?.id) return
 
@@ -59,7 +56,6 @@ export function PvPReplay() {
         }
         if (!result.match) throw new Error('No replay data')
 
-        // Parse replay JSONB (may be string or already parsed)
         const match = result.match
         if (typeof match.player1.replay === 'string') {
           match.player1.replay = JSON.parse(match.player1.replay as unknown as string) as ReplaySnapshot[]
@@ -79,7 +75,6 @@ export function PvPReplay() {
     void load()
   }, [matchId, session?.user?.id])
 
-  // Generate challenge from seed
   const challenge = useMemo(() => {
     if (!replay) return null
     const rng = new SeededRandom(replay.challengeSeed)
@@ -90,7 +85,6 @@ export function PvPReplay() {
     })
   }, [replay])
 
-  // Total duration = max of both players' last snapshot time, or time limit
   const totalDuration = useMemo(() => {
     if (!replay) return 60
     const p1Max = replay.player1.replay?.length ? replay.player1.replay[replay.player1.replay.length - 1].t : 0
@@ -98,7 +92,6 @@ export function PvPReplay() {
     return Math.max(p1Max, p2Max, 1)
   }, [replay])
 
-  // Animation loop
   useEffect(() => {
     if (!playing) {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
@@ -130,7 +123,6 @@ export function PvPReplay() {
     }
   }, [playing, speed, totalDuration])
 
-  // Get current content for both players
   const p1State = useMemo(() => {
     if (!replay?.player1.replay || !challenge) return { content: challenge?.initialContent ?? '', line: 0, col: 0 }
     return getSnapshotAtTime(replay.player1.replay, currentTime, challenge.initialContent)

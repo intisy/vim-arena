@@ -36,7 +36,6 @@ export function useChallengeEngine(initialPracticeMode = false) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
 
-  // Stabilize refs
   const eloRatingRef = useRef(elo.rating)
   eloRatingRef.current = elo.rating
 
@@ -75,7 +74,6 @@ export function useChallengeEngine(initialPracticeMode = false) {
     }
   }, [phase])
 
-  // Submit result to server via RPC — single call handles scoring, elo, stats, history
   const submitToServer = useCallback(async (ch: GeneratedChallenge, res: ChallengeResult, isPractice: boolean, isRetryAttempt: boolean) => {
     if (!user) return
     try {
@@ -91,7 +89,6 @@ export function useChallengeEngine(initialPracticeMode = false) {
         p_is_practice: isPractice,
         p_is_retry: isRetryAttempt,
       })
-      // Invalidate all data that the RPC may have changed
       queryClient.invalidateQueries({ queryKey: CHALLENGE_STATS_QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: ELO_QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: USER_STATS_QUERY_KEY })

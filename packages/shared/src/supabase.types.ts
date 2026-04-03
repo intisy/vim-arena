@@ -1,8 +1,3 @@
-// TypeScript types matching the Supabase DB schema (001_initial.sql)
-// These are the row-level types used throughout the app.
-// NOTE: All row types MUST be `type` aliases (not `interface`) so they satisfy
-// Record<string, unknown> required by @supabase/postgrest-js GenericTable.
-
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Profile = {
@@ -112,8 +107,6 @@ export type MatchmakingQueueRow = {
   queued_at: string
 }
 
-// Supabase Database type map (for typed client usage)
-// Includes Relationships, Views, Functions required by @supabase/postgrest-js GenericSchema.
 export type Database = {
   public: {
     Tables: {

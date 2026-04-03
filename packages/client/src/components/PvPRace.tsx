@@ -25,7 +25,6 @@ export function PvPRace() {
   const navigate = useNavigate()
   const { session } = useAuth()
 
-  // Recover config from sessionStorage on refresh (location.state is lost)
   const [config] = useState<PvpRaceConfig | null>(() => {
     const fromState = (location.state as { config?: PvpRaceConfig } | null)?.config ?? null
     if (fromState) {
@@ -56,7 +55,6 @@ export function PvPRace() {
   const lastSnapshotTimeRef = useRef<number>(0)
   const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Determine who I am in the match
   const isPlayer1 = config ? userId === config.player1Id : false
   const myUsername = config
     ? (isPlayer1 ? config.player1Username : config.player2Username)
@@ -67,7 +65,6 @@ export function PvPRace() {
   const myElo = config ? (isPlayer1 ? config.player1Elo : config.player2Elo) : 0
   const opponentElo = config ? (isPlayer1 ? config.player2Elo : config.player1Elo) : 0
 
-  // Generate challenge deterministically from seed, then check if match is still active
   useEffect(() => {
     if (!config || !matchId) return
 
@@ -79,7 +76,6 @@ export function PvPRace() {
     })
     setChallenge(ch)
 
-    // Check DB to see if match is already finished before starting
     const checkAndStart = async () => {
       try {
         const { data } = await supabase.rpc('get_match_replay', {
@@ -87,17 +83,15 @@ export function PvPRace() {
         })
         const replayData = data as { status?: string; match?: { status?: string } } | null
         if (replayData?.status === 'ok' && replayData.match?.status && replayData.match.status !== 'active') {
-          // Match already finished — clean up sessionStorage and redirect to replay
           sessionStorage.removeItem(`pvp-config-${matchId}`)
           sessionStorage.removeItem(`pvp-started-${config.matchId}`)
           navigate(`/pvp/replay/${matchId}`, { replace: true })
           return
         }
       } catch {
-        // If check fails (e.g. migration not applied), proceed normally
+        // proceed normally if check fails
       }
 
-      // Match is active or check unavailable — start normally
       const key = `pvp-started-${config.matchId}`
       if (sessionStorage.getItem(key)) {
         setPhase('racing')
@@ -109,7 +103,6 @@ export function PvPRace() {
     void checkAndStart()
   }, [config, matchId, navigate])
 
-  // Countdown → racing
   useEffect(() => {
     if (phase !== 'countdown') return
 
@@ -118,7 +111,6 @@ export function PvPRace() {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(interval)
-          // Mark countdown as done so refresh skips it
           if (config?.matchId) {
             sessionStorage.setItem(`pvp-started-${config.matchId}`, '1')
           }
@@ -132,11 +124,9 @@ export function PvPRace() {
     return () => clearInterval(interval)
   }, [phase, config?.matchId])
 
-  // Start timer when racing begins — anchored to sessionStorage so refresh doesn't reset it
   useEffect(() => {
     if (phase !== 'racing' || !matchId) return
 
-    // Recover or set race start timestamp
     const storageKey = `pvp-race-start-${matchId}`
     const saved = sessionStorage.getItem(storageKey)
     if (saved) {
@@ -157,7 +147,6 @@ export function PvPRace() {
       const secs = (now - startTimeRef.current) / 1000
       setElapsed(secs)
 
-      // Auto-timeout
       if (config && secs >= config.timeLimit) {
         handleRaceComplete(true)
       }
@@ -169,7 +158,6 @@ export function PvPRace() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, matchId])
 
-  // Subscribe to Realtime for opponent progress + race results
   useEffect(() => {
     if (!matchId || !userId) return
 
@@ -189,12 +177,10 @@ export function PvPRace() {
         const msg = payload.payload as RaceResultMessage
         setRaceResult(msg)
         setPhase('finished')
-        // Stop retry polling — we got the result via Realtime
         if (retryTimerRef.current) {
           clearInterval(retryTimerRef.current)
           retryTimerRef.current = null
         }
-        // Submit replay data (fire-and-forget)
         if (replaySnapshotsRef.current.length > 0 && matchId) {
           void supabase.rpc('submit_replay_data', {
             p_match_id: matchId,
@@ -216,13 +202,11 @@ export function PvPRace() {
     }
   }, [matchId, userId])
 
-  // Calculate completion percentage based on editor content vs expected
   const calcCompletionPercent = useCallback((currentContent: string): number => {
     if (!challenge) return 0
     const expected = challenge.expectedContent
     if (currentContent === expected) return 100
 
-    // Character-level similarity
     const maxLen = Math.max(currentContent.length, expected.length)
     if (maxLen === 0) return 100
 
@@ -235,7 +219,6 @@ export function PvPRace() {
     return Math.min(99, Math.round((matching / maxLen) * 100))
   }, [challenge])
 
-  // Broadcast progress to opponent (throttled to 5/sec = 200ms)
   const broadcastProgress = useCallback((ks: number, pct: number) => {
     const now = Date.now()
     if (now - broadcastThrottleRef.current < 200) return
@@ -258,14 +241,12 @@ export function PvPRace() {
     })
   }, [matchId, userId])
 
-  // Handle race completion (success or timeout)
   const handleRaceComplete = useCallback(async (timedOut = false) => {
     if (completedRef.current || !matchId) return
     completedRef.current = true
 
     if (timerRef.current) clearInterval(timerRef.current)
 
-    // Immediately show "waiting for results" overlay
     setPhase('finished')
 
     const timeSeconds = (Date.now() - startTimeRef.current) / 1000
@@ -287,7 +268,6 @@ export function PvPRace() {
         const result = data as { status: string; result?: RaceResultMessage } | null
 
         if (result?.status === 'completed' && result.result) {
-          // Both players done — broadcast result + submit replay
           const channel = supabase.channel(`race:${matchId}`)
           await channel.send({
             type: 'broadcast',
@@ -298,7 +278,6 @@ export function PvPRace() {
 
           setRaceResult(result.result)
 
-          // Submit replay data (fire-and-forget)
           if (replaySnapshotsRef.current.length > 0) {
             void supabase.rpc('submit_replay_data', {
               p_match_id: matchId,
@@ -307,7 +286,7 @@ export function PvPRace() {
           }
           return true
         }
-        return false // still waiting
+        return false
       } catch {
         return false
       }
@@ -316,7 +295,6 @@ export function PvPRace() {
     const completed = await submitAndCheck()
     if (completed) return
 
-    // Start retry polling — handles opponent quit / auto-forfeit
     retryTimerRef.current = setInterval(async () => {
       const done = await submitAndCheck()
       if (done && retryTimerRef.current) {
@@ -326,7 +304,6 @@ export function PvPRace() {
     }, 3000)
   }, [matchId, keystrokes])
 
-  // Editor state change handler — check for completion + record replay
   const handleEditorStateChange = useCallback((state: EditorState) => {
     if (phase !== 'racing' || !challenge || completedRef.current) return
 
@@ -334,7 +311,6 @@ export function PvPRace() {
     setCompletionPercent(pct)
     broadcastProgress(keystrokes, pct)
 
-    // Record replay snapshot every 500ms (content + cursor)
     const now = Date.now()
     if (now - lastSnapshotTimeRef.current >= 500 && startTimeRef.current > 0) {
       lastSnapshotTimeRef.current = now
@@ -346,9 +322,7 @@ export function PvPRace() {
       })
     }
 
-    // Check if challenge is complete
     if (state.content === challenge.expectedContent) {
-      // Record final snapshot
       if (startTimeRef.current > 0) {
         replaySnapshotsRef.current.push({
           t: parseFloat(((Date.now() - startTimeRef.current) / 1000).toFixed(2)),
@@ -361,7 +335,6 @@ export function PvPRace() {
     }
   }, [phase, challenge, keystrokes, calcCompletionPercent, broadcastProgress, handleRaceComplete])
 
-  // Keystroke counter
   const handleKeystroke = useCallback(() => {
     setKeystrokes(prev => {
       const next = prev + 1
@@ -370,7 +343,6 @@ export function PvPRace() {
     })
   }, [broadcastProgress, completionPercent])
 
-  // Time display
   const timeDisplay = useMemo(() => {
     const mins = Math.floor(elapsed / 60)
     const secs = Math.floor(elapsed % 60)
@@ -382,7 +354,6 @@ export function PvPRace() {
   const timePercent = Math.min(100, (elapsed / timeLimit) * 100)
   const timeWarning = timePercent > 75
 
-  // No config — redirect back
   if (!config) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -405,7 +376,6 @@ export function PvPRace() {
     )
   }
 
-  // Results screen
   if (phase === 'finished' && raceResult) {
     const myResult = isPlayer1 ? raceResult.player1 : raceResult.player2
     const oppResult = isPlayer1 ? raceResult.player2 : raceResult.player1
@@ -414,7 +384,6 @@ export function PvPRace() {
 
     return (
       <div className="max-w-2xl mx-auto flex flex-col items-center gap-8 py-12">
-        {/* Result Header */}
         <div className="text-center">
           <div className={`text-5xl font-black mb-2 ${iWon ? 'text-[var(--theme-success)]' : isDraw ? 'text-[var(--theme-warning)]' : 'text-[var(--theme-error)]'}`}>
             {iWon ? '🏆 Victory!' : isDraw ? '🤝 Draw' : '💀 Defeat'}
@@ -424,9 +393,7 @@ export function PvPRace() {
           </p>
         </div>
 
-        {/* Player Cards */}
         <div className="w-full grid grid-cols-2 gap-4">
-          {/* My result */}
           <div className={`p-6 rounded-xl border ${iWon ? 'border-[var(--theme-success)]' : 'border-[var(--theme-border)]'} bg-[var(--theme-background)]`}>
             <div className="flex items-center gap-2 mb-4">
               {iWon && <Trophy size={18} className="text-[var(--theme-success)]" />}
@@ -468,7 +435,6 @@ export function PvPRace() {
             </div>
           </div>
 
-          {/* Opponent result */}
           <div className={`p-6 rounded-xl border ${!iWon && !isDraw ? 'border-[var(--theme-success)]' : 'border-[var(--theme-border)]'} bg-[var(--theme-background)]`}>
             <div className="flex items-center gap-2 mb-4">
               {!iWon && !isDraw && <Trophy size={18} className="text-[var(--theme-success)]" />}
@@ -507,7 +473,6 @@ export function PvPRace() {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-4">
           <button
             onClick={() => navigate('/pvp')}
@@ -526,25 +491,20 @@ export function PvPRace() {
     )
   }
 
-  // Racing / Countdown view
   return (
     <div className="max-w-5xl mx-auto p-6 h-full flex flex-col relative">
-      {/* Header Bar */}
       <div className="flex justify-between items-center mb-4 bg-[var(--theme-muted)] p-4 rounded-xl border border-[var(--theme-border)]">
-        {/* My Info */}
         <div className="flex items-center gap-3">
           <User size={18} className="text-[var(--theme-primary)]" />
           <span className="font-bold text-[var(--theme-foreground)]">{myUsername}</span>
           <span className="text-xs text-[var(--theme-muted-foreground)] font-mono">{myElo}</span>
         </div>
 
-        {/* Timer */}
         <div className={`flex items-center gap-2 font-mono text-lg font-bold ${timeWarning ? 'text-[var(--theme-error)]' : 'text-[var(--theme-foreground)]'}`}>
           <Timer size={18} />
           {timeDisplay}
         </div>
 
-        {/* Opponent Info */}
         <div className="flex items-center gap-3">
           <span className="text-xs text-[var(--theme-muted-foreground)] font-mono">{opponentElo}</span>
           <span className="font-bold text-[var(--theme-foreground)]">{opponentUsername}</span>
@@ -552,9 +512,7 @@ export function PvPRace() {
         </div>
       </div>
 
-      {/* Progress Bars */}
       <div className="flex gap-4 mb-4">
-        {/* My progress */}
         <div className="flex-1">
           <div className="flex justify-between text-xs mb-1">
             <span className="text-[var(--theme-primary)] font-bold">You</span>
@@ -568,7 +526,6 @@ export function PvPRace() {
           </div>
         </div>
 
-        {/* Opponent progress */}
         <div className="flex-1">
           <div className="flex justify-between text-xs mb-1">
             <span className="text-[var(--theme-error)] font-bold">{opponentUsername}</span>
@@ -583,7 +540,6 @@ export function PvPRace() {
         </div>
       </div>
 
-      {/* Time Bar */}
       <div className="h-1 bg-[var(--theme-muted)] rounded-full overflow-hidden mb-4">
         <div
           className={`h-full rounded-full transition-all duration-100 ${timeWarning ? 'bg-[var(--theme-error)]' : 'bg-[var(--theme-accent)]'}`}
@@ -591,7 +547,6 @@ export function PvPRace() {
         />
       </div>
 
-      {/* Challenge Info */}
       <div className="mb-4 flex items-center justify-between">
         <div>
           <span className="px-2 py-1 bg-green-900/50 text-green-400 text-xs font-bold rounded-full border border-green-800 mr-2">
@@ -604,7 +559,6 @@ export function PvPRace() {
         </div>
       </div>
 
-      {/* Editor */}
       <div className="flex-1 relative min-h-[400px]">
         <VimEditor
           ref={editorRef}
@@ -625,7 +579,6 @@ export function PvPRace() {
           className="rounded-xl overflow-hidden shadow-2xl"
         />
 
-        {/* Countdown Overlay */}
         {phase === 'countdown' && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl z-10">
             <div className="text-center">
@@ -639,7 +592,6 @@ export function PvPRace() {
           </div>
         )}
 
-        {/* Waiting for opponent finish */}
         {phase === 'finished' && !raceResult && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl z-10">
             <div className="flex flex-col items-center gap-4">
