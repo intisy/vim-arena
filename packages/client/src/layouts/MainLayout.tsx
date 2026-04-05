@@ -3,6 +3,7 @@ import { Suspense, useState, useRef, useEffect } from 'react'
 import { BookOpen, Zap, Swords, Settings, BarChart3, LogOut, Menu, X } from 'lucide-react'
 import { Avatar } from '@/components/Avatar'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSettings } from '@/hooks/useSettings'
 
 const NAV_LINKS = [
   { to: '/lessons', label: 'Lessons', icon: BookOpen, end: false, hint: 'g l' },
@@ -20,6 +21,7 @@ export function MainLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { user, signOut } = useAuth()
+  useSettings()
 
   useEffect(() => {
     if (!avatarOpen) return
