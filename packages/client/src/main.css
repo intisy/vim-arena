@@ -100,6 +100,28 @@ body {
 .stagger > *:nth-child(5) { animation-delay: 240ms; }
 .stagger > *:nth-child(6) { animation-delay: 300ms; }
 
+/* ─── Reduce motion ─── */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* ─── High contrast ─── */
+.high-contrast {
+  --theme-border: color-mix(in srgb, var(--theme-foreground) 40%, transparent);
+}
+.high-contrast .glass-card {
+  background: var(--theme-muted);
+  backdrop-filter: none;
+}
+.high-contrast .text-\[var\(--theme-muted-foreground\)\] {
+  color: var(--theme-foreground) !important;
+  opacity: 0.85;
+}
+
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

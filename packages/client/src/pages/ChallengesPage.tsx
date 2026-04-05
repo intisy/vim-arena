@@ -135,21 +135,34 @@ export default function ChallengesPage() {
           {/* Practice mode toggle */}
           <button
             onClick={handleTogglePractice}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-200 border ${
+            className={`w-full flex items-center justify-between px-5 py-4 rounded-xl text-sm font-bold transition-all duration-200 border ${
               practiceMode
-                ? 'bg-[var(--theme-warning)]/10 text-[var(--theme-warning)] border-[var(--theme-warning)]/30'
-                : 'bg-[var(--theme-muted)] text-[var(--theme-muted-foreground)] border-[var(--theme-border)] hover:text-[var(--theme-foreground)] hover:border-[var(--theme-muted-foreground)]'
+                ? 'bg-[var(--theme-warning)]/10 border-[var(--theme-warning)]/30'
+                : 'bg-[var(--theme-muted)] border-[var(--theme-border)] hover:border-[var(--theme-muted-foreground)]'
             }`}
           >
-            {practiceMode ? <Target size={16} /> : <GraduationCap size={16} />}
-            {practiceMode ? 'Practice Mode ON' : 'Practice Mode'}
-            <kbd className="text-xs bg-[var(--theme-background)] border border-[var(--theme-border)] px-1.5 py-0.5 rounded font-mono ml-1">p</kbd>
+            <div className="flex items-center gap-3">
+              {practiceMode ? <Target size={18} className="text-[var(--theme-warning)]" /> : <GraduationCap size={18} className="text-[var(--theme-muted-foreground)]" />}
+              <div className="text-left">
+                <div className={practiceMode ? 'text-[var(--theme-warning)]' : 'text-[var(--theme-foreground)]'}>
+                  Practice Mode
+                </div>
+                <div className={`text-xs font-normal mt-0.5 ${practiceMode ? 'text-[var(--theme-warning)]/70' : 'text-[var(--theme-muted-foreground)]'}`}>
+                  {practiceMode ? 'Shows optimal steps. No elo change.' : 'Only correct keys allowed'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <kbd className="text-[10px] bg-[var(--theme-background)] border border-[var(--theme-border)] px-1.5 py-0.5 rounded font-mono text-[var(--theme-muted-foreground)]">p</kbd>
+              <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                practiceMode ? 'bg-[var(--theme-warning)]' : 'bg-[var(--theme-border)]'
+              }`}>
+                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                  practiceMode ? 'translate-x-[22px]' : 'translate-x-0.5'
+                }`} />
+              </div>
+            </div>
           </button>
-          {practiceMode && (
-            <p className="text-[var(--theme-warning)]/70 text-xs text-center -mt-4">
-              Shows optimal steps. Only correct keys allowed. No elo change.
-            </p>
-          )}
 
           {/* Start button */}
           <button
