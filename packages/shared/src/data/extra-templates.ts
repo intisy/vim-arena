@@ -4430,4 +4430,613 @@ export const EXTRA_TEMPLATES: ChallengeTemplate[] = [
       }
     },
   },
+
+  {
+    id: 'change-entire-line',
+    type: 'change',
+    title: 'Change Entire Line',
+    description: 'Replace the entire line content using cc',
+    difficulty: 2,
+    requiredCommands: ['cc'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => line.trimStart().length >= 4)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const indent = chosen.line.match(/^(\s*)/)?.[1] ?? ''
+      const replacements = ['return null', 'break', 'continue', '// removed', 'pass']
+      const replacement = replacements[rng.nextInt(0, replacements.length - 1)]
+      const newLine = indent + replacement
+
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
+      const actionSteps: SolutionStep[] = [
+        { keys: `cc${replacement}`, description: `Change line to '${replacement}'` },
+        { keys: 'Escape', description: 'Exit insert mode' },
+      ]
+      const solutions = computeSolutions(
+        offset.line, offset.column, chosen.index, 0,
+        lines[chosen.index], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Change line ${chosen.index + 1} to '${replacement}'`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: 0,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'visual-uppercase-word',
+    type: 'change',
+    title: 'Visual Uppercase Word',
+    description: 'Visually select a word and convert it to uppercase',
+    difficulty: 3,
+    requiredCommands: ['viw', 'U'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates: Array<{ lineIdx: number; start: number; end: number; word: string }> = []
+
+      for (let i = 0; i < lines.length; i++) {
+        const wordRegex = /\b([a-z]\w{2,7})\b/g
+        let m: RegExpExecArray | null
+        while ((m = wordRegex.exec(lines[i])) !== null) {
+          if (/[a-z]/.test(m[1])) {
+            candidates.push({ lineIdx: i, start: m.index, end: m.index + m[0].length, word: m[0] })
+          }
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.start) + chosen.word.toUpperCase() + line.slice(chosen.end)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: 'viwU', description: 'Visual select word and uppercase' }]
+      const solutions = computeSolutions(
+        offset.line, offset.column, chosen.lineIdx, chosen.start,
+        lines[chosen.lineIdx], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Uppercase '${chosen.word}' on line ${chosen.lineIdx + 1}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.start,
+          toLine: chosen.lineIdx,
+          toCol: chosen.end,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'visual-lowercase-word',
+    type: 'change',
+    title: 'Visual Lowercase Word',
+    description: 'Visually select a word and convert it to lowercase',
+    difficulty: 3,
+    requiredCommands: ['viw', 'u'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates: Array<{ lineIdx: number; start: number; end: number; word: string }> = []
+
+      for (let i = 0; i < lines.length; i++) {
+        const wordRegex = /\b([A-Z]\w{2,7})\b/g
+        let m: RegExpExecArray | null
+        while ((m = wordRegex.exec(lines[i])) !== null) {
+          if (/[A-Z]/.test(m[1])) {
+            candidates.push({ lineIdx: i, start: m.index, end: m.index + m[0].length, word: m[0] })
+          }
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.start) + chosen.word.toLowerCase() + line.slice(chosen.end)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: 'viwu', description: 'Visual select word and lowercase' }]
+      const solutions = computeSolutions(
+        offset.line, offset.column, chosen.lineIdx, chosen.start,
+        lines[chosen.lineIdx], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Lowercase '${chosen.word}' on line ${chosen.lineIdx + 1}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.start,
+          toLine: chosen.lineIdx,
+          toCol: chosen.end,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'indent-multiple-lines',
+    type: 'change',
+    title: 'Indent Multiple Lines',
+    description: 'Indent 2-3 consecutive lines using a count',
+    difficulty: 3,
+    requiredCommands: ['>>'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 4) return null
+
+      const count = rng.nextInt(2, 3)
+      const maxStart = lines.length - count
+      if (maxStart < 0) return null
+
+      const candidates: number[] = []
+      for (let i = 0; i <= maxStart; i++) {
+        let valid = true
+        for (let j = 0; j < count; j++) {
+          const dedented = lines[i + j].startsWith('  ') ? lines[i + j].slice(2) : lines[i + j]
+          if (dedented.trimStart().length < 2) { valid = false; break }
+        }
+        if (valid) candidates.push(i)
+      }
+      if (candidates.length === 0) return null
+
+      const lineIdx = candidates[rng.nextInt(0, candidates.length - 1)]
+      const corruptedLines = [...lines]
+      for (let j = 0; j < count; j++) {
+        if (corruptedLines[lineIdx + j].startsWith('  ')) {
+          corruptedLines[lineIdx + j] = corruptedLines[lineIdx + j].slice(2)
+        }
+      }
+
+      const offset = pickOffsetCursor(rng, lineIdx, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: `${count}>>`, description: `Indent ${count} lines` }]
+      const solutions = computeSolutions(
+        offset.line, offset.column, lineIdx, 0,
+        corruptedLines[lineIdx], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: corruptedLines.join('\n'),
+        initialCursor: offset,
+        expectedContent: snippet.content,
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Indent ${count} lines starting at line ${lineIdx + 1}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: lineIdx,
+          fromCol: 0,
+          toLine: lineIdx + count - 1,
+          toCol: corruptedLines[lineIdx + count - 1].length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'delete-to-match-bracket',
+    type: 'delete',
+    title: 'Delete to Matching Bracket',
+    description: 'Delete from opening bracket to its matching closing bracket using d%',
+    difficulty: 4,
+    requiredCommands: ['d%'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates: Array<{ lineIdx: number; openCol: number; closeCol: number; open: string; close: string }> = []
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+        const pairs: Array<[string, string]> = [['(', ')'], ['[', ']']]
+        for (const [open, close] of pairs) {
+          let depth = 0
+          let openIdx = -1
+          for (let c = 0; c < line.length; c++) {
+            if (line[c] === open && depth === 0) {
+              openIdx = c
+              depth = 1
+            } else if (line[c] === open) {
+              depth++
+            } else if (line[c] === close) {
+              depth--
+              if (depth === 0 && openIdx >= 0) {
+                const span = c - openIdx + 1
+                if (span >= 3 && span <= 20) {
+                  candidates.push({ lineIdx: i, openCol: openIdx, closeCol: c, open, close })
+                }
+                openIdx = -1
+              }
+            }
+          }
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.openCol) + line.slice(chosen.closeCol + 1)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: 'd%', description: `Delete to matching '${chosen.close}'` }]
+      const solutions = computeSolutions(
+        offset.line, offset.column, chosen.lineIdx, chosen.openCol,
+        lines[chosen.lineIdx], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Delete from '${chosen.open}' to matching '${chosen.close}' on line ${chosen.lineIdx + 1}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.openCol,
+          toLine: chosen.lineIdx,
+          toCol: chosen.closeCol + 1,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'yank-line-paste-above',
+    type: 'yank-paste',
+    title: 'Duplicate Line Above',
+    description: 'Yank the entire line and paste it above',
+    difficulty: 2,
+    requiredCommands: ['yy', 'P'],
+    timeLimitSeconds: 10,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 3) return null
+
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => line.trimStart().length >= 3)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const expectedLines = [...lines]
+      expectedLines.splice(chosen.index, 0, chosen.line)
+
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
+      const actionSteps: SolutionStep[] = [
+        { keys: 'yy', description: 'Yank entire line' },
+        { keys: 'P', description: 'Paste above' },
+      ]
+      const solutions = computeSolutions(
+        offset.line, offset.column, chosen.index, 0,
+        lines[chosen.index], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Duplicate line ${chosen.index + 1} above`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: 0,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'replace-multiple-chars',
+    type: 'change',
+    title: 'Replace Multiple Characters',
+    description: 'Replace 2-4 characters at once with the same character using a count',
+    difficulty: 3,
+    requiredCommands: ['r'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates: Array<{ lineIdx: number; col: number; count: number }> = []
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+        if (line.length < 6) continue
+        for (let c = 0; c < line.length - 3; c++) {
+          if (/\w/.test(line[c])) {
+            const count = rng.nextInt(2, Math.min(4, line.length - c))
+            let allWord = true
+            for (let j = 0; j < count; j++) {
+              if (!/\w/.test(line[c + j])) { allWord = false; break }
+            }
+            if (allWord) {
+              candidates.push({ lineIdx: i, col: c, count })
+            }
+          }
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const replaceChars = ['x', '-', '_', '0']
+      const replaceWith = replaceChars[rng.nextInt(0, replaceChars.length - 1)]
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.col) + replaceWith.repeat(chosen.count) + line.slice(chosen.col + chosen.count)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const cmd = `${chosen.count}r${replaceWith}`
+      const actionSteps: SolutionStep[] = [{ keys: cmd, description: `Replace ${chosen.count} chars with '${replaceWith}'` }]
+      const solutions = computeSolutions(
+        offset.line, offset.column, chosen.lineIdx, chosen.col,
+        lines[chosen.lineIdx], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Replace ${chosen.count} characters with '${replaceWith}' on line ${chosen.lineIdx + 1}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.col,
+          toLine: chosen.lineIdx,
+          toCol: chosen.col + chosen.count,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'scroll-delete-to-bol',
+    type: 'delete',
+    title: 'Scroll and Delete to Beginning of Line',
+    description: 'Navigate to a distant position and delete to the start of the line',
+    difficulty: 5,
+    requiredCommands: ['d0', 'G'],
+    timeLimitSeconds: 20,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 20) return null
+
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => line.length >= 8)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const col = rng.nextInt(3, Math.min(chosen.line.length - 2, 12))
+      const newLine = chosen.line.slice(col)
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = newLine
+
+      const offset = pickFarCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [{ keys: 'd0', description: 'Delete to beginning of line' }]
+      const solutions = computeScrollSolutions(
+        offset.line, offset.column, chosen.index, col,
+        lines[chosen.index], lines.length, actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Scroll to line ${chosen.index + 1} and delete to start`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: 0,
+          toLine: chosen.index,
+          toCol: col,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'scroll-change-to-eol',
+    type: 'change',
+    title: 'Scroll and Change to End of Line',
+    description: 'Navigate to a distant position and change to end of line with C',
+    difficulty: 5,
+    requiredCommands: ['C', 'G'],
+    timeLimitSeconds: 25,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 20) return null
+
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => line.length >= 8)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const maxCol = Math.max(1, Math.floor(chosen.line.length / 2))
+      const col = rng.nextInt(1, maxCol)
+      const kept = chosen.line.slice(0, col)
+      const replacements = ['null', 'true', 'false', '0', '[]']
+      const replacement = replacements[rng.nextInt(0, replacements.length - 1)]
+      const newLine = kept + replacement
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = newLine
+
+      const offset = pickFarCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [
+        { keys: `C${replacement}`, description: `Change to end with '${replacement}'` },
+        { keys: 'Escape', description: 'Exit insert mode' },
+      ]
+      const solutions = computeScrollSolutions(
+        offset.line, offset.column, chosen.index, col,
+        lines[chosen.index], lines.length, actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Scroll to line ${chosen.index + 1} and change to end`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: col,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'scroll-substitute-line',
+    type: 'change',
+    title: 'Scroll and Substitute Line',
+    description: 'Navigate to a distant line and replace it entirely using S',
+    difficulty: 5,
+    requiredCommands: ['S', 'G'],
+    timeLimitSeconds: 25,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 20) return null
+
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => line.trimStart().length >= 4)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const indent = chosen.line.match(/^(\s*)/)?.[1] ?? ''
+      const replacements = ['return null', 'break', 'continue', '// removed']
+      const replacement = replacements[rng.nextInt(0, replacements.length - 1)]
+      const newLine = indent + replacement
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = newLine
+
+      const offset = pickFarCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [
+        { keys: `S${replacement}`, description: `Substitute line with '${replacement}'` },
+        { keys: 'Escape', description: 'Exit insert mode' },
+      ]
+      const solutions = computeScrollSolutions(
+        offset.line, offset.column, chosen.index, 0,
+        lines[chosen.index], lines.length, actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Scroll to line ${chosen.index + 1} and substitute it`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: 0,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
+      }
+    },
+  },
 ]
