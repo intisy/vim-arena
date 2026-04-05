@@ -83,7 +83,6 @@ export default function ChallengeViewPage() {
     }
   }, [phase, result, handleTimeoutKeyDown])
 
-  // Practice toggle keybind works during entire complete phase (both result and timeout screens)
   useEffect(() => {
     if (phase !== 'complete') return
     const handler = (e: KeyboardEvent) => {
@@ -93,7 +92,6 @@ export default function ChallengeViewPage() {
     return () => window.removeEventListener('keydown', handler)
   }, [phase, togglePracticeMode])
 
-  // Escape to pause/resume during active phase (practice mode only)
   useEffect(() => {
     if (phase !== 'active' && phase !== 'paused') return
     const handler = (e: KeyboardEvent) => {
@@ -143,27 +141,27 @@ export default function ChallengeViewPage() {
         </div>
       )}
 
-      <div className="flex justify-between items-start mb-6 bg-gray-800/50 p-6 rounded-xl border border-gray-700">
-        <div className="flex-1 pr-8">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="px-3 py-1 bg-green-900/50 text-green-400 text-sm font-bold rounded-full border border-green-800">
+      <div className="flex justify-between items-start mb-4 bg-gray-800/50 p-5 rounded-xl border border-gray-700">
+        <div className="flex-1 min-w-0 pr-6">
+          <div className="flex items-center gap-3 mb-1.5">
+            <span className="px-3 py-1 bg-green-900/50 text-green-400 text-sm font-bold rounded-full border border-green-800 shrink-0">
               Level {challenge.difficulty}
             </span>
-            <h2 className="text-2xl font-bold text-white">{challenge.description}</h2>
+            <h2 className="text-xl font-bold text-white truncate">{challenge.description}</h2>
           </div>
-          <p className="text-gray-400">
+          <p className="text-sm text-gray-400">
             {practiceMode
-              ? 'Practice mode — follow the steps below. Only perfect keys are allowed. No elo change.'
+              ? 'Practice mode — only solution keys are allowed. No elo change.'
               : isRetry
-                ? 'Retry — same challenge, no elo change. Navigate to the highlighted area and complete the task.'
+                ? 'Retry — same challenge, no elo change.'
                 : 'Navigate to the highlighted area and complete the task.'}
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 shrink-0">
           {practiceMode && (phase === 'active' || phase === 'paused') && (
             <button
               onClick={togglePause}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border ${
                 phase === 'paused'
                   ? 'bg-blue-900/50 text-blue-400 border-blue-700'
                   : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200 hover:border-gray-500'
@@ -171,13 +169,13 @@ export default function ChallengeViewPage() {
             >
               {phase === 'paused' ? <Play size={14} /> : <Pause size={14} />}
               {phase === 'paused' ? 'Resume' : 'Pause'}
-              <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-1">Esc</kbd>
+              <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-0.5">Esc</kbd>
             </button>
           )}
           <button
             onClick={togglePracticeMode}
             disabled={phase === 'active' || phase === 'countdown' || phase === 'paused'}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border ${
               phase === 'active' || phase === 'countdown' || phase === 'paused'
                 ? 'bg-gray-800/50 text-gray-600 border-gray-800 cursor-not-allowed'
                 : practiceMode
@@ -187,7 +185,7 @@ export default function ChallengeViewPage() {
           >
             {practiceMode ? <Target size={14} /> : <GraduationCap size={14} />}
             {practiceMode ? 'Practice ON' : 'Practice'}
-            <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-1">p</kbd>
+            <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-0.5">p</kbd>
           </button>
           <ChallengeTimer
             timeLimit={challenge.timeLimit}
@@ -197,36 +195,34 @@ export default function ChallengeViewPage() {
         </div>
       </div>
 
-      {practiceMode && equalSolutions.length > 0 && phase !== 'countdown' && (
-        <div className="mb-4 bg-amber-900/20 border border-amber-800/50 rounded-lg px-4 py-3 space-y-3">
-          {equalSolutions.map((sol, si) => (
-            <div key={si}>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-sm font-bold text-amber-400 uppercase tracking-wider">
-                  {equalSolutions.length === 1 ? 'Solution:' : `Option ${si + 1}:`}
-                </span>
-                <span className="text-xs text-amber-600">({sol.totalKeystrokes} keystrokes)</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {sol.steps.map((step, i) => (
-                  <div key={i} className="flex items-center gap-1.5">
-                    {i > 0 && <ArrowRight size={12} className="text-gray-600" />}
-                    <div className="flex items-center gap-1 bg-amber-900/40 border border-amber-700 rounded px-2 py-1">
-                      <kbd className="font-mono font-bold text-amber-300 text-sm">
-                        {step.keys}
-                      </kbd>
-                      <span className="text-amber-500 text-xs">{step.description}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="flex-1 relative min-h-[400px]">
         <div className={`transition-opacity duration-300 ${phase === 'complete' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+          {practiceMode && equalSolutions.length > 0 && phase !== 'countdown' && (
+            <div className="mb-3 bg-gray-800/60 border border-amber-800/40 rounded-lg px-4 py-2.5">
+              {equalSolutions.map((sol, si) => (
+                <div key={si} className={si > 0 ? 'mt-2 pt-2 border-t border-gray-700/50' : ''}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+                      {equalSolutions.length === 1 ? 'Solution' : `Option ${si + 1}`}
+                    </span>
+                    <span className="text-xs text-gray-500">{sol.totalKeystrokes} keys</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {sol.steps.map((step, i) => (
+                      <div key={i} className="flex items-center gap-1">
+                        {i > 0 && <ArrowRight size={10} className="text-gray-600 shrink-0" />}
+                        <span className="inline-flex items-center gap-1 bg-amber-900/30 border border-amber-800/60 rounded px-1.5 py-0.5">
+                          <kbd className="font-mono font-bold text-amber-300 text-xs">{step.keys}</kbd>
+                          <span className="text-amber-500/80 text-[11px]">{step.description}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <VimEditor
             ref={editorRef}
             initialContent={challenge.initialContent}
@@ -244,7 +240,7 @@ export default function ChallengeViewPage() {
             className="rounded-xl overflow-hidden shadow-2xl"
           />
           
-          <div className="mt-4 flex justify-between text-sm text-gray-500 font-mono px-2">
+          <div className="mt-3 flex justify-between text-sm text-gray-500 font-mono px-1">
             <div>Keystrokes: <span className="text-white">{keystrokes}</span> / {challenge.referenceKeystrokeCount}</div>
             <div>Target: {challenge.expectedContent.split('\n').length} lines</div>
           </div>

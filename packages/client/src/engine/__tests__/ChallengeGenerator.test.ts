@@ -96,7 +96,6 @@ describe('ChallengeGenerator', () => {
     const gen2 = new ChallengeGenerator(templates, snippets, new SeededRandom(999))
     const c1 = gen1.generate()
     const c2 = gen2.generate()
-    // At least something should differ (extremely unlikely to be identical)
     const sameAll = c1.templateId === c2.templateId
       && c1.snippetId === c2.snippetId
       && c1.initialCursor.line === c2.initialCursor.line
@@ -177,8 +176,6 @@ describe('ChallengeGenerator', () => {
     const gen = new ChallengeGenerator(templates, snippets, new SeededRandom(42))
     for (let i = 0; i < 10; i++) {
       const challenge = gen.generate()
-      // yank-paste produces different content (duplicated line)
-      // delete/change produce different content too
       expect(challenge.expectedContent).not.toBe(challenge.initialContent)
     }
   })
@@ -199,7 +196,6 @@ describe('Challenge Templates', () => {
     const challenge = template.generateChallenge(testSnippet, 42)
     expect(challenge).not.toBeNull()
     expect(challenge!.templateId).toBe('delete-char')
-    // Corrupted input has 1 extra char; expected content is the original snippet
     expect(challenge!.expectedContent).toBe(testSnippet.content)
     expect(challenge!.initialContent.length).toBe(testSnippet.content.length + 1)
   })
@@ -209,7 +205,6 @@ describe('Challenge Templates', () => {
     const challenge = template.generateChallenge(testSnippet, 42)
     expect(challenge).not.toBeNull()
     expect(challenge!.templateId).toBe('replace-char')
-    // Corrupted input has a wrong letter; expected content is the original snippet
     expect(challenge!.expectedContent).toBe(testSnippet.content)
     expect(challenge!.initialContent.length).toBe(testSnippet.content.length)
     expect(challenge!.initialContent).not.toBe(testSnippet.content)
@@ -267,8 +262,8 @@ describe('Challenge Templates', () => {
     expect(challenge!.expectedContent.length).toBeLessThan(testSnippet.content.length)
   })
 
-  test('all 8 templates are present', () => {
-    expect(CHALLENGE_TEMPLATES).toHaveLength(8)
+  test('all 18 templates are present', () => {
+    expect(CHALLENGE_TEMPLATES).toHaveLength(18)
     const ids = CHALLENGE_TEMPLATES.map(t => t.id)
     expect(ids).toContain('delete-char')
     expect(ids).toContain('replace-char')
@@ -278,6 +273,16 @@ describe('Challenge Templates', () => {
     expect(ids).toContain('delete-to-eol')
     expect(ids).toContain('yank-paste')
     expect(ids).toContain('delete-inner-word')
+    expect(ids).toContain('append-eol')
+    expect(ids).toContain('insert-bol')
+    expect(ids).toContain('join-lines')
+    expect(ids).toContain('change-to-eol')
+    expect(ids).toContain('swap-lines')
+    expect(ids).toContain('delete-inside-quotes')
+    expect(ids).toContain('change-inside-parens')
+    expect(ids).toContain('delete-around-word')
+    expect(ids).toContain('scroll-delete-line')
+    expect(ids).toContain('scroll-change-word')
   })
 
   test('template returns null for unsuitable snippet', () => {
@@ -288,9 +293,50 @@ describe('Challenge Templates', () => {
       lineCount: 1,
       tags: [],
     }
-    // delete-line needs >= 2 lines
     const template = CHALLENGE_TEMPLATES.find(t => t.id === 'delete-line')!
     const challenge = template.generateChallenge(tinySnippet, 42)
     expect(challenge).toBeNull()
+  })
+
+  test('scroll templates return null for short snippets', () => {
+    const scrollTemplate = CHALLENGE_TEMPLATES.find(t => t.id === 'scroll-delete-line')!
+    const challenge = scrollTemplate.generateChallenge(testSnippet, 42)
+    expect(challenge).toBeNull()
+  })
+
+  test('scroll templates generate valid challenge for long snippets', () => {
+    const longSnippet: CodeSnippet = {
+      id: 'long-test',
+      content: Array.from({ length: 30 }, (_, i) => `  const line${i} = ${i}`).join('\n'),
+      language: 'javascript',
+      lineCount: 30,
+      tags: ['long'],
+    }
+    const scrollTemplate = CHALLENGE_TEMPLATES.find(t => t.id === 'scroll-delete-line')!
+    const challenge = scrollTemplate.generateChallenge(longSnippet, 42)
+    expect(challenge).not.toBeNull()
+    expect(challenge!.templateId).toBe('scroll-delete-line')
+    const expectedLines = challenge!.expectedContent.split('\n')
+    expect(expectedLines.length).toBe(29)
+  })
+
+  test('join-lines template generates valid challenge', () => {
+    const template = CHALLENGE_TEMPLATES.find(t => t.id === 'join-lines')!
+    const challenge = template.generateChallenge(testSnippet, 42)
+    expect(challenge).not.toBeNull()
+    expect(challenge!.templateId).toBe('join-lines')
+    const expectedLines = challenge!.expectedContent.split('\n')
+    const originalLines = testSnippet.content.split('\n')
+    expect(expectedLines.length).toBe(originalLines.length - 1)
+  })
+
+  test('swap-lines template generates valid challenge', () => {
+    const template = CHALLENGE_TEMPLATES.find(t => t.id === 'swap-lines')!
+    const challenge = template.generateChallenge(testSnippet, 42)
+    expect(challenge).not.toBeNull()
+    expect(challenge!.templateId).toBe('swap-lines')
+    const expectedLines = challenge!.expectedContent.split('\n')
+    const originalLines = testSnippet.content.split('\n')
+    expect(expectedLines.length).toBe(originalLines.length)
   })
 })

@@ -158,6 +158,29 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
           if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false
           if (event.ctrlKey || event.altKey || event.metaKey) return false
 
+          // Handle ^ explicitly: browsers treat Shift+6 as a dead/compose key
+          // on many keyboard layouts and insert a literal '^' character instead
+          // of letting vim process the "first non-whitespace" motion.
+          if (event.key === '^' || event.key === 'Dead') {
+            const currentMode = readVimMode(view)
+            if (currentMode !== 'insert' && currentMode !== 'replace') {
+              const ak = allowedKeysRef.current
+              if (ak && !ak.includes('^')) {
+                event.preventDefault()
+                event.stopPropagation()
+                return true
+              }
+              event.preventDefault()
+              event.stopPropagation()
+              const cm = getCM(view)
+              if (cm) {
+                Vim.handleKey(cm as Parameters<typeof Vim.handleKey>[0], '^', 'user')
+              }
+              onKeystrokeRef.current?.()
+              return true
+            }
+          }
+
           const keys = allowedKeysRef.current
 
           if (keys) {
