@@ -4,7 +4,7 @@ import { CHALLENGE_TEMPLATES } from '@/data/challenge-templates'
 import { ALL_SNIPPETS } from '@/data/snippets'
 import type { CodeSnippet } from '@/types/challenge'
 
-// ─── SeededRandom Tests ───────────────────────────────────
+// â”€â”€â”€ SeededRandom Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 describe('SeededRandom', () => {
   test('produces deterministic output with same seed', () => {
     const rng1 = new SeededRandom(42)
@@ -59,7 +59,7 @@ describe('SeededRandom', () => {
   })
 })
 
-// ─── ChallengeGenerator Tests ─────────────────────────────
+// â”€â”€â”€ ChallengeGenerator Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 describe('ChallengeGenerator', () => {
   const templates = CHALLENGE_TEMPLATES
   const snippets = ALL_SNIPPETS
@@ -181,7 +181,7 @@ describe('ChallengeGenerator', () => {
   })
 })
 
-// ─── Individual Template Tests ────────────────────────────
+// â”€â”€â”€ Individual Template Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 describe('Challenge Templates', () => {
   const testSnippet: CodeSnippet = {
     id: 'test-snippet',
@@ -263,7 +263,7 @@ describe('Challenge Templates', () => {
   })
 
   test('all 45 templates are present', () => {
-    expect(CHALLENGE_TEMPLATES).toHaveLength(71)
+    expect(CHALLENGE_TEMPLATES).toHaveLength(81)
     const ids = CHALLENGE_TEMPLATES.map(t => t.id)
     // Base templates (18)
     expect(ids).toContain('delete-char')
@@ -341,6 +341,17 @@ describe('Challenge Templates', () => {
     expect(ids).toContain('change-big-word')
     expect(ids).toContain('scroll-indent-line')
     expect(ids).toContain('scroll-dedent-line')
+    // Batch 6 extra templates (10)
+    expect(ids).toContain('change-inside-word')
+    expect(ids).toContain('join-lines-no-space')
+    expect(ids).toContain('uppercase-line')
+    expect(ids).toContain('lowercase-line')
+    expect(ids).toContain('toggle-case-line')
+    expect(ids).toContain('join-count-lines')
+    expect(ids).toContain('scroll-uppercase-line')
+    expect(ids).toContain('scroll-lowercase-line')
+    expect(ids).toContain('scroll-change-inside-word')
+    expect(ids).toContain('scroll-toggle-case-line')
   })
 
   test('template returns null for unsuitable snippet', () => {

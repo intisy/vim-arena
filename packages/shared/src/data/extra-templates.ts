@@ -3266,4 +3266,560 @@ export const EXTRA_TEMPLATES: ChallengeTemplate[] = [
       }
     },
   },
+
+  {
+    id: 'change-inside-word',
+    type: 'change',
+    title: 'Change Inside Word',
+    description: 'Change the word under the cursor to a different word',
+    difficulty: 2,
+    requiredCommands: ['ciw'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates: Array<{ lineIdx: number; start: number; end: number; word: string }> = []
+
+      for (let i = 0; i < lines.length; i++) {
+        const wordRegex = /\b(\w{3,8})\b/g
+        let m: RegExpExecArray | null
+        while ((m = wordRegex.exec(lines[i])) !== null) {
+          candidates.push({ lineIdx: i, start: m.index, end: m.index + m[0].length, word: m[0] })
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const replacements = ['foo', 'bar', 'baz', 'tmp', 'val', 'key', 'out', 'src']
+      const replacement = replacements[rng.nextInt(0, replacements.length - 1)]
+
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.start) + replacement + line.slice(chosen.end)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const actionSteps: SolutionStep[] = [
+        { keys: `ciw${replacement}`, description: `Change word to '${replacement}'` },
+        { keys: 'Escape', description: 'Exit insert mode' },
+      ]
+      const solutions = computeSolutions(
+        offset.line, offset.column, chosen.lineIdx, chosen.start,
+        lines[chosen.lineIdx], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Change '${chosen.word}' to '${replacement}'`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.start,
+          toLine: chosen.lineIdx,
+          toCol: chosen.end,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'join-lines-no-space',
+    type: 'change',
+    title: 'Join Lines Without Space',
+    description: 'Join the current line with the next without adding a space',
+    difficulty: 3,
+    requiredCommands: ['gJ'],
+    timeLimitSeconds: 10,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 3) return null
+
+      const candidates: number[] = []
+      for (let i = 0; i < lines.length - 1; i++) {
+        if (lines[i].length > 0 && lines[i + 1].length > 0) {
+          candidates.push(i)
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const lineIdx = candidates[rng.nextInt(0, candidates.length - 1)]
+      const joinedLine = lines[lineIdx] + lines[lineIdx + 1]
+      const expectedLines = [...lines]
+      expectedLines.splice(lineIdx, 2, joinedLine)
+
+      const offset = pickOffsetCursor(rng, lineIdx, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: 'gJ', description: 'Join lines without space' }]
+      const solutions = computeSolutions(
+        offset.line, offset.column, lineIdx, 0,
+        lines[lineIdx], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Join line ${lineIdx + 1} with line below (no space)`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: lineIdx,
+          fromCol: 0,
+          toLine: lineIdx + 1,
+          toCol: lines[lineIdx + 1].length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'uppercase-line',
+    type: 'change',
+    title: 'Uppercase Entire Line',
+    description: 'Convert the entire line to uppercase',
+    difficulty: 3,
+    requiredCommands: ['gUU'],
+    timeLimitSeconds: 10,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => /[a-z]/.test(line) && line.trimStart().length >= 3)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = chosen.line.toUpperCase()
+
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: 'gUU', description: 'Uppercase entire line' }]
+      const solutions = computeSolutions(
+        offset.line, offset.column, chosen.index, 0,
+        lines[chosen.index], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Convert line ${chosen.index + 1} to uppercase`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: 0,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'lowercase-line',
+    type: 'change',
+    title: 'Lowercase Entire Line',
+    description: 'Convert the entire line to lowercase',
+    difficulty: 3,
+    requiredCommands: ['guu'],
+    timeLimitSeconds: 10,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => /[A-Z]/.test(line) && line.trimStart().length >= 3)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = chosen.line.toLowerCase()
+
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: 'guu', description: 'Lowercase entire line' }]
+      const solutions = computeSolutions(
+        offset.line, offset.column, chosen.index, 0,
+        lines[chosen.index], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Convert line ${chosen.index + 1} to lowercase`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: 0,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'toggle-case-line',
+    type: 'change',
+    title: 'Toggle Case Entire Line',
+    description: 'Toggle the case of every character on the line',
+    difficulty: 3,
+    requiredCommands: ['g~~'],
+    timeLimitSeconds: 10,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => /[a-zA-Z]/.test(line) && line.trimStart().length >= 3)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const toggled = chosen.line.split('').map(c => {
+        if (c >= 'a' && c <= 'z') return c.toUpperCase()
+        if (c >= 'A' && c <= 'Z') return c.toLowerCase()
+        return c
+      }).join('')
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = toggled
+
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: 'g~~', description: 'Toggle case of entire line' }]
+      const solutions = computeSolutions(
+        offset.line, offset.column, chosen.index, 0,
+        lines[chosen.index], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Toggle case of line ${chosen.index + 1}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: 0,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'join-count-lines',
+    type: 'change',
+    title: 'Join Multiple Lines',
+    description: 'Join several lines together using a count with J',
+    difficulty: 3,
+    requiredCommands: ['J'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 5) return null
+
+      const count = rng.nextInt(3, 4)
+      const maxStart = lines.length - count
+      if (maxStart < 0) return null
+
+      const candidates: number[] = []
+      for (let i = 0; i <= maxStart; i++) {
+        let valid = true
+        for (let j = 0; j < count; j++) {
+          if (lines[i + j].trimStart().length < 2) { valid = false; break }
+        }
+        if (valid) candidates.push(i)
+      }
+      if (candidates.length === 0) return null
+
+      const lineIdx = candidates[rng.nextInt(0, candidates.length - 1)]
+      let joined = lines[lineIdx]
+      for (let j = 1; j < count; j++) {
+        joined += ' ' + lines[lineIdx + j].trimStart()
+      }
+      const expectedLines = [...lines]
+      expectedLines.splice(lineIdx, count, joined)
+
+      const offset = pickOffsetCursor(rng, lineIdx, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: `${count}J`, description: `Join ${count} lines` }]
+      const solutions = computeSolutions(
+        offset.line, offset.column, lineIdx, 0,
+        lines[lineIdx], actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Join ${count} lines starting at line ${lineIdx + 1}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: lineIdx,
+          fromCol: 0,
+          toLine: lineIdx + count - 1,
+          toCol: lines[lineIdx + count - 1].length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'scroll-uppercase-line',
+    type: 'change',
+    title: 'Scroll and Uppercase Line',
+    description: 'Navigate to a distant line and convert it to uppercase',
+    difficulty: 5,
+    requiredCommands: ['gUU', 'G'],
+    timeLimitSeconds: 20,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 20) return null
+
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => /[a-z]/.test(line) && line.trimStart().length >= 3)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = chosen.line.toUpperCase()
+
+      const offset = pickFarCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [{ keys: 'gUU', description: 'Uppercase entire line' }]
+      const solutions = computeScrollSolutions(
+        offset.line, offset.column, chosen.index, 0,
+        lines[chosen.index], lines.length, actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Scroll to line ${chosen.index + 1} and uppercase it`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: 0,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'scroll-lowercase-line',
+    type: 'change',
+    title: 'Scroll and Lowercase Line',
+    description: 'Navigate to a distant line and convert it to lowercase',
+    difficulty: 5,
+    requiredCommands: ['guu', 'G'],
+    timeLimitSeconds: 20,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 20) return null
+
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => /[A-Z]/.test(line) && line.trimStart().length >= 3)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = chosen.line.toLowerCase()
+
+      const offset = pickFarCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [{ keys: 'guu', description: 'Lowercase entire line' }]
+      const solutions = computeScrollSolutions(
+        offset.line, offset.column, chosen.index, 0,
+        lines[chosen.index], lines.length, actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Scroll to line ${chosen.index + 1} and lowercase it`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: 0,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'scroll-change-inside-word',
+    type: 'change',
+    title: 'Scroll and Change Word',
+    description: 'Navigate to a distant word and change it using ciw',
+    difficulty: 5,
+    requiredCommands: ['ciw', 'G'],
+    timeLimitSeconds: 25,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 20) return null
+
+      const candidates: Array<{ lineIdx: number; start: number; end: number; word: string }> = []
+      for (let i = 0; i < lines.length; i++) {
+        const wordRegex = /\b(\w{3,8})\b/g
+        let m: RegExpExecArray | null
+        while ((m = wordRegex.exec(lines[i])) !== null) {
+          candidates.push({ lineIdx: i, start: m.index, end: m.index + m[0].length, word: m[0] })
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const replacements = ['foo', 'bar', 'baz', 'tmp', 'val', 'key']
+      const replacement = replacements[rng.nextInt(0, replacements.length - 1)]
+
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.start) + replacement + line.slice(chosen.end)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickFarCursor(rng, chosen.lineIdx, lines.length)
+      const actionSteps: SolutionStep[] = [
+        { keys: `ciw${replacement}`, description: `Change word to '${replacement}'` },
+        { keys: 'Escape', description: 'Exit insert mode' },
+      ]
+      const solutions = computeScrollSolutions(
+        offset.line, offset.column, chosen.lineIdx, chosen.start,
+        lines[chosen.lineIdx], lines.length, actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Scroll to and change '${chosen.word}' to '${replacement}'`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.start,
+          toLine: chosen.lineIdx,
+          toCol: chosen.end,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'scroll-toggle-case-line',
+    type: 'change',
+    title: 'Scroll and Toggle Case Line',
+    description: 'Navigate to a distant line and toggle the case of every character',
+    difficulty: 5,
+    requiredCommands: ['g~~', 'G'],
+    timeLimitSeconds: 20,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 20) return null
+
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => /[a-zA-Z]/.test(line) && line.trimStart().length >= 3)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const toggled = chosen.line.split('').map(c => {
+        if (c >= 'a' && c <= 'z') return c.toUpperCase()
+        if (c >= 'A' && c <= 'Z') return c.toLowerCase()
+        return c
+      }).join('')
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = toggled
+
+      const offset = pickFarCursor(rng, chosen.index, lines.length)
+      const actionSteps: SolutionStep[] = [{ keys: 'g~~', description: 'Toggle case of entire line' }]
+      const solutions = computeScrollSolutions(
+        offset.line, offset.column, chosen.index, 0,
+        lines[chosen.index], lines.length, actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Scroll to line ${chosen.index + 1} and toggle its case`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: 0,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
+      }
+    },
+  },
 ]
