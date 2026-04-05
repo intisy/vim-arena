@@ -16,13 +16,13 @@ import type { EditorState } from '@/types/editor'
 
 export type ChallengePhase = 'idle' | 'countdown' | 'active' | 'paused' | 'complete'
 
-export function useChallengeEngine(initialPracticeMode = false) {
+export function useChallengeEngine(initialPracticeMode = false, countdownDuration = 3) {
   const [challenge, setChallenge] = useState<GeneratedChallenge | null>(null)
   const [phase, setPhase] = useState<ChallengePhase>('idle')
   const [elapsed, setElapsed] = useState(0)
   const [keystrokes, setKeystrokes] = useState(0)
   const [result, setResult] = useState<ChallengeResult | null>(null)
-  const [countdown, setCountdown] = useState(3)
+  const [countdown, setCountdown] = useState(countdownDuration)
   const [difficulty, setDifficulty] = useState<1 | 2 | 3 | 4 | 5>(1)
   const [practiceMode, setPracticeMode] = useState(initialPracticeMode)
   const [isRetry, setIsRetry] = useState(false)
@@ -33,6 +33,8 @@ export function useChallengeEngine(initialPracticeMode = false) {
   const isRetryRef = useRef(false)
   const lastChallengeRef = useRef<GeneratedChallenge | null>(null)
   const challengeIdRef = useRef<string | null>(null)
+  const countdownDurationRef = useRef(countdownDuration)
+  countdownDurationRef.current = countdownDuration
   const { elo } = useEloRating()
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -129,12 +131,13 @@ export function useChallengeEngine(initialPracticeMode = false) {
     setResult(null)
     setElapsed(0)
     setKeystrokes(0)
-    setCountdown(3)
+    const cdDuration = countdownDurationRef.current
+    setCountdown(cdDuration)
     setPhase('countdown')
 
     void registerChallenge(ch)
 
-    let currentCountdown = 3
+    let currentCountdown = cdDuration
     countdownIntervalRef.current = setInterval(() => {
       currentCountdown -= 1
       setCountdown(currentCountdown)

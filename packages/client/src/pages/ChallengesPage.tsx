@@ -5,6 +5,7 @@ import { useChallengeStats } from '@/hooks/useChallengeStats'
 import { getRatingLabel, getRatingColor } from '@/engine/EloRating'
 import { Target, GraduationCap, Star, LogIn } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSettings } from '@/hooks/useSettings'
 
 const DIFFICULTY_LABELS: Record<number, { label: string; desc: string }> = {
   1: { label: 'Beginner', desc: 'delete/replace single characters' },
@@ -23,7 +24,8 @@ export default function ChallengesPage() {
   const { user } = useAuth()
   const { elo, getMatchedDifficulty } = useEloRating()
   const { stats } = useChallengeStats()
-  const [practiceMode, setPracticeMode] = useState(false)
+  const { settings } = useSettings()
+  const [practiceMode, setPracticeMode] = useState(settings.challengeDefaultPractice)
 
   const matchedDiff = getMatchedDifficulty()
   const ratingLabel = getRatingLabel(elo.rating)
@@ -56,6 +58,8 @@ export default function ChallengesPage() {
   const winRate = elo.gamesPlayed > 0
     ? Math.round((elo.wins / elo.gamesPlayed) * 100)
     : 0
+
+  const showKbd = settings.challengeShowKeyboardHints
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in-up">
@@ -153,7 +157,9 @@ export default function ChallengesPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <kbd className="text-[10px] bg-[var(--theme-background)] border border-[var(--theme-border)] px-1.5 py-0.5 rounded font-mono text-[var(--theme-muted-foreground)]">p</kbd>
+              {showKbd && (
+                <kbd className="text-[10px] bg-[var(--theme-background)] border border-[var(--theme-border)] px-1.5 py-0.5 rounded font-mono text-[var(--theme-muted-foreground)]">p</kbd>
+              )}
               <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
                 practiceMode ? 'bg-[var(--theme-warning)]' : 'bg-[var(--theme-border)]'
               }`}>
@@ -170,7 +176,9 @@ export default function ChallengesPage() {
             className="w-full py-4 bg-[var(--theme-primary)] hover:opacity-90 text-[var(--theme-background)] text-xl font-black rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
           >
             Start Challenge
-            <kbd className="text-sm bg-[var(--theme-primary)]/80 px-2 py-0.5 rounded font-mono">Enter</kbd>
+            {showKbd && (
+              <kbd className="text-sm bg-[var(--theme-primary)]/80 px-2 py-0.5 rounded font-mono">Enter</kbd>
+            )}
           </button>
         </div>
 

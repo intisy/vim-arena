@@ -117,6 +117,8 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     onModeChange,
     onKeystroke,
     className,
+    fontSize = 14,
+    showLineNumbers = true,
   },
   ref,
 ) {
@@ -158,9 +160,6 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
           if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false
           if (event.ctrlKey || event.altKey || event.metaKey) return false
 
-          // Handle ^ explicitly: browsers treat Shift+6 as a dead/compose key
-          // on many keyboard layouts and insert a literal '^' character instead
-          // of letting vim process the "first non-whitespace" motion.
           if (event.key === '^' || event.key === 'Dead') {
             const currentMode = readVimMode(view)
             if (currentMode !== 'insert' && currentMode !== 'replace') {
@@ -402,7 +401,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
         readOnly={readOnly}
         theme="dark"
         basicSetup={{
-          lineNumbers: true,
+          lineNumbers: showLineNumbers,
           highlightActiveLine: true,
           highlightActiveLineGutter: true,
           foldGutter: false,
@@ -411,7 +410,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
           indentOnInput: false,
         }}
         style={{
-          fontSize: '14px',
+          fontSize: `${fontSize}px`,
         }}
       />
       <div

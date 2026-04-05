@@ -28,4 +28,6 @@ export interface VimEditorProps {
   onModeChange?: (mode: VimMode) => void
   onKeystroke?: () => void
   className?: string
+  fontSize?: number
+  showLineNumbers?: boolean
 }

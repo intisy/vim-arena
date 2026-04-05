@@ -10,6 +10,13 @@ import { buildPracticeKeys } from '@/engine/KeyFilter'
 import { Target, GraduationCap, ArrowRight, LogIn, Pause, Play } from 'lucide-react'
 import type { TargetRange } from '@/types/editor'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSettings } from '@/hooks/useSettings'
+
+const EDITOR_HEIGHTS: Record<string, string> = {
+  compact: '300px',
+  default: '400px',
+  tall: '550px',
+}
 
 export default function ChallengeViewPage() {
   useEffect(() => {
@@ -19,10 +26,13 @@ export default function ChallengeViewPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { settings } = useSettings()
   const difficulty = location.state?.difficulty || 1
   const initialPracticeMode = location.state?.practiceMode ?? false
   const editorRef = useRef<VimEditorRef>(null)
   const { getBestScore } = useChallengeStats()
+
+  const editorHeight = EDITOR_HEIGHTS[settings.editorHeight] ?? '400px'
 
   const {
     challenge,
@@ -40,7 +50,7 @@ export default function ChallengeViewPage() {
     nextChallenge,
     handleEditorStateChange,
     handleKeystroke,
-  } = useChallengeEngine(initialPracticeMode)
+  } = useChallengeEngine(initialPracticeMode, settings.challengeCountdownDuration)
 
   useEffect(() => {
     startChallenge(difficulty as 1 | 2 | 3 | 4 | 5)
@@ -101,6 +111,15 @@ export default function ChallengeViewPage() {
     return () => window.removeEventListener('keydown', handler)
   }, [phase, togglePause])
 
+  // Auto-advance on completion
+  useEffect(() => {
+    if (phase !== 'complete' || !result || !settings.challengeAutoAdvance) return
+    const timer = setTimeout(() => {
+      nextChallenge()
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [phase, result, settings.challengeAutoAdvance, nextChallenge])
+
   const allowedKeys = useMemo(() => {
     if (!practiceMode || !challenge?.optimalSolutions) return undefined
     return buildPracticeKeys(challenge.optimalSolutions)
@@ -129,6 +148,8 @@ export default function ChallengeViewPage() {
 
   const bestKeystrokeCount = challenge.optimalSolutions?.[0]?.totalKeystrokes ?? Infinity
   const equalSolutions = challenge.optimalSolutions?.filter(s => s.totalKeystrokes === bestKeystrokeCount) ?? []
+
+  const showKbd = settings.challengeShowKeyboardHints
 
   return (
     <div className="max-w-5xl mx-auto p-6 h-full flex flex-col relative">
@@ -169,7 +190,7 @@ export default function ChallengeViewPage() {
             >
               {phase === 'paused' ? <Play size={14} /> : <Pause size={14} />}
               {phase === 'paused' ? 'Resume' : 'Pause'}
-              <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-0.5">Esc</kbd>
+              {showKbd && <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-0.5">Esc</kbd>}
             </button>
           )}
           <button
@@ -185,7 +206,7 @@ export default function ChallengeViewPage() {
           >
             {practiceMode ? <Target size={14} /> : <GraduationCap size={14} />}
             {practiceMode ? 'Practice ON' : 'Practice'}
-            <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-0.5">p</kbd>
+            {showKbd && <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-0.5">p</kbd>}
           </button>
           <ChallengeTimer
             timeLimit={challenge.timeLimit}
@@ -236,7 +257,9 @@ export default function ChallengeViewPage() {
             trapFocus={phase === 'active'}
             onStateChange={handleEditorStateChange}
             onKeystroke={handleKeystroke}
-            height="500px"
+            height={editorHeight}
+            fontSize={settings.editorFontSize}
+            showLineNumbers={settings.editorShowLineNumbers}
             className="rounded-xl overflow-hidden shadow-2xl"
           />
           
@@ -267,15 +290,20 @@ export default function ChallengeViewPage() {
         {phase === 'complete' && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md rounded-xl z-20 p-6">
             {result ? (
-              <ChallengeResults
-                result={result}
-                onRetry={retry}
-                onNext={nextChallenge}
-                onBack={handleBack}
-                isPersonalBest={isPersonalBest}
-                isPractice={practiceMode}
-                isRetry={isRetry}
-              />
+              <div className="flex flex-col items-center gap-4">
+                <ChallengeResults
+                  result={result}
+                  onRetry={retry}
+                  onNext={nextChallenge}
+                  onBack={handleBack}
+                  isPersonalBest={isPersonalBest}
+                  isPractice={practiceMode}
+                  isRetry={isRetry}
+                />
+                {settings.challengeAutoAdvance && (
+                  <p className="text-xs text-gray-500 animate-pulse">Auto-advancing in 3s...</p>
+                )}
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center p-8 bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-md mx-auto">
                 <h2 className="text-3xl font-bold text-white mb-4">Time&apos;s Up!</h2>
@@ -286,7 +314,7 @@ export default function ChallengeViewPage() {
                     className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
                     Next Challenge
-                    <kbd className="text-xs bg-green-700 px-1.5 py-0.5 rounded font-mono">n</kbd>
+                    {showKbd && <kbd className="text-xs bg-green-700 px-1.5 py-0.5 rounded font-mono">n</kbd>}
                   </button>
                   <div className="flex gap-3">
                     <button
@@ -294,14 +322,14 @@ export default function ChallengeViewPage() {
                       className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                       Retry
-                      <kbd className="text-xs bg-gray-600 px-1.5 py-0.5 rounded font-mono">r</kbd>
+                      {showKbd && <kbd className="text-xs bg-gray-600 px-1.5 py-0.5 rounded font-mono">r</kbd>}
                     </button>
                     <button
                       onClick={handleBack}
                       className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                       Back
-                      <kbd className="text-xs bg-gray-700 px-1.5 py-0.5 rounded font-mono">b</kbd>
+                      {showKbd && <kbd className="text-xs bg-gray-700 px-1.5 py-0.5 rounded font-mono">b</kbd>}
                     </button>
                   </div>
                 </div>
