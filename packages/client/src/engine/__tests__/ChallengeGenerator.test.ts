@@ -262,8 +262,8 @@ describe('Challenge Templates', () => {
     expect(challenge!.expectedContent.length).toBeLessThan(testSnippet.content.length)
   })
 
-  test('all 36 templates are present', () => {
-    expect(CHALLENGE_TEMPLATES).toHaveLength(36)
+  test('all 45 templates are present', () => {
+    expect(CHALLENGE_TEMPLATES).toHaveLength(45)
     const ids = CHALLENGE_TEMPLATES.map(t => t.id)
     // Base templates (18)
     expect(ids).toContain('delete-char')
@@ -284,7 +284,7 @@ describe('Challenge Templates', () => {
     expect(ids).toContain('delete-around-word')
     expect(ids).toContain('scroll-delete-line')
     expect(ids).toContain('scroll-change-word')
-    // Extra templates (18)
+    // Extra templates (27)
     expect(ids).toContain('delete-back-char')
     expect(ids).toContain('substitute-char')
     expect(ids).toContain('delete-multiple-chars')
@@ -303,6 +303,15 @@ describe('Challenge Templates', () => {
     expect(ids).toContain('scroll-replace-char')
     expect(ids).toContain('scroll-delete-word')
     expect(ids).toContain('scroll-join-lines')
+    expect(ids).toContain('open-line-below')
+    expect(ids).toContain('open-line-above')
+    expect(ids).toContain('substitute-line')
+    expect(ids).toContain('delete-till-char')
+    expect(ids).toContain('indent-line')
+    expect(ids).toContain('dedent-line')
+    expect(ids).toContain('delete-around-quotes')
+    expect(ids).toContain('delete-around-parens')
+    expect(ids).toContain('change-around-word')
   })
 
   test('template returns null for unsuitable snippet', () => {
@@ -430,6 +439,41 @@ describe('Challenge Templates', () => {
     }
   })
 
+  test('open-line-below template generates valid challenge', () => {
+    const template = CHALLENGE_TEMPLATES.find(t => t.id === 'open-line-below')!
+    const challenge = template.generateChallenge(testSnippet, 42)
+    expect(challenge).not.toBeNull()
+    expect(challenge!.templateId).toBe('open-line-below')
+    const expectedLines = challenge!.expectedContent.split('\n')
+    const initialLines = challenge!.initialContent.split('\n')
+    expect(expectedLines.length).toBe(initialLines.length + 1)
+  })
+
+  test('open-line-above template generates valid challenge', () => {
+    const template = CHALLENGE_TEMPLATES.find(t => t.id === 'open-line-above')!
+    const challenge = template.generateChallenge(testSnippet, 42)
+    expect(challenge).not.toBeNull()
+    expect(challenge!.templateId).toBe('open-line-above')
+    const expectedLines = challenge!.expectedContent.split('\n')
+    const initialLines = challenge!.initialContent.split('\n')
+    expect(expectedLines.length).toBe(initialLines.length + 1)
+  })
+
+  test('substitute-line template generates valid challenge', () => {
+    const template = CHALLENGE_TEMPLATES.find(t => t.id === 'substitute-line')!
+    const challenge = template.generateChallenge(testSnippet, 42)
+    expect(challenge).not.toBeNull()
+    expect(challenge!.templateId).toBe('substitute-line')
+    expect(challenge!.expectedContent).not.toBe(testSnippet.content)
+  })
+
+  test('indent-line template generates valid challenge', () => {
+    const template = CHALLENGE_TEMPLATES.find(t => t.id === 'indent-line')!
+    const challenge = template.generateChallenge(testSnippet, 42)
+    expect(challenge).not.toBeNull()
+    expect(challenge!.templateId).toBe('indent-line')
+  })
+
   test('no duplicate template IDs', () => {
     const ids = CHALLENGE_TEMPLATES.map(t => t.id)
     const uniqueIds = new Set(ids)
@@ -440,7 +484,7 @@ describe('Challenge Templates', () => {
     for (const template of CHALLENGE_TEMPLATES) {
       let generated = false
       for (const snippet of ALL_SNIPPETS) {
-        for (let seed = 0; seed < 5; seed++) {
+        for (let seed = 0; seed < 10; seed++) {
           const challenge = template.generateChallenge(snippet, seed)
           if (challenge !== null) {
             generated = true
