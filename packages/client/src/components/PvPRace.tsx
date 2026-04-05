@@ -8,9 +8,16 @@ import { supabase } from '@/lib/supabase'
 import { ChallengeGenerator, SeededRandom } from '@/engine/ChallengeGenerator'
 import { CHALLENGE_TEMPLATES } from '@/data/challenge-templates'
 import { ALL_SNIPPETS } from '@/data/snippets'
+import { useSettings } from '@/hooks/useSettings'
 import type { PvpRaceConfig, RaceProgressMessage, RaceResultMessage, ReplaySnapshot } from '@vim-arena/shared'
 import type { GeneratedChallenge } from '@/types/challenge'
 import type { EditorState } from '@/types/editor'
+
+const EDITOR_HEIGHTS: Record<string, string> = {
+  compact: '300px',
+  default: '400px',
+  tall: '550px',
+}
 
 type RacePhase = 'loading' | 'countdown' | 'racing' | 'finished'
 
@@ -24,6 +31,7 @@ export function PvPRace() {
   const location = useLocation()
   const navigate = useNavigate()
   const { session } = useAuth()
+  const { settings } = useSettings()
 
   const [config] = useState<PvpRaceConfig | null>(() => {
     const fromState = (location.state as { config?: PvpRaceConfig } | null)?.config ?? null
@@ -54,6 +62,8 @@ export function PvPRace() {
   const replaySnapshotsRef = useRef<ReplaySnapshot[]>([])
   const lastSnapshotTimeRef = useRef<number>(0)
   const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const editorHeight = EDITOR_HEIGHTS[settings.editorHeight] ?? '400px'
 
   const isPlayer1 = config ? userId === config.player1Id : false
   const myUsername = config
@@ -575,7 +585,9 @@ export function PvPRace() {
           trapFocus={phase === 'racing'}
           onStateChange={handleEditorStateChange}
           onKeystroke={handleKeystroke}
-          height="500px"
+          height={editorHeight}
+          fontSize={settings.editorFontSize}
+          showLineNumbers={settings.editorShowLineNumbers}
           className="rounded-xl overflow-hidden shadow-2xl"
         />
 

@@ -11,6 +11,7 @@ import { buildAllowedKeys } from '@/engine/KeyFilter'
 import { Search, PartyPopper, Check, Lightbulb, ArrowLeft, ArrowRight } from 'lucide-react'
 import type { VimEditorRef } from '@/components/VimEditor'
 import type { EditorState } from '@/types/editor'
+import { useSettings } from '@/hooks/useSettings'
 
 function formatInstruction(text: string) {
   const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g)
@@ -40,6 +41,7 @@ export default function LessonViewPage() {
   const { lessonId } = useParams<{ lessonId: string }>()
   const navigate = useNavigate()
   const lesson = lessonId ? LESSONS_BY_ID.get(lessonId) : undefined
+  const { settings } = useSettings()
   
   useEffect(() => {
     if (lesson) {
@@ -299,6 +301,8 @@ export default function LessonViewPage() {
                           onStateChange={handleStateChange}
                           className="h-full"
                           height={editorHeight}
+                          fontSize={settings.editorFontSize}
+                          showLineNumbers={settings.editorShowLineNumbers}
                         />
                         
                         {showSuccess && (
