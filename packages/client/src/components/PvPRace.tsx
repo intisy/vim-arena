@@ -588,6 +588,7 @@ export function PvPRace() {
           height={editorHeight}
           fontSize={settings.editorFontSize}
           showLineNumbers={settings.editorShowLineNumbers}
+          relativeLineNumbers={settings.editorRelativeLineNumbers}
           className="rounded-xl overflow-hidden shadow-2xl"
         />
 

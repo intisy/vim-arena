@@ -1,7 +1,7 @@
 import { forwardRef, useImperativeHandle, useRef, useCallback, useState, useMemo, useEffect } from 'react'
 import ReactCodeMirror from '@uiw/react-codemirror'
 import type { ReactCodeMirrorRef } from '@uiw/react-codemirror'
-import { EditorView, Decoration, type DecorationSet } from '@codemirror/view'
+import { EditorView, Decoration, type DecorationSet, lineNumbers as cmLineNumbers } from '@codemirror/view'
 import { StateField, StateEffect, Prec, type Range } from '@codemirror/state'
 import { vim, getCM, Vim } from '@replit/codemirror-vim'
 import { javascript } from '@codemirror/lang-javascript'
@@ -119,6 +119,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     className,
     fontSize = 14,
     showLineNumbers = true,
+    relativeLineNumbers = false,
   },
   ref,
 ) {
@@ -234,6 +235,17 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
     [],
   )
 
+  const relativeLineNumbersExt = useMemo(() => {
+    if (!relativeLineNumbers || !showLineNumbers) return []
+    return [cmLineNumbers({
+      formatNumber: (lineNo, state) => {
+        const cursorLine = state.doc.lineAt(state.selection.main.head).number
+        if (lineNo === cursorLine) return String(lineNo)
+        return String(Math.abs(lineNo - cursorLine))
+      },
+    })]
+  }, [relativeLineNumbers, showLineNumbers])
+
   const dispatchTargets = useCallback((view: EditorView) => {
     const decorations: Range<Decoration>[] = []
 
@@ -344,8 +356,8 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
   )
 
   const extensions = useMemo(
-    () => [vim(), getLangExtension(language), stateTracker, targetField, preventMouseSelection, keyFilterAndTracker],
-    [language, stateTracker, keyFilterAndTracker],
+    () => [vim(), getLangExtension(language), stateTracker, targetField, preventMouseSelection, keyFilterAndTracker, ...relativeLineNumbersExt],
+    [language, stateTracker, keyFilterAndTracker, relativeLineNumbersExt],
   )
 
   return (
@@ -401,7 +413,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
         readOnly={readOnly}
         theme="dark"
         basicSetup={{
-          lineNumbers: showLineNumbers,
+          lineNumbers: showLineNumbers && !relativeLineNumbers,
           highlightActiveLine: true,
           highlightActiveLineGutter: true,
           foldGutter: false,

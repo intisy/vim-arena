@@ -303,6 +303,7 @@ export default function LessonViewPage() {
                           height={editorHeight}
                           fontSize={settings.editorFontSize}
                           showLineNumbers={settings.editorShowLineNumbers}
+                          relativeLineNumbers={settings.editorRelativeLineNumbers}
                         />
                         
                         {showSuccess && (

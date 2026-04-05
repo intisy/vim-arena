@@ -30,4 +30,5 @@ export interface VimEditorProps {
   className?: string
   fontSize?: number
   showLineNumbers?: boolean
+  relativeLineNumbers?: boolean
 }

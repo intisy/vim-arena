@@ -260,6 +260,7 @@ export default function ChallengeViewPage() {
             height={editorHeight}
             fontSize={settings.editorFontSize}
             showLineNumbers={settings.editorShowLineNumbers}
+            relativeLineNumbers={settings.editorRelativeLineNumbers}
             className="rounded-xl overflow-hidden shadow-2xl"
           />
           
