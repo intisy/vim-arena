@@ -1464,6 +1464,384 @@ export const EXTRA_TEMPLATES: ChallengeTemplate[] = [
     },
   },
 
+  {
+    id: 'delete-word-backward',
+    type: 'delete',
+    title: 'Delete Word Backward',
+    description: 'Delete the word before the cursor',
+    difficulty: 3,
+    requiredCommands: ['db'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => /\w{2,}\s+\w/.test(line))
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const wordBoundaries: Array<{ wordStart: number; wordEnd: number; text: string; nextStart: number }> = []
+      const regex = /\w{2,}/g
+      let match: RegExpExecArray | null
+      const allWords: Array<{ start: number; end: number; text: string }> = []
+      while ((match = regex.exec(chosen.line)) !== null) {
+        allWords.push({ start: match.index, end: match.index + match[0].length, text: match[0] })
+      }
+      for (let w = 0; w < allWords.length - 1; w++) {
+        const cur = allWords[w]
+        const next = allWords[w + 1]
+        if (next.start > cur.end) {
+          wordBoundaries.push({ wordStart: cur.start, wordEnd: cur.end, text: cur.text, nextStart: next.start })
+        }
+      }
+      if (wordBoundaries.length === 0) return null
+
+      const chosen2 = wordBoundaries[rng.nextInt(0, wordBoundaries.length - 1)]
+      const newLine = chosen.line.slice(0, chosen2.wordStart) + chosen.line.slice(chosen2.wordEnd)
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = newLine
+
+      const cursorCol = chosen2.wordEnd
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: 'db', description: 'Delete word backward' }]
+      const solutions = computeSolutions(offset.line, offset.column, chosen.index, cursorCol, chosen.line, actionSteps)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        targetCursor: { line: chosen.index, column: cursorCol },
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Delete '${chosen2.text}' backward`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: chosen2.wordStart,
+          toLine: chosen.index,
+          toCol: chosen2.wordEnd,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'delete-inside-brackets',
+    type: 'delete',
+    title: 'Delete Inside Brackets',
+    description: 'Delete the content inside the square brackets',
+    difficulty: 4,
+    requiredCommands: ['di['],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+
+      const candidates: Array<{ lineIdx: number; start: number; end: number }> = []
+      for (let i = 0; i < lines.length; i++) {
+        const bracketRegex = /\[([^\[\]]{2,20})\]/g
+        let m: RegExpExecArray | null
+        while ((m = bracketRegex.exec(lines[i])) !== null) {
+          candidates.push({ lineIdx: i, start: m.index + 1, end: m.index + 1 + m[1].length })
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.start) + line.slice(chosen.end)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const vStep = verticalStep(offset.line, chosen.lineIdx)
+      const actionSteps: SolutionStep[] = [{ keys: 'di[', description: 'Delete inside brackets' }]
+      const steps: SolutionStep[] = vStep ? [vStep, ...actionSteps] : [...actionSteps]
+      const totalKeystrokes = steps.reduce((n, s) => n + countStepKeys(s), 0)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: totalKeystrokes,
+        description: 'Delete the content inside the square brackets',
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: [{ label: 'Optimal', steps, totalKeystrokes }],
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.start - 1,
+          toLine: chosen.lineIdx,
+          toCol: chosen.end + 1,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'change-inside-brackets',
+    type: 'change',
+    title: 'Change Inside Brackets',
+    description: 'Replace the content inside the square brackets',
+    difficulty: 4,
+    requiredCommands: ['ci['],
+    timeLimitSeconds: 20,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+
+      const candidates: Array<{ lineIdx: number; start: number; end: number }> = []
+      for (let i = 0; i < lines.length; i++) {
+        const bracketRegex = /\[([^\[\]]{2,20})\]/g
+        let m: RegExpExecArray | null
+        while ((m = bracketRegex.exec(lines[i])) !== null) {
+          candidates.push({ lineIdx: i, start: m.index + 1, end: m.index + 1 + m[1].length })
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const replacements = ['0', 'i', 'key', 'idx', 'n']
+      const replacement = replacements[rng.nextInt(0, replacements.length - 1)]
+
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.start) + replacement + line.slice(chosen.end)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const vStep = verticalStep(offset.line, chosen.lineIdx)
+      const actionSteps: SolutionStep[] = [
+        { keys: 'ci[', description: 'Change inside brackets' },
+        { keys: replacement, description: `Type "${replacement}"` },
+        { keys: 'Escape', description: 'Exit insert mode' },
+      ]
+      const steps: SolutionStep[] = vStep ? [vStep, ...actionSteps] : [...actionSteps]
+      const totalKeystrokes = steps.reduce((n, s) => n + countStepKeys(s), 0)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: totalKeystrokes,
+        description: `Change content inside brackets to "${replacement}"`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: [{ label: 'Optimal', steps, totalKeystrokes }],
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.start - 1,
+          toLine: chosen.lineIdx,
+          toCol: chosen.end + 1,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'delete-around-braces',
+    type: 'delete',
+    title: 'Delete Around Braces',
+    description: 'Delete the braced expression including the braces',
+    difficulty: 4,
+    requiredCommands: ['da{'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+
+      const candidates: Array<{ lineIdx: number; outerStart: number; outerEnd: number }> = []
+      for (let i = 0; i < lines.length; i++) {
+        const braceRegex = /\{([^{}]{2,30})\}/g
+        let m: RegExpExecArray | null
+        while ((m = braceRegex.exec(lines[i])) !== null) {
+          candidates.push({ lineIdx: i, outerStart: m.index, outerEnd: m.index + m[0].length })
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.outerStart) + line.slice(chosen.outerEnd)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const vStep = verticalStep(offset.line, chosen.lineIdx)
+      const actionSteps: SolutionStep[] = [
+        { keys: 'da{', description: 'Delete around braces' },
+      ]
+      const steps: SolutionStep[] = vStep ? [vStep, ...actionSteps] : [...actionSteps]
+      const totalKeystrokes = steps.reduce((n, s) => n + countStepKeys(s), 0)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: totalKeystrokes,
+        description: 'Delete the braced expression including braces',
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: [{ label: 'Optimal', steps, totalKeystrokes }],
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.outerStart,
+          toLine: chosen.lineIdx,
+          toCol: chosen.outerEnd,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'yank-word-paste',
+    type: 'yank-paste',
+    title: 'Yank Word and Paste',
+    description: 'Copy a word and paste it at another location',
+    difficulty: 4,
+    requiredCommands: ['yw', 'p'],
+    timeLimitSeconds: 20,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => /\w{3,}/.test(line))
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const words: Array<{ start: number; end: number; text: string }> = []
+      const regex = /\w{3,}/g
+      let match: RegExpExecArray | null
+      while ((match = regex.exec(chosen.line)) !== null) {
+        words.push({ start: match.index, end: match.index + match[0].length, text: match[0] })
+      }
+      if (words.length === 0) return null
+
+      const word = words[rng.nextInt(0, words.length - 1)]
+      const range = getDeleteWordRange(chosen.line, word.start)
+      const yankedText = chosen.line.slice(range.start, range.end)
+
+      const insertCol = chosen.line.length > word.end + 2
+        ? rng.nextInt(word.end + 1, Math.min(word.end + 5, chosen.line.length - 1))
+        : chosen.line.length - 1
+      if (insertCol <= word.end) return null
+
+      const newLine = chosen.line.slice(0, insertCol + 1) + yankedText + chosen.line.slice(insertCol + 1)
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
+      const actionSteps: SolutionStep[] = [
+        { keys: 'yw', description: 'Yank word' },
+      ]
+      const solutions = computeSolutions(offset.line, offset.column, chosen.index, word.start, chosen.line, actionSteps)
+
+      const navToInsert = insertCol - word.start
+      const pasteSteps: SolutionStep[] = [
+        { keys: `${navToInsert}l`, description: `Move right ${navToInsert}` },
+        { keys: 'p', description: 'Paste after cursor' },
+      ]
+      const totalExtra = pasteSteps.reduce((n, s) => n + countStepKeys(s), 0)
+      for (const sol of solutions) {
+        sol.steps.push(...pasteSteps)
+        sol.totalKeystrokes += totalExtra
+      }
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        targetCursor: { line: chosen.index, column: word.start },
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Copy '${word.text}' and paste it after column ${insertCol + 1}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: word.start,
+          toLine: chosen.index,
+          toCol: range.end,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'scroll-delete-to-eol',
+    type: 'delete',
+    title: 'Scroll and Delete to End',
+    description: 'Navigate to a distant line and delete to end of line',
+    difficulty: 5,
+    requiredCommands: ['D', 'G'],
+    timeLimitSeconds: 20,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 20) return null
+
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => line.length >= 6)
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const maxCol = Math.max(1, Math.floor(chosen.line.length / 2))
+      const col = rng.nextInt(1, maxCol)
+
+      const newLine = chosen.line.slice(0, col)
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = newLine
+
+      const offset = pickFarCursor(rng, chosen.index, lines.length)
+
+      const actionSteps: SolutionStep[] = [{ keys: 'D', description: 'Delete to end of line' }]
+      const solutions = computeScrollSolutions(
+        offset.line, offset.column, chosen.index, col,
+        chosen.line, lines.length, actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        targetCursor: { line: chosen.index, column: col },
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Truncate line ${chosen.index + 1} at column ${col + 1}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: col,
+          toLine: chosen.index,
+          toCol: chosen.line.length,
+        },
+      }
+    },
+  },
+
   // ── Scroll challenges (require long snippets, 20+ lines) ──────
 
   {
