@@ -263,7 +263,7 @@ describe('Challenge Templates', () => {
   })
 
   test('all 45 templates are present', () => {
-    expect(CHALLENGE_TEMPLATES).toHaveLength(51)
+    expect(CHALLENGE_TEMPLATES).toHaveLength(61)
     const ids = CHALLENGE_TEMPLATES.map(t => t.id)
     // Base templates (18)
     expect(ids).toContain('delete-char')
@@ -319,6 +319,17 @@ describe('Challenge Templates', () => {
     expect(ids).toContain('delete-around-braces')
     expect(ids).toContain('yank-word-paste')
     expect(ids).toContain('scroll-delete-to-eol')
+    // Batch 4 extra templates (10)
+    expect(ids).toContain('uppercase-word')
+    expect(ids).toContain('lowercase-word')
+    expect(ids).toContain('delete-around-brackets')
+    expect(ids).toContain('change-around-parens')
+    expect(ids).toContain('change-around-quotes')
+    expect(ids).toContain('delete-inside-braces')
+    expect(ids).toContain('append-after-word')
+    expect(ids).toContain('replace-mode')
+    expect(ids).toContain('change-around-braces')
+    expect(ids).toContain('scroll-toggle-case')
   })
 
   test('template returns null for unsuitable snippet', () => {

@@ -107,6 +107,19 @@ export type MatchmakingQueueRow = {
   queued_at: string
 }
 
+export type ActiveSoloChallengeRow = {
+  id: string
+  user_id: string
+  template_id: string
+  snippet_id: string
+  difficulty: 1 | 2 | 3 | 4 | 5
+  reference_keystroke_count: number
+  time_limit: number
+  started_at: string
+  completed: boolean
+  created_at: string
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -221,6 +234,20 @@ export type Database = {
           },
         ]
       }
+      active_solo_challenges: {
+        Row: ActiveSoloChallengeRow
+        Insert: Omit<ActiveSoloChallengeRow, 'id' | 'started_at' | 'completed' | 'created_at'>
+        Update: Partial<Omit<ActiveSoloChallengeRow, 'id'>>
+        Relationships: [
+          {
+            foreignKeyName: "active_solo_challenges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -264,6 +291,16 @@ export type Database = {
         }
         Returns: Json
       }
+      start_solo_challenge: {
+        Args: {
+          p_template_id: string
+          p_snippet_id: string
+          p_difficulty: number
+          p_reference_keystroke_count: number
+          p_time_limit: number
+        }
+        Returns: Json
+      }
       submit_solo_result: {
         Args: {
           p_template_id: string
@@ -276,6 +313,7 @@ export type Database = {
           p_time_limit: number
           p_is_practice?: boolean
           p_is_retry?: boolean
+          p_challenge_id?: string | null
         }
         Returns: Json
       }

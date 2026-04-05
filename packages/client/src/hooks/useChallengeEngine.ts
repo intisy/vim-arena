@@ -32,6 +32,7 @@ export function useChallengeEngine(initialPracticeMode = false) {
   const practiceModeRef = useRef(initialPracticeMode)
   const isRetryRef = useRef(false)
   const lastChallengeRef = useRef<GeneratedChallenge | null>(null)
+  const challengeIdRef = useRef<string | null>(null)
   const { elo } = useEloRating()
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -74,6 +75,25 @@ export function useChallengeEngine(initialPracticeMode = false) {
     }
   }, [phase])
 
+  const registerChallenge = useCallback(async (ch: GeneratedChallenge) => {
+    if (!user) return
+    try {
+      const { data } = await supabase.rpc('start_solo_challenge', {
+        p_template_id: ch.templateId,
+        p_snippet_id: ch.snippetId,
+        p_difficulty: ch.difficulty,
+        p_reference_keystroke_count: ch.referenceKeystrokeCount,
+        p_time_limit: ch.timeLimit,
+      })
+      const parsed = data as Record<string, unknown> | null
+      if (parsed?.challengeId && typeof parsed.challengeId === 'string') {
+        challengeIdRef.current = parsed.challengeId
+      }
+    } catch (_) {
+      challengeIdRef.current = null
+    }
+  }, [user])
+
   const submitToServer = useCallback(async (ch: GeneratedChallenge, res: ChallengeResult, isPractice: boolean, isRetryAttempt: boolean) => {
     if (!user) return
     try {
@@ -88,7 +108,9 @@ export function useChallengeEngine(initialPracticeMode = false) {
         p_time_limit: ch.timeLimit,
         p_is_practice: isPractice,
         p_is_retry: isRetryAttempt,
+        p_challenge_id: challengeIdRef.current,
       })
+      challengeIdRef.current = null
       queryClient.invalidateQueries({ queryKey: CHALLENGE_STATS_QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: ELO_QUERY_KEY })
       queryClient.invalidateQueries({ queryKey: USER_STATS_QUERY_KEY })
@@ -99,6 +121,7 @@ export function useChallengeEngine(initialPracticeMode = false) {
 
   const launchChallenge = useCallback((ch: GeneratedChallenge, retrying: boolean) => {
     cleanup()
+    challengeIdRef.current = null
     setIsRetry(retrying)
     isRetryRef.current = retrying
     setChallenge(ch)
@@ -108,6 +131,8 @@ export function useChallengeEngine(initialPracticeMode = false) {
     setKeystrokes(0)
     setCountdown(3)
     setPhase('countdown')
+
+    void registerChallenge(ch)
 
     let currentCountdown = 3
     countdownIntervalRef.current = setInterval(() => {
@@ -134,7 +159,7 @@ export function useChallengeEngine(initialPracticeMode = false) {
         setPhase('active')
       }
     }, 1000)
-  }, [cleanup, submitToServer])
+  }, [cleanup, submitToServer, registerChallenge])
 
   const startChallenge = useCallback((diff: 1 | 2 | 3 | 4 | 5) => {
     setDifficulty(diff)

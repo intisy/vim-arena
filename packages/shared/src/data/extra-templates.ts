@@ -2040,4 +2040,625 @@ export const EXTRA_TEMPLATES: ChallengeTemplate[] = [
       }
     },
   },
+
+  // ── Batch 4: More vim motions ──────────────────────────────
+
+  {
+    id: 'uppercase-word',
+    type: 'change',
+    title: 'Uppercase Word',
+    description: 'Convert the word to uppercase using gUw',
+    difficulty: 3,
+    requiredCommands: ['gUw'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => /[a-z]{3,}/.test(line))
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const words: Array<{ start: number; end: number; text: string }> = []
+      const regex = /[a-z]{3,}/g
+      let match: RegExpExecArray | null
+      while ((match = regex.exec(chosen.line)) !== null) {
+        words.push({ start: match.index, end: match.index + match[0].length, text: match[0] })
+      }
+      if (words.length === 0) return null
+
+      const word = words[rng.nextInt(0, words.length - 1)]
+      const uppercased = word.text.toUpperCase()
+      const newLine = chosen.line.slice(0, word.start) + uppercased + chosen.line.slice(word.end)
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: 'gUw', description: 'Uppercase word' }]
+      const solutions = computeSolutions(offset.line, offset.column, chosen.index, word.start, chosen.line, actionSteps)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        targetCursor: { line: chosen.index, column: word.start },
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Uppercase '${word.text}' to '${uppercased}'`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: word.start,
+          toLine: chosen.index,
+          toCol: word.end,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'lowercase-word',
+    type: 'change',
+    title: 'Lowercase Word',
+    description: 'Convert the word to lowercase using guw',
+    difficulty: 3,
+    requiredCommands: ['guw'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates: Array<{ lineIdx: number; start: number; end: number; text: string }> = []
+      for (let i = 0; i < lines.length; i++) {
+        const regex = /[a-zA-Z]{3,}/g
+        let match: RegExpExecArray | null
+        while ((match = regex.exec(lines[i])) !== null) {
+          const txt = match[0]
+          if (txt !== txt.toLowerCase() && /[A-Z]/.test(txt)) {
+            candidates.push({ lineIdx: i, start: match.index, end: match.index + txt.length, text: txt })
+          }
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const lowered = chosen.text.toLowerCase()
+      const newLine = lines[chosen.lineIdx].slice(0, chosen.start) + lowered + lines[chosen.lineIdx].slice(chosen.end)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const actionSteps: SolutionStep[] = [{ keys: 'guw', description: 'Lowercase word' }]
+      const solutions = computeSolutions(offset.line, offset.column, chosen.lineIdx, chosen.start, lines[chosen.lineIdx], actionSteps)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        targetCursor: { line: chosen.lineIdx, column: chosen.start },
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Lowercase '${chosen.text}' to '${lowered}'`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.start,
+          toLine: chosen.lineIdx,
+          toCol: chosen.end,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'delete-around-brackets',
+    type: 'delete',
+    title: 'Delete Around Brackets',
+    description: 'Delete the bracketed expression including the brackets',
+    difficulty: 4,
+    requiredCommands: ['da['],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+
+      const candidates: Array<{ lineIdx: number; outerStart: number; outerEnd: number }> = []
+      for (let i = 0; i < lines.length; i++) {
+        const bracketRegex = /\[([^\[\]]{2,20})\]/g
+        let m: RegExpExecArray | null
+        while ((m = bracketRegex.exec(lines[i])) !== null) {
+          candidates.push({ lineIdx: i, outerStart: m.index, outerEnd: m.index + m[0].length })
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.outerStart) + line.slice(chosen.outerEnd)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const vStep = verticalStep(offset.line, chosen.lineIdx)
+      const actionSteps: SolutionStep[] = [{ keys: 'da[', description: 'Delete around brackets' }]
+      const steps: SolutionStep[] = vStep ? [vStep, ...actionSteps] : [...actionSteps]
+      const totalKeystrokes = steps.reduce((n, s) => n + countStepKeys(s), 0)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: totalKeystrokes,
+        description: 'Delete the bracketed expression including brackets',
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: [{ label: 'Optimal', steps, totalKeystrokes }],
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.outerStart,
+          toLine: chosen.lineIdx,
+          toCol: chosen.outerEnd,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'change-around-parens',
+    type: 'change',
+    title: 'Change Around Parentheses',
+    description: 'Replace the parenthesized expression including the parens',
+    difficulty: 4,
+    requiredCommands: ['ca('],
+    timeLimitSeconds: 20,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+
+      const candidates: Array<{ lineIdx: number; outerStart: number; outerEnd: number }> = []
+      for (let i = 0; i < lines.length; i++) {
+        const parenRegex = /\(([^()]{2,15})\)/g
+        let m: RegExpExecArray | null
+        while ((m = parenRegex.exec(lines[i])) !== null) {
+          candidates.push({ lineIdx: i, outerStart: m.index, outerEnd: m.index + m[0].length })
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const replacements = ['(x)', '(0)', '(true)', '(data)', '(null)']
+      const replacement = replacements[rng.nextInt(0, replacements.length - 1)]
+
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.outerStart) + replacement + line.slice(chosen.outerEnd)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const vStep = verticalStep(offset.line, chosen.lineIdx)
+      const actionSteps: SolutionStep[] = [
+        { keys: 'ca(', description: 'Change around parentheses' },
+        { keys: replacement, description: `Type "${replacement}"` },
+        { keys: 'Escape', description: 'Exit insert mode' },
+      ]
+      const steps: SolutionStep[] = vStep ? [vStep, ...actionSteps] : [...actionSteps]
+      const totalKeystrokes = steps.reduce((n, s) => n + countStepKeys(s), 0)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: totalKeystrokes,
+        description: `Replace parenthesized expression with ${replacement}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: [{ label: 'Optimal', steps, totalKeystrokes }],
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.outerStart,
+          toLine: chosen.lineIdx,
+          toCol: chosen.outerEnd,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'change-around-quotes',
+    type: 'change',
+    title: 'Change Around Quotes',
+    description: 'Replace the quoted string including the quote marks',
+    difficulty: 4,
+    requiredCommands: ['ca"'],
+    timeLimitSeconds: 20,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+
+      const candidates: Array<{ lineIdx: number; outerStart: number; outerEnd: number; quote: string }> = []
+      for (let i = 0; i < lines.length; i++) {
+        const dqRegex = /"([^"]{2,})"/g
+        let m: RegExpExecArray | null
+        while ((m = dqRegex.exec(lines[i])) !== null) {
+          candidates.push({ lineIdx: i, outerStart: m.index, outerEnd: m.index + m[0].length, quote: '"' })
+        }
+        const sqRegex = /'([^']{2,})'/g
+        while ((m = sqRegex.exec(lines[i])) !== null) {
+          candidates.push({ lineIdx: i, outerStart: m.index, outerEnd: m.index + m[0].length, quote: "'" })
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const replacements = ['"ok"', '"done"', '"test"', '"error"', '"null"']
+      const replacement = replacements[rng.nextInt(0, replacements.length - 1)]
+
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.outerStart) + replacement + line.slice(chosen.outerEnd)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const vStep = verticalStep(offset.line, chosen.lineIdx)
+      const cmd = `ca${chosen.quote}`
+      const actionSteps: SolutionStep[] = [
+        { keys: cmd, description: `Change around ${chosen.quote === '"' ? 'double' : 'single'} quotes` },
+        { keys: replacement, description: `Type ${replacement}` },
+        { keys: 'Escape', description: 'Exit insert mode' },
+      ]
+      const steps: SolutionStep[] = vStep ? [vStep, ...actionSteps] : [...actionSteps]
+      const totalKeystrokes = steps.reduce((n, s) => n + countStepKeys(s), 0)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: totalKeystrokes,
+        description: `Replace quoted string with ${replacement}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: [{ label: 'Optimal', steps, totalKeystrokes }],
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.outerStart,
+          toLine: chosen.lineIdx,
+          toCol: chosen.outerEnd,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'delete-inside-braces',
+    type: 'delete',
+    title: 'Delete Inside Braces',
+    description: 'Delete the content inside the curly braces',
+    difficulty: 4,
+    requiredCommands: ['di{'],
+    timeLimitSeconds: 15,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+
+      const candidates: Array<{ lineIdx: number; start: number; end: number }> = []
+      for (let i = 0; i < lines.length; i++) {
+        const braceRegex = /\{([^{}]{2,30})\}/g
+        let m: RegExpExecArray | null
+        while ((m = braceRegex.exec(lines[i])) !== null) {
+          candidates.push({ lineIdx: i, start: m.index + 1, end: m.index + 1 + m[1].length })
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.start) + line.slice(chosen.end)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const vStep = verticalStep(offset.line, chosen.lineIdx)
+      const actionSteps: SolutionStep[] = [{ keys: 'di{', description: 'Delete inside braces' }]
+      const steps: SolutionStep[] = vStep ? [vStep, ...actionSteps] : [...actionSteps]
+      const totalKeystrokes = steps.reduce((n, s) => n + countStepKeys(s), 0)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: totalKeystrokes,
+        description: 'Delete the content inside the curly braces',
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: [{ label: 'Optimal', steps, totalKeystrokes }],
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.start - 1,
+          toLine: chosen.lineIdx,
+          toCol: chosen.end + 1,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'append-after-word',
+    type: 'change',
+    title: 'Append After Word',
+    description: 'Move to the end of a word and append text using ea',
+    difficulty: 3,
+    requiredCommands: ['e', 'a'],
+    timeLimitSeconds: 18,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => /\w{3,}/.test(line))
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const words: Array<{ start: number; end: number; text: string }> = []
+      const regex = /\w{3,}/g
+      let match: RegExpExecArray | null
+      while ((match = regex.exec(chosen.line)) !== null) {
+        if (match.index + match[0].length < chosen.line.length) {
+          words.push({ start: match.index, end: match.index + match[0].length, text: match[0] })
+        }
+      }
+      if (words.length === 0) return null
+
+      const word = words[rng.nextInt(0, words.length - 1)]
+      const suffixes = ['ed', 'ly', 'er', 'ing', 's']
+      const suffix = suffixes[rng.nextInt(0, suffixes.length - 1)]
+
+      const newLine = chosen.line.slice(0, word.end) + suffix + chosen.line.slice(word.end)
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
+      const actionSteps: SolutionStep[] = [
+        { keys: 'ea', description: 'Go to end of word and append' },
+        { keys: suffix, description: `Type "${suffix}"` },
+        { keys: 'Escape', description: 'Exit insert mode' },
+      ]
+      const solutions = computeSolutions(offset.line, offset.column, chosen.index, word.start, chosen.line, actionSteps)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        targetCursor: { line: chosen.index, column: word.start },
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Append "${suffix}" after '${word.text}'`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: word.start,
+          toLine: chosen.index,
+          toCol: word.end,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'replace-mode',
+    type: 'change',
+    title: 'Replace Mode',
+    description: 'Overwrite several characters using R (replace mode)',
+    difficulty: 3,
+    requiredCommands: ['R'],
+    timeLimitSeconds: 18,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      const candidates = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => /\w{4,}/.test(line))
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const words: Array<{ start: number; end: number; text: string }> = []
+      const regex = /\w{4,}/g
+      let match: RegExpExecArray | null
+      while ((match = regex.exec(chosen.line)) !== null) {
+        words.push({ start: match.index, end: match.index + match[0].length, text: match[0] })
+      }
+      if (words.length === 0) return null
+
+      const word = words[rng.nextInt(0, words.length - 1)]
+      const replacementWords = ['data', 'temp', 'item', 'node', 'flag', 'size', 'base']
+      let replacement = replacementWords[rng.nextInt(0, replacementWords.length - 1)]
+      if (replacement.length > word.text.length) {
+        replacement = replacement.slice(0, word.text.length)
+      }
+      if (replacement === word.text.slice(0, replacement.length)) replacement = 'zzzz'.slice(0, replacement.length)
+
+      const newLine = chosen.line.slice(0, word.start) + replacement + chosen.line.slice(word.start + replacement.length)
+      const expectedLines = [...lines]
+      expectedLines[chosen.index] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.index, lines.length, lines)
+      const actionSteps: SolutionStep[] = [
+        { keys: 'R', description: 'Enter replace mode' },
+        { keys: replacement, description: `Type "${replacement}"` },
+        { keys: 'Escape', description: 'Exit replace mode' },
+      ]
+      const solutions = computeSolutions(offset.line, offset.column, chosen.index, word.start, chosen.line, actionSteps)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        targetCursor: { line: chosen.index, column: word.start },
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Overwrite '${word.text.slice(0, replacement.length)}' with "${replacement}"`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.index,
+          fromCol: word.start,
+          toLine: chosen.index,
+          toCol: word.start + replacement.length,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'change-around-braces',
+    type: 'change',
+    title: 'Change Around Braces',
+    description: 'Replace the braced expression including the braces',
+    difficulty: 4,
+    requiredCommands: ['ca{'],
+    timeLimitSeconds: 20,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+
+      const candidates: Array<{ lineIdx: number; outerStart: number; outerEnd: number }> = []
+      for (let i = 0; i < lines.length; i++) {
+        const braceRegex = /\{([^{}]{2,30})\}/g
+        let m: RegExpExecArray | null
+        while ((m = braceRegex.exec(lines[i])) !== null) {
+          candidates.push({ lineIdx: i, outerStart: m.index, outerEnd: m.index + m[0].length })
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const replacements = ['{x}', '{0}', '{null}', '{data}', '{true}']
+      const replacement = replacements[rng.nextInt(0, replacements.length - 1)]
+
+      const line = lines[chosen.lineIdx]
+      const newLine = line.slice(0, chosen.outerStart) + replacement + line.slice(chosen.outerEnd)
+      const expectedLines = [...lines]
+      expectedLines[chosen.lineIdx] = newLine
+
+      const offset = pickOffsetCursor(rng, chosen.lineIdx, lines.length, lines)
+      const vStep = verticalStep(offset.line, chosen.lineIdx)
+      const actionSteps: SolutionStep[] = [
+        { keys: 'ca{', description: 'Change around braces' },
+        { keys: replacement, description: `Type "${replacement}"` },
+        { keys: 'Escape', description: 'Exit insert mode' },
+      ]
+      const steps: SolutionStep[] = vStep ? [vStep, ...actionSteps] : [...actionSteps]
+      const totalKeystrokes = steps.reduce((n, s) => n + countStepKeys(s), 0)
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: snippet.content,
+        initialCursor: offset,
+        expectedContent: expectedLines.join('\n'),
+        referenceKeystrokeCount: totalKeystrokes,
+        description: `Replace braced expression with ${replacement}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: [{ label: 'Optimal', steps, totalKeystrokes }],
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.outerStart,
+          toLine: chosen.lineIdx,
+          toCol: chosen.outerEnd,
+        },
+      }
+    },
+  },
+
+  {
+    id: 'scroll-toggle-case',
+    type: 'change',
+    title: 'Scroll and Toggle Case',
+    description: 'Navigate to a distant character and toggle its case',
+    difficulty: 5,
+    requiredCommands: ['~', 'G'],
+    timeLimitSeconds: 20,
+    generateChallenge(snippet: CodeSnippet, seed: number): GeneratedChallenge | null {
+      const rng = new SeededRandom(seed)
+      const lines = snippet.content.split('\n')
+      if (lines.length < 20) return null
+
+      const candidates: Array<{ lineIdx: number; col: number; original: string }> = []
+      for (let i = 0; i < lines.length; i++) {
+        for (let j = 0; j < lines[i].length; j++) {
+          const ch = lines[i][j]
+          if (/[a-zA-Z]/.test(ch)) {
+            candidates.push({ lineIdx: i, col: j, original: ch })
+          }
+        }
+      }
+      if (candidates.length === 0) return null
+
+      const chosen = candidates[rng.nextInt(0, candidates.length - 1)]
+      const toggled = chosen.original === chosen.original.toUpperCase()
+        ? chosen.original.toLowerCase()
+        : chosen.original.toUpperCase()
+
+      const corruptedLine = lines[chosen.lineIdx].slice(0, chosen.col) + toggled + lines[chosen.lineIdx].slice(chosen.col + 1)
+      const corruptedLines = [...lines]
+      corruptedLines[chosen.lineIdx] = corruptedLine
+
+      const offset = pickFarCursor(rng, chosen.lineIdx, lines.length)
+
+      const actionSteps: SolutionStep[] = [{ keys: '~', description: 'Toggle case' }]
+      const solutions = computeScrollSolutions(
+        offset.line, offset.column, chosen.lineIdx, chosen.col,
+        corruptedLine, lines.length, actionSteps,
+      )
+
+      return {
+        templateId: this.id,
+        snippetId: snippet.id,
+        initialContent: corruptedLines.join('\n'),
+        initialCursor: offset,
+        targetCursor: { line: chosen.lineIdx, column: chosen.col },
+        expectedContent: snippet.content,
+        referenceKeystrokeCount: solutions[0].totalKeystrokes,
+        description: `Fix case: '${toggled}' → '${chosen.original}' on line ${chosen.lineIdx + 1}`,
+        timeLimit: this.timeLimitSeconds,
+        difficulty: this.difficulty,
+        requiredCommands: this.requiredCommands,
+        optimalSolutions: solutions,
+        targetHighlight: {
+          fromLine: chosen.lineIdx,
+          fromCol: chosen.col,
+          toLine: chosen.lineIdx,
+          toCol: chosen.col + 1,
+        },
+      }
+    },
+  },
 ]
