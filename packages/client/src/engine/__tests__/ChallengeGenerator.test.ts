@@ -4,7 +4,7 @@ import { CHALLENGE_TEMPLATES } from '@/data/challenge-templates'
 import { ALL_SNIPPETS } from '@/data/snippets'
 import type { CodeSnippet } from '@/types/challenge'
 
-// â”€â”€â”€ SeededRandom Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ SeededRandom Tests Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 describe('SeededRandom', () => {
   test('produces deterministic output with same seed', () => {
     const rng1 = new SeededRandom(42)
@@ -59,7 +59,7 @@ describe('SeededRandom', () => {
   })
 })
 
-// â”€â”€â”€ ChallengeGenerator Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ ChallengeGenerator Tests Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 describe('ChallengeGenerator', () => {
   const templates = CHALLENGE_TEMPLATES
   const snippets = ALL_SNIPPETS
@@ -181,7 +181,7 @@ describe('ChallengeGenerator', () => {
   })
 })
 
-// â”€â”€â”€ Individual Template Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Individual Template Tests Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 describe('Challenge Templates', () => {
   const testSnippet: CodeSnippet = {
     id: 'test-snippet',
@@ -263,7 +263,7 @@ describe('Challenge Templates', () => {
   })
 
   test('all 45 templates are present', () => {
-    expect(CHALLENGE_TEMPLATES).toHaveLength(81)
+    expect(CHALLENGE_TEMPLATES).toHaveLength(91)
     const ids = CHALLENGE_TEMPLATES.map(t => t.id)
     // Base templates (18)
     expect(ids).toContain('delete-char')
@@ -352,6 +352,17 @@ describe('Challenge Templates', () => {
     expect(ids).toContain('scroll-lowercase-line')
     expect(ids).toContain('scroll-change-inside-word')
     expect(ids).toContain('scroll-toggle-case-line')
+    // Batch 7 extra templates (10)
+    expect(ids).toContain('yank-line-paste-below')
+    expect(ids).toContain('delete-count-words')
+    expect(ids).toContain('delete-end-of-word')
+    expect(ids).toContain('change-find-char-backward')
+    expect(ids).toContain('yank-two-lines-paste')
+    expect(ids).toContain('change-count-words')
+    expect(ids).toContain('scroll-join-no-space')
+    expect(ids).toContain('scroll-delete-end-word')
+    expect(ids).toContain('scroll-yank-line-paste')
+    expect(ids).toContain('scroll-delete-count-words')
   })
 
   test('template returns null for unsuitable snippet', () => {
