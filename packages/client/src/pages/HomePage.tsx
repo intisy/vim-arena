@@ -8,15 +8,15 @@ function LoginSection() {
   const { signInWithGitHub, signInWithGoogle } = useAuth()
 
   return (
-    <div className="flex flex-col items-center gap-12 py-16">
+    <div className="flex flex-col items-center gap-16 py-20 animate-fade-in-up">
       {/* Hero */}
       <div className="text-center max-w-2xl">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--theme-border)] bg-[var(--theme-muted)] text-xs font-bold text-[var(--theme-muted-foreground)] uppercase tracking-wider mb-6">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--theme-border)] bg-[var(--theme-muted)] text-xs font-bold text-[var(--theme-muted-foreground)] uppercase tracking-wider mb-8">
           <Terminal size={14} className="text-[var(--theme-primary)]" />
           Free &amp; Open Source
         </div>
-        <h1 className="text-5xl md:text-6xl font-black tracking-tight text-[var(--theme-foreground)] mb-4">
-          Master <span className="text-[var(--theme-primary)]">Vim</span> by doing.
+        <h1 className="text-5xl md:text-7xl font-black tracking-tight text-[var(--theme-foreground)] mb-6 leading-[1.1]">
+          Master <span className="gradient-text">Vim</span> by doing.
         </h1>
         <p className="text-lg text-[var(--theme-muted-foreground)] max-w-lg mx-auto leading-relaxed">
           Interactive lessons, timed challenges, and PvP battles.
@@ -25,17 +25,17 @@ function LoginSection() {
       </div>
 
       {/* Auth buttons */}
-      <div className="flex flex-col gap-3 w-72">
+      <div className="flex flex-col gap-3 w-80">
         <button
           onClick={signInWithGitHub}
-          className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-[#24292e] text-white font-bold rounded-xl text-sm hover:bg-[#2f363d] transition-colors shadow-lg shadow-black/20"
+          className="flex items-center justify-center gap-2.5 px-6 py-4 bg-[#24292e] text-white font-bold rounded-xl text-sm hover:bg-[#2f363d] transition-all duration-200 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:-translate-y-0.5"
         >
           <Github size={20} />
           Continue with GitHub
         </button>
         <button
           onClick={signInWithGoogle}
-          className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-white text-gray-800 font-bold rounded-xl text-sm hover:bg-gray-50 transition-colors border border-gray-200 shadow-lg shadow-black/10"
+          className="flex items-center justify-center gap-2.5 px-6 py-4 bg-white text-gray-800 font-bold rounded-xl text-sm hover:bg-gray-50 transition-all duration-200 border border-gray-200 shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 hover:-translate-y-0.5"
         >
           <svg width="20" height="20" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
@@ -45,34 +45,34 @@ function LoginSection() {
           </svg>
           Continue with Google
         </button>
-        <p className="text-center text-xs text-[var(--theme-muted-foreground)] mt-1">
+        <p className="text-center text-xs text-[var(--theme-muted-foreground)] mt-2">
           Or <Link to="/challenges" className="text-[var(--theme-primary)] hover:underline font-medium">try challenges</Link> without an account
         </p>
       </div>
 
       {/* Feature highlights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl">
-        <div className="flex flex-col items-center text-center gap-2 p-5">
-          <div className="w-10 h-10 rounded-lg bg-[var(--theme-primary)]/10 flex items-center justify-center mb-1">
-            <BookOpen size={20} className="text-[var(--theme-primary)]" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl stagger">
+        <div className="glass-card rounded-xl p-6 flex flex-col items-center text-center gap-3 animate-fade-in-up">
+          <div className="w-12 h-12 rounded-xl bg-[var(--theme-primary)]/10 flex items-center justify-center">
+            <BookOpen size={22} className="text-[var(--theme-primary)]" />
           </div>
           <h3 className="font-bold text-[var(--theme-foreground)] text-sm">60+ Lessons</h3>
           <p className="text-xs text-[var(--theme-muted-foreground)] leading-relaxed">
             From basic motions to advanced text objects
           </p>
         </div>
-        <div className="flex flex-col items-center text-center gap-2 p-5">
-          <div className="w-10 h-10 rounded-lg bg-[var(--theme-accent)]/10 flex items-center justify-center mb-1">
-            <Clock size={20} className="text-[var(--theme-accent)]" />
+        <div className="glass-card rounded-xl p-6 flex flex-col items-center text-center gap-3 animate-fade-in-up">
+          <div className="w-12 h-12 rounded-xl bg-[var(--theme-accent)]/10 flex items-center justify-center">
+            <Clock size={22} className="text-[var(--theme-accent)]" />
           </div>
           <h3 className="font-bold text-[var(--theme-foreground)] text-sm">Timed Challenges</h3>
           <p className="text-xs text-[var(--theme-muted-foreground)] leading-relaxed">
             Adaptive difficulty with Elo rating system
           </p>
         </div>
-        <div className="flex flex-col items-center text-center gap-2 p-5">
-          <div className="w-10 h-10 rounded-lg bg-[var(--theme-warning)]/10 flex items-center justify-center mb-1">
-            <Swords size={20} className="text-[var(--theme-warning)]" />
+        <div className="glass-card rounded-xl p-6 flex flex-col items-center text-center gap-3 animate-fade-in-up">
+          <div className="w-12 h-12 rounded-xl bg-[var(--theme-warning)]/10 flex items-center justify-center">
+            <Swords size={22} className="text-[var(--theme-warning)]" />
           </div>
           <h3 className="font-bold text-[var(--theme-foreground)] text-sm">PvP Battles</h3>
           <p className="text-xs text-[var(--theme-muted-foreground)] leading-relaxed">
@@ -116,10 +116,10 @@ export function HomePage() {
       {!user ? (
         <LoginSection />
       ) : (
-        <>
+        <div className="animate-fade-in-up">
           {/* Welcome header */}
-          <section className="pt-8">
-            <h1 className="text-3xl font-bold text-[var(--theme-foreground)] mb-1">
+          <section className="pt-8 mb-8">
+            <h1 className="text-3xl font-black text-[var(--theme-foreground)] mb-1 tracking-tight">
               Welcome back
             </h1>
             <p className="text-[var(--theme-muted-foreground)]">
@@ -128,14 +128,14 @@ export function HomePage() {
           </section>
 
           {/* Quick actions */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 stagger">
             <Link
               to="/lessons"
-              className="group relative flex flex-col gap-3 p-6 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] hover:border-[var(--theme-primary)] hover:shadow-lg hover:shadow-[var(--theme-primary)]/5 transition-all duration-200"
+              className="group relative flex flex-col gap-4 p-6 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] glow-border transition-all duration-200 animate-fade-in-up hover:-translate-y-0.5"
             >
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-lg bg-[var(--theme-primary)]/10 flex items-center justify-center">
-                  <BookOpen size={20} className="text-[var(--theme-primary)]" />
+                <div className="w-11 h-11 rounded-xl bg-[var(--theme-primary)]/10 flex items-center justify-center">
+                  <BookOpen size={22} className="text-[var(--theme-primary)]" />
                 </div>
                 <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--theme-muted)] border border-[var(--theme-border)] text-[var(--theme-muted-foreground)]">1</kbd>
               </div>
@@ -146,17 +146,17 @@ export function HomePage() {
                 </p>
               </div>
               <span className="flex items-center gap-1 text-sm font-medium text-[var(--theme-primary)] mt-auto">
-                Continue <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                Continue <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-200" />
               </span>
             </Link>
 
             <Link
               to="/challenges"
-              className="group relative flex flex-col gap-3 p-6 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] hover:border-[var(--theme-accent)] hover:shadow-lg hover:shadow-[var(--theme-accent)]/5 transition-all duration-200"
+              className="group relative flex flex-col gap-4 p-6 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] glow-border-accent transition-all duration-200 animate-fade-in-up hover:-translate-y-0.5"
             >
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-lg bg-[var(--theme-accent)]/10 flex items-center justify-center">
-                  <Zap size={20} className="text-[var(--theme-accent)]" />
+                <div className="w-11 h-11 rounded-xl bg-[var(--theme-accent)]/10 flex items-center justify-center">
+                  <Zap size={22} className="text-[var(--theme-accent)]" />
                 </div>
                 <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--theme-muted)] border border-[var(--theme-border)] text-[var(--theme-muted-foreground)]">2</kbd>
               </div>
@@ -167,17 +167,17 @@ export function HomePage() {
                 </p>
               </div>
               <span className="flex items-center gap-1 text-sm font-medium text-[var(--theme-accent)] mt-auto">
-                Play <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                Play <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-200" />
               </span>
             </Link>
 
             <Link
               to="/pvp"
-              className="group relative flex flex-col gap-3 p-6 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] hover:border-[var(--theme-warning)] hover:shadow-lg hover:shadow-[var(--theme-warning)]/5 transition-all duration-200"
+              className="group relative flex flex-col gap-4 p-6 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] glow-border-warning transition-all duration-200 animate-fade-in-up hover:-translate-y-0.5"
             >
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-lg bg-[var(--theme-warning)]/10 flex items-center justify-center">
-                  <Trophy size={20} className="text-[var(--theme-warning)]" />
+                <div className="w-11 h-11 rounded-xl bg-[var(--theme-warning)]/10 flex items-center justify-center">
+                  <Trophy size={22} className="text-[var(--theme-warning)]" />
                 </div>
                 <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--theme-muted)] border border-[var(--theme-border)] text-[var(--theme-muted-foreground)]">3</kbd>
               </div>
@@ -188,19 +188,19 @@ export function HomePage() {
                 </p>
               </div>
               <span className="flex items-center gap-1 text-sm font-medium text-[var(--theme-warning)] mt-auto">
-                Enter <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                Enter <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-200" />
               </span>
             </Link>
           </section>
 
           {/* Stats Overview */}
           <section>
-            <h2 className="text-sm font-bold text-[var(--theme-muted-foreground)] uppercase tracking-wider mb-4">
+            <h2 className="section-heading text-sm font-bold text-[var(--theme-muted-foreground)] uppercase tracking-wider mb-6">
               Your Progress
             </h2>
             <StatsOverview />
           </section>
-        </>
+        </div>
       )}
     </div>
   )

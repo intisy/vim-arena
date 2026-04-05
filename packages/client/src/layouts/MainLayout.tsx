@@ -42,12 +42,16 @@ export function MainLayout() {
       {/* Logo */}
       <Link
         to="/"
-        className="flex items-center gap-2 px-3 py-2 mb-6 text-[var(--theme-foreground)] hover:text-[var(--theme-primary)] transition-colors"
+        className="flex items-center gap-2.5 px-3 py-3 mb-2 text-[var(--theme-foreground)] hover:text-[var(--theme-primary)] transition-colors group"
         onClick={() => setMobileOpen(false)}
       >
-        <Swords size={22} className="text-[var(--theme-accent)]" />
-        <span className="text-lg font-bold tracking-tight">vim-arena</span>
+        <div className="w-8 h-8 rounded-lg bg-[var(--theme-primary)]/10 flex items-center justify-center group-hover:bg-[var(--theme-primary)]/20 transition-colors">
+          <Swords size={18} className="text-[var(--theme-primary)]" />
+        </div>
+        <span className="text-lg font-black tracking-tight">vim-arena</span>
       </Link>
+
+      <div className="divider-glow my-3" />
 
       {/* Section label */}
       <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">
@@ -63,16 +67,16 @@ export function MainLayout() {
             end={end}
             onClick={() => setMobileOpen(false)}
             className={({ isActive }) =>
-              `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+              `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 isActive
-                  ? 'bg-[var(--theme-primary)]/10 text-[var(--theme-primary)] shadow-sm'
-                  : 'text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)]'
+                  ? 'bg-[var(--theme-primary)]/10 text-[var(--theme-primary)] shadow-sm shadow-[var(--theme-primary)]/5 border border-[var(--theme-primary)]/20'
+                  : 'text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] border border-transparent'
               }`
             }
           >
             <Icon size={18} />
             <span className="flex-1">{label}</span>
-            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--theme-background)] border border-[var(--theme-border)] text-[var(--theme-muted-foreground)] opacity-50 group-hover:opacity-100 transition-opacity">
+            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--theme-background)] border border-[var(--theme-border)] text-[var(--theme-muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity">
               {hint}
             </kbd>
           </NavLink>
@@ -83,15 +87,16 @@ export function MainLayout() {
       <div className="flex-1" />
 
       {/* Profile section */}
-      <div className="border-t border-[var(--theme-border)] pt-3 mt-3">
+      <div className="pt-3 mt-3">
+        <div className="divider-glow mb-3" />
         {user ? (
           <div ref={dropdownRef} className="relative">
             <button
               onClick={() => setAvatarOpen(prev => !prev)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 avatarOpen
-                  ? 'bg-[var(--theme-muted)] text-[var(--theme-foreground)]'
-                  : 'text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)]'
+                  ? 'bg-[var(--theme-muted)] text-[var(--theme-foreground)] border border-[var(--theme-border)]'
+                  : 'text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:bg-[var(--theme-muted)] border border-transparent'
               }`}
             >
               <Avatar seed="vim-arena-user" size={5} pixelSize={6} />
@@ -99,7 +104,7 @@ export function MainLayout() {
             </button>
 
             {avatarOpen && (
-              <div className="absolute bottom-full left-0 right-0 mb-1 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-background)] shadow-lg shadow-black/20 overflow-hidden z-50">
+              <div className="absolute bottom-full left-0 right-0 mb-1 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-background)] shadow-lg shadow-black/30 overflow-hidden z-50 animate-fade-in">
                 {PROFILE_LINKS.map(({ to, label, icon: Icon, hint }) => (
                   <NavLink
                     key={to}
@@ -149,7 +154,7 @@ export function MainLayout() {
       {/* Mobile menu button */}
       <button
         onClick={() => setMobileOpen(prev => !prev)}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-[var(--theme-muted)] border border-[var(--theme-border)] text-[var(--theme-foreground)]"
+        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-[var(--theme-muted)] border border-[var(--theme-border)] text-[var(--theme-foreground)] shadow-lg"
       >
         {mobileOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
@@ -157,7 +162,7 @@ export function MainLayout() {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -173,7 +178,7 @@ export function MainLayout() {
       </nav>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-grid">
         <div className="max-w-[1200px] mx-auto p-6 lg:p-8">
           <Suspense fallback={
             <div className="flex items-center justify-center h-64 text-[var(--theme-muted-foreground)] font-mono animate-pulse">

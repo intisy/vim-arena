@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Settings2 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 
 export function SettingsPage() {
@@ -15,7 +16,6 @@ export function SettingsPage() {
         document.activeElement?.tagName === 'TEXTAREA'
       ) return
 
-      // Number keys 1-N select themes
       const num = parseInt(e.key, 10)
       if (num >= 1 && num <= themes.length) {
         e.preventDefault()
@@ -28,28 +28,35 @@ export function SettingsPage() {
   }, [themes, setTheme])
 
   return (
-    <div className="max-w-4xl mx-auto py-8 flex flex-col gap-12">
+    <div className="max-w-4xl mx-auto py-8 flex flex-col gap-12 animate-fade-in-up">
       <header>
-        <h1 className="text-4xl font-bold text-[var(--theme-foreground)] mb-2">Settings</h1>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--theme-primary)]/10 flex items-center justify-center">
+            <Settings2 size={22} className="text-[var(--theme-primary)]" />
+          </div>
+          <h1 className="text-4xl font-black tracking-tight text-[var(--theme-foreground)]">Settings</h1>
+        </div>
         <p className="text-[var(--theme-muted-foreground)]">
           Customize your vim-arena experience.
         </p>
       </header>
 
+      <div className="divider-glow" />
+
       <section>
-        <h2 className="text-2xl font-bold text-[var(--theme-foreground)] mb-6 border-b border-[var(--theme-border)] pb-2">
+        <h2 className="section-heading text-2xl font-bold text-[var(--theme-foreground)] mb-6 pb-2">
           Theme
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 stagger">
           {themes.map((t, i) => {
             const isActive = t.className === theme.className
             return (
               <button
                 key={t.className}
                 onClick={() => setTheme(t.className)}
-                className={`relative flex flex-col gap-4 p-6 rounded-xl border-2 text-left transition-all ${
+                className={`glow-border relative flex flex-col gap-4 p-6 rounded-xl border-2 text-left transition-all hover:-translate-y-0.5 ${
                   isActive
-                    ? 'border-[var(--theme-primary)] bg-[var(--theme-muted)] shadow-[0_0_10px_var(--theme-primary)]'
+                    ? 'border-[var(--theme-primary)] bg-[var(--theme-muted)] shadow-[0_0_15px_var(--theme-primary)/0.2]'
                     : 'border-[var(--theme-border)] bg-[var(--theme-background)] hover:border-[var(--theme-muted-foreground)]'
                 }`}
               >
@@ -59,15 +66,14 @@ export function SettingsPage() {
                     {t.name}
                   </span>
                   {isActive && (
-                    <span className="text-xs font-bold bg-[var(--theme-primary)] text-[var(--theme-background)] px-2 py-1 rounded uppercase tracking-wider">
+                    <span className="text-[10px] font-bold bg-[var(--theme-primary)] text-[var(--theme-background)] px-2 py-1 rounded-full uppercase tracking-widest">
                       Active
                     </span>
                   )}
                 </div>
                 
-                {/* Theme Preview */}
                 <div 
-                  className="w-full h-24 rounded-md border flex flex-col overflow-hidden"
+                  className="w-full h-24 rounded-lg border flex flex-col overflow-hidden"
                   style={{ 
                     backgroundColor: t.colors.background,
                     borderColor: t.colors.border

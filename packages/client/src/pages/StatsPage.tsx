@@ -202,7 +202,7 @@ function DifficultyBars({ history }: { history: Array<{ difficulty: number }> })
     <div className="flex items-end gap-3 h-36">
       {counts.map((count, i) => (
         <div key={i} className="flex-1 flex flex-col items-center gap-1">
-          <span className="text-xs font-mono text-[var(--theme-foreground)]">{count}</span>
+          <span className="text-xs font-mono font-bold text-[var(--theme-foreground)]">{count}</span>
           <div className="w-full rounded-t-md" style={{
             height: `${Math.max((count / max) * 100, 4)}%`,
             backgroundColor: colors[i],
@@ -264,48 +264,56 @@ export default function StatsPage() {
   }, [])
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-[var(--theme-foreground)] mb-2 flex items-center gap-3">
-          <BarChart3 size={32} className="text-[var(--theme-primary)]" />
-          Stats
-        </h1>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--theme-primary)]/10 flex items-center justify-center">
+            <BarChart3 size={22} className="text-[var(--theme-primary)]" />
+          </div>
+          <h1 className="text-4xl font-black tracking-tight text-[var(--theme-foreground)]">Stats</h1>
+        </div>
         <p className="text-lg text-[var(--theme-muted-foreground)]">
           Track your Vim mastery progress
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="p-4 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-muted)] flex flex-col items-center text-center">
-          <div className="text-3xl font-bold font-mono text-[var(--theme-primary)] mb-1">{elo.rating}</div>
-          <div className="text-xs text-[var(--theme-muted-foreground)] uppercase tracking-wider">Rating</div>
+      <div className="divider-glow mb-8" />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 stagger">
+        <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
+          <div className="text-3xl font-black font-mono text-[var(--theme-primary)] mb-1">{elo.rating}</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Rating</div>
         </div>
-        <div className="p-4 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-muted)] flex flex-col items-center text-center">
-          <div className="text-3xl font-bold font-mono text-[var(--theme-accent)] mb-1">{elo.peakRating}</div>
-          <div className="text-xs text-[var(--theme-muted-foreground)] uppercase tracking-wider">Peak Rating</div>
+        <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
+          <div className="text-3xl font-black font-mono text-[var(--theme-accent)] mb-1">{elo.peakRating}</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Peak Rating</div>
         </div>
-        <div className="p-4 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-muted)] flex flex-col items-center text-center">
-          <div className="text-3xl font-bold font-mono text-[var(--theme-warning)] mb-1">{completedCount}</div>
-          <div className="text-xs text-[var(--theme-muted-foreground)] uppercase tracking-wider">Lessons Done</div>
+        <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
+          <div className="text-3xl font-black font-mono text-[var(--theme-warning)] mb-1">{completedCount}</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Lessons Done</div>
         </div>
-        <div className="p-4 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-muted)] flex flex-col items-center text-center">
-          <div className="text-3xl font-bold font-mono text-[var(--theme-success)] mb-1">{userStats.bestChallengeScore}%</div>
-          <div className="text-xs text-[var(--theme-muted-foreground)] uppercase tracking-wider">Best Score</div>
+        <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
+          <div className="text-3xl font-black font-mono text-[var(--theme-success)] mb-1">{userStats.bestChallengeScore}%</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Best Score</div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] p-6">
+        <div className="glass-card glow-border rounded-xl p-6">
           <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
-            <TrendingUp size={18} className="text-[var(--theme-primary)]" />
+            <div className="w-8 h-8 rounded-lg bg-[var(--theme-primary)]/10 flex items-center justify-center">
+              <TrendingUp size={16} className="text-[var(--theme-primary)]" />
+            </div>
             Rating History
           </h2>
           <RatingHistoryChart history={elo.history} />
         </div>
 
-        <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] p-6">
+        <div className="glass-card glow-border-accent rounded-xl p-6">
           <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
-            <Award size={18} className="text-[var(--theme-accent)]" />
+            <div className="w-8 h-8 rounded-lg bg-[var(--theme-accent)]/10 flex items-center justify-center">
+              <Award size={16} className="text-[var(--theme-accent)]" />
+            </div>
             Win Rate
           </h2>
           <WinLossRing wins={elo.wins} losses={elo.losses} />
@@ -313,17 +321,21 @@ export default function StatsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] p-6">
+        <div className="glass-card glow-border rounded-xl p-6">
           <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
-            <Target size={18} className="text-red-400" />
+            <div className="w-8 h-8 rounded-lg bg-red-400/10 flex items-center justify-center">
+              <Target size={16} className="text-red-400" />
+            </div>
             Difficulty Distribution
           </h2>
           <DifficultyBars history={elo.history} />
         </div>
 
-        <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] p-6">
+        <div className="glass-card glow-border rounded-xl p-6">
           <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
-            <BookOpen size={18} className="text-amber-400" />
+            <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center">
+              <BookOpen size={16} className="text-amber-400" />
+            </div>
             Lesson Progress
           </h2>
           <LessonProgressBars isCompleted={isCompleted} />

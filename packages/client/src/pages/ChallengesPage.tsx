@@ -58,9 +58,9 @@ export default function ChallengesPage() {
     : 0
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
+    <div className="max-w-4xl mx-auto animate-fade-in-up">
       {!user && (
-        <div className="mb-6 px-4 py-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-muted)] flex items-center gap-3">
+        <div className="mb-6 px-4 py-3 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-muted)] flex items-center gap-3">
           <LogIn size={18} className="text-[var(--theme-primary)] shrink-0" />
           <p className="text-sm text-[var(--theme-muted-foreground)] flex-1">
             <Link to="/" className="text-[var(--theme-primary)] font-bold hover:underline">Sign in</Link> to save your progress, track Elo rating, and compete on leaderboards.
@@ -68,138 +68,150 @@ export default function ChallengesPage() {
         </div>
       )}
 
-      <h1 className="text-4xl font-bold text-white mb-4">Vim Challenges</h1>
-      <p className="text-gray-400 mb-12 text-lg">
-        Test your vim skills against the clock. Difficulty adapts to your skill level.
-      </p>
+      <div className="mb-10">
+        <h1 className="text-4xl font-black text-[var(--theme-foreground)] mb-3 tracking-tight">Vim Challenges</h1>
+        <p className="text-[var(--theme-muted-foreground)] text-lg">
+          Test your vim skills against the clock. Difficulty adapts to your skill level.
+        </p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        <div>
-          <div className="p-8 rounded-2xl border-2 border-gray-700 bg-gray-800/50 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="flex flex-col gap-6">
+          {/* Rating card */}
+          <div className="stat-card rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-muted)] p-8">
             <div className="text-center mb-6">
-              <div className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Your Rating</div>
-              <div className="text-6xl font-black mb-2" style={{ color: ratingColor }}>
+              <div className="text-[10px] font-bold text-[var(--theme-muted-foreground)] uppercase tracking-widest mb-3">Your Rating</div>
+              <div className="text-6xl font-black mb-2 tracking-tight" style={{ color: ratingColor }}>
                 {elo.rating}
               </div>
               <div className="text-lg font-semibold" style={{ color: ratingColor }}>
                 {ratingLabel}
               </div>
               {elo.peakRating > elo.rating && (
-                <div className="text-xs text-gray-500 mt-1">Peak: {elo.peakRating}</div>
+                <div className="text-xs text-[var(--theme-muted-foreground)] mt-1">Peak: {elo.peakRating}</div>
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-4 text-center border-t border-gray-700 pt-4">
+            <div className="divider-glow mb-4" />
+
+            <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <div className="text-xl font-bold text-white">{elo.gamesPlayed}</div>
-                <div className="text-xs text-gray-500">Played</div>
+                <div className="text-xl font-bold text-[var(--theme-foreground)]">{elo.gamesPlayed}</div>
+                <div className="text-[10px] text-[var(--theme-muted-foreground)] uppercase tracking-wider">Played</div>
               </div>
               <div>
-                <div className="text-xl font-bold text-green-400">{elo.wins}</div>
-                <div className="text-xs text-gray-500">Wins</div>
+                <div className="text-xl font-bold text-[var(--theme-success)]">{elo.wins}</div>
+                <div className="text-[10px] text-[var(--theme-muted-foreground)] uppercase tracking-wider">Wins</div>
               </div>
               <div>
-                <div className="text-xl font-bold text-white">{winRate}%</div>
-                <div className="text-xs text-gray-500">Win Rate</div>
+                <div className="text-xl font-bold text-[var(--theme-foreground)]">{winRate}%</div>
+                <div className="text-[10px] text-[var(--theme-muted-foreground)] uppercase tracking-wider">Win Rate</div>
               </div>
             </div>
           </div>
 
-          <div className="p-6 rounded-xl border border-gray-700 bg-gray-800/30 mb-6">
-            <div className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Matched Difficulty</div>
+          {/* Matched difficulty */}
+          <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] p-6 glow-border">
+            <div className="text-[10px] font-bold text-[var(--theme-muted-foreground)] uppercase tracking-widest mb-3">Matched Difficulty</div>
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-2xl font-bold text-white">
+                <span className="text-2xl font-bold text-[var(--theme-foreground)]">
                   Level {matchedDiff}: {diffInfo.label}
                 </span>
-                <p className="text-gray-400 text-sm mt-1">{diffInfo.desc}</p>
+                <p className="text-[var(--theme-muted-foreground)] text-sm mt-1">{diffInfo.desc}</p>
               </div>
               <span className="flex gap-0.5">
                 {Array.from({ length: 5 }, (_, i) => (
                   <Star
                     key={i}
                     size={20}
-                    className={i < matchedDiff ? 'text-yellow-500 fill-yellow-500' : 'text-gray-600'}
+                    className={i < matchedDiff ? 'text-[var(--theme-warning)] fill-[var(--theme-warning)]' : 'text-[var(--theme-border)]'}
                   />
                 ))}
               </span>
             </div>
           </div>
 
+          {/* Practice mode toggle */}
           <button
             onClick={handleTogglePractice}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-colors border mb-3 ${
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-200 border ${
               practiceMode
-                ? 'bg-amber-900/50 text-amber-400 border-amber-700'
-                : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200 hover:border-gray-500'
+                ? 'bg-[var(--theme-warning)]/10 text-[var(--theme-warning)] border-[var(--theme-warning)]/30'
+                : 'bg-[var(--theme-muted)] text-[var(--theme-muted-foreground)] border-[var(--theme-border)] hover:text-[var(--theme-foreground)] hover:border-[var(--theme-muted-foreground)]'
             }`}
           >
             {practiceMode ? <Target size={16} /> : <GraduationCap size={16} />}
             {practiceMode ? 'Practice Mode ON' : 'Practice Mode'}
-            <kbd className="text-xs bg-gray-700 px-1.5 py-0.5 rounded font-mono ml-1">p</kbd>
+            <kbd className="text-xs bg-[var(--theme-background)] border border-[var(--theme-border)] px-1.5 py-0.5 rounded font-mono ml-1">p</kbd>
           </button>
           {practiceMode && (
-            <p className="text-amber-500/70 text-xs text-center mb-3 -mt-1">
+            <p className="text-[var(--theme-warning)]/70 text-xs text-center -mt-4">
               Shows optimal steps. Only correct keys allowed. No elo change.
             </p>
           )}
 
+          {/* Start button */}
           <button
             onClick={handleStart}
-            className="w-full py-4 bg-green-600 hover:bg-green-500 text-white text-xl font-bold rounded-xl transition-colors shadow-lg shadow-green-900/20 flex items-center justify-center gap-2"
+            className="w-full py-4 bg-[var(--theme-primary)] hover:opacity-90 text-[var(--theme-background)] text-xl font-black rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
           >
             Start Challenge
-            <kbd className="text-sm bg-green-700 px-2 py-0.5 rounded font-mono">Enter</kbd>
+            <kbd className="text-sm bg-[var(--theme-primary)]/80 px-2 py-0.5 rounded font-mono">Enter</kbd>
           </button>
         </div>
 
-        <div>
-          <h2 className="text-2xl font-semibold text-white mb-6">Recent History</h2>
-          {elo.history.length === 0 ? (
-            <div className="p-8 bg-gray-800/50 rounded-xl border border-gray-700 text-center">
-              <p className="text-gray-400">No challenges completed yet.</p>
-              <p className="text-gray-500 text-sm mt-2">Complete a challenge to see your history here.</p>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
-              {elo.history.slice(0, 20).map((entry, i) => {
-                const diff = entry.rating - (i < elo.history.length - 1 ? elo.history[i + 1].rating : 1000)
-                const isGain = diff >= 0
-                return (
-                  <div key={i} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-gray-500 font-mono w-8">L{entry.difficulty}</span>
-                      <span className="text-white font-mono">{entry.rating}</span>
-                      <span className={`text-sm font-bold ${isGain ? 'text-green-400' : 'text-red-400'}`}>
-                        {isGain ? '+' : ''}{diff}
-                      </span>
+        <div className="flex flex-col gap-8">
+          {/* Recent History */}
+          <div>
+            <h2 className="section-heading text-xl font-bold text-[var(--theme-foreground)] mb-6">Recent History</h2>
+            {elo.history.length === 0 ? (
+              <div className="p-8 glass-card rounded-xl text-center">
+                <p className="text-[var(--theme-muted-foreground)]">No challenges completed yet.</p>
+                <p className="text-[var(--theme-muted-foreground)]/60 text-sm mt-2">Complete a challenge to see your history here.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                {elo.history.slice(0, 20).map((entry, i) => {
+                  const diff = entry.rating - (i < elo.history.length - 1 ? elo.history[i + 1].rating : 1000)
+                  const isGain = diff >= 0
+                  return (
+                    <div key={i} className="p-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-background)] flex justify-between items-center glow-border transition-all duration-150">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-[var(--theme-muted-foreground)] font-mono w-8">L{entry.difficulty}</span>
+                        <span className="text-[var(--theme-foreground)] font-mono">{entry.rating}</span>
+                        <span className={`text-sm font-bold ${isGain ? 'text-[var(--theme-success)]' : 'text-[var(--theme-error)]'}`}>
+                          {isGain ? '+' : ''}{diff}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[var(--theme-muted-foreground)] text-sm">Score: {entry.score}</span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-gray-400 text-sm">Score: {entry.score}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                  )
+                })}
+              </div>
+            )}
+          </div>
 
+          {/* Best Scores */}
           {Object.keys(stats).length > 0 && (
-            <>
-              <h2 className="text-2xl font-semibold text-white mb-4 mt-8">Best Scores</h2>
+            <div>
+              <h2 className="section-heading text-xl font-bold text-[var(--theme-foreground)] mb-6">Best Scores</h2>
               <div className="space-y-2">
                 {Object.values(stats).map((stat) => (
-                  <div key={stat.templateId} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700 flex justify-between items-center">
+                  <div key={stat.templateId} className="p-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-background)] flex justify-between items-center">
                     <div>
-                      <div className="text-white font-medium text-sm">{stat.templateId}</div>
-                      <div className="text-gray-500 text-xs">{stat.attempts} attempts</div>
+                      <div className="text-[var(--theme-foreground)] font-medium text-sm">{stat.templateId}</div>
+                      <div className="text-[var(--theme-muted-foreground)] text-xs">{stat.attempts} attempts</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-green-400 font-mono font-bold">{stat.bestScore}</div>
+                      <div className="text-[var(--theme-success)] font-mono font-bold">{stat.bestScore}</div>
                     </div>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

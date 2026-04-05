@@ -183,10 +183,10 @@ export function PvPPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col items-center gap-8 py-12">
+    <div className="max-w-2xl mx-auto flex flex-col items-center gap-8 py-12 animate-fade-in-up">
       {/* Header */}
-      <div className="text-center flex flex-col items-center gap-3">
-        <div className="w-16 h-16 rounded-2xl bg-[var(--theme-warning)]/10 flex items-center justify-center">
+      <div className="text-center flex flex-col items-center gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-[var(--theme-warning)]/10 flex items-center justify-center animate-pulse-glow">
           <Swords size={36} className="text-[var(--theme-warning)]" />
         </div>
         <h1 className="text-4xl font-black tracking-tight text-[var(--theme-foreground)]">
@@ -198,16 +198,18 @@ export function PvPPage() {
       </div>
 
       {/* Your Rating Card */}
-      <div className="w-full max-w-md p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-muted)] flex items-center justify-between">
+      <div className="w-full max-w-md stat-card p-5 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-muted)] flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Trophy size={20} className="text-[var(--theme-warning)]" />
+          <div className="w-9 h-9 rounded-lg bg-[var(--theme-warning)]/10 flex items-center justify-center">
+            <Trophy size={18} className="text-[var(--theme-warning)]" />
+          </div>
           <span className="font-bold text-[var(--theme-foreground)]">Your Rating</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
             <div className="text-2xl font-black font-mono text-[var(--theme-warning)]">{elo.rating}</div>
           </div>
-          <div className="text-xs text-[var(--theme-muted-foreground)] text-right leading-tight">
+          <div className="text-xs text-[var(--theme-muted-foreground)] text-right leading-tight font-mono">
             <div>{elo.gamesPlayed} games</div>
             <div className="text-[var(--theme-success)]">{elo.wins}W</div>
             <div className="text-[var(--theme-error)]">{elo.losses}L</div>
@@ -216,19 +218,21 @@ export function PvPPage() {
       </div>
 
       {/* Queue Card */}
-      <div className="w-full max-w-md p-8 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center gap-6">
+      <div className="w-full max-w-md p-8 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center gap-6 glow-border-warning">
         {queueState === 'idle' && (
           <>
-            <div className="flex flex-col items-center gap-2 text-center">
-              <Zap size={24} className="text-[var(--theme-accent)]" />
-              <p className="text-sm text-[var(--theme-muted-foreground)]">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="w-10 h-10 rounded-lg bg-[var(--theme-accent)]/10 flex items-center justify-center">
+                <Zap size={22} className="text-[var(--theme-accent)]" />
+              </div>
+              <p className="text-sm text-[var(--theme-muted-foreground)] leading-relaxed">
                 You'll be matched with a player of similar skill level.
                 Both players receive the same challenge — first to finish wins!
               </p>
             </div>
             <button
               onClick={joinQueue}
-              className="w-full px-6 py-4 bg-[var(--theme-warning)] text-[var(--theme-background)] font-bold rounded-lg text-lg hover:opacity-90 transition-opacity shadow-[0_0_15px_var(--theme-warning)]"
+              className="w-full px-6 py-4 bg-[var(--theme-warning)] text-[var(--theme-background)] font-black rounded-xl text-lg hover:opacity-90 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
             >
               Find Match
             </button>
@@ -236,7 +240,7 @@ export function PvPPage() {
         )}
 
         {queueState === 'joining' && (
-          <div className="flex items-center gap-3 text-[var(--theme-muted-foreground)]">
+          <div className="flex items-center gap-3 text-[var(--theme-muted-foreground)] py-4">
             <Loader2 size={24} className="animate-spin" />
             <span>Joining queue...</span>
           </div>
@@ -268,7 +272,7 @@ export function PvPPage() {
         )}
 
         {queueState === 'matched' && matchConfig && (
-          <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex flex-col items-center gap-4 text-center py-4">
             <div className="text-3xl font-black text-[var(--theme-success)]">
               Match Found!
             </div>
@@ -299,19 +303,19 @@ export function PvPPage() {
         )}
       </div>
 
-      {/* Info */}
-      <div className="w-full max-w-md grid grid-cols-3 gap-4 text-center">
-        <div className="p-4 rounded-lg border border-[var(--theme-border)]">
-          <div className="text-2xl font-bold text-[var(--theme-primary)]">60s</div>
-          <div className="text-xs text-[var(--theme-muted-foreground)] mt-1">Time Limit</div>
+      {/* Info cards */}
+      <div className="w-full max-w-md grid grid-cols-3 gap-3 stagger">
+        <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] text-center animate-fade-in-up">
+          <div className="text-2xl font-black text-[var(--theme-primary)] font-mono">60s</div>
+          <div className="text-[10px] text-[var(--theme-muted-foreground)] mt-1 uppercase tracking-wider">Time Limit</div>
         </div>
-        <div className="p-4 rounded-lg border border-[var(--theme-border)]">
-          <div className="text-2xl font-bold text-[var(--theme-accent)]">1v1</div>
-          <div className="text-xs text-[var(--theme-muted-foreground)] mt-1">Head to Head</div>
+        <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] text-center animate-fade-in-up">
+          <div className="text-2xl font-black text-[var(--theme-accent)] font-mono">1v1</div>
+          <div className="text-[10px] text-[var(--theme-muted-foreground)] mt-1 uppercase tracking-wider">Head to Head</div>
         </div>
-        <div className="p-4 rounded-lg border border-[var(--theme-border)]">
-          <div className="text-2xl font-bold text-[var(--theme-warning)]">{elo.peakRating}</div>
-          <div className="text-xs text-[var(--theme-muted-foreground)] mt-1">Peak Elo</div>
+        <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] text-center animate-fade-in-up">
+          <div className="text-2xl font-black text-[var(--theme-warning)] font-mono">{elo.peakRating}</div>
+          <div className="text-[10px] text-[var(--theme-muted-foreground)] mt-1 uppercase tracking-wider">Peak Elo</div>
         </div>
       </div>
 
@@ -327,7 +331,7 @@ export function PvPPage() {
             <Loader2 size={24} className="animate-spin text-[var(--theme-muted-foreground)]" />
           </div>
         ) : history.length === 0 ? (
-          <div className="text-center py-8 text-sm text-[var(--theme-muted-foreground)] border border-[var(--theme-border)] rounded-xl">
+          <div className="text-center py-8 text-sm text-[var(--theme-muted-foreground)] glass-card rounded-xl">
             No matches yet. Find a match to get started!
           </div>
         ) : (
@@ -340,12 +344,12 @@ export function PvPPage() {
               return (
                 <div
                   key={match.matchId}
-                  className={`p-4 rounded-xl border bg-[var(--theme-background)] ${won ? 'border-[var(--theme-success)]/30' : draw ? 'border-[var(--theme-warning)]/30' : 'border-[var(--theme-error)]/30'}`}
+                  className={`p-4 rounded-xl border bg-[var(--theme-background)] transition-all duration-200 hover:-translate-y-0.5 ${won ? 'border-[var(--theme-success)]/30 hover:border-[var(--theme-success)]/50' : draw ? 'border-[var(--theme-warning)]/30 hover:border-[var(--theme-warning)]/50' : 'border-[var(--theme-error)]/30 hover:border-[var(--theme-error)]/50'}`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className={`text-sm font-bold ${won ? 'text-[var(--theme-success)]' : draw ? 'text-[var(--theme-warning)]' : 'text-[var(--theme-error)]'}`}>
-                        {won ? 'W' : draw ? 'D' : 'L'}
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${won ? 'bg-[var(--theme-success)]/10 text-[var(--theme-success)]' : draw ? 'bg-[var(--theme-warning)]/10 text-[var(--theme-warning)]' : 'bg-[var(--theme-error)]/10 text-[var(--theme-error)]'}`}>
+                        {won ? 'WIN' : draw ? 'DRAW' : 'LOSS'}
                       </span>
                       <span className="text-sm text-[var(--theme-foreground)]">
                         vs <span className="font-bold">{match.opponentUsername}</span>
@@ -358,7 +362,7 @@ export function PvPPage() {
                       {match.hasReplay && (
                         <button
                           onClick={() => navigate(`/pvp/replay/${match.matchId}`)}
-                          className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-[var(--theme-muted)] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] transition-colors"
+                          className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-[var(--theme-muted)] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] transition-colors border border-[var(--theme-border)]"
                           title="Watch Replay"
                         >
                           <Eye size={12} />
@@ -368,12 +372,12 @@ export function PvPPage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-xs text-[var(--theme-muted-foreground)]">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 font-mono">
                       {match.myTimeSeconds !== null && (
-                        <span className="font-mono">{match.myTimeSeconds.toFixed(1)}s</span>
+                        <span>{match.myTimeSeconds.toFixed(1)}s</span>
                       )}
                       {match.myKeystrokes !== null && (
-                        <span className="font-mono">{match.myKeystrokes} keys</span>
+                        <span>{match.myKeystrokes} keys</span>
                       )}
                       <span className="capitalize">{match.status}</span>
                     </div>

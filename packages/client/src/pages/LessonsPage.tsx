@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Target, Pencil, Move, Zap, ChevronsUp, Search,
-  Braces, Quote, Type, AlignLeft, Trophy, Eye, Check,
+  Braces, Quote, Type, AlignLeft, Trophy, Eye, Check, BookOpen,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { LESSON_CATEGORIES } from '@/data/categories'
@@ -29,11 +29,31 @@ const CATEGORY_COLORS: Record<string, string> = {
   Eye: 'text-violet-400',
 }
 
+const CATEGORY_BG_COLORS: Record<string, string> = {
+  Target: 'bg-red-400/10',
+  Pencil: 'bg-amber-400/10',
+  Move: 'bg-blue-400/10',
+  Zap: 'bg-yellow-400/10',
+  ChevronsUp: 'bg-purple-400/10',
+  Search: 'bg-cyan-400/10',
+  Braces: 'bg-teal-400/10',
+  Quote: 'bg-pink-400/10',
+  Type: 'bg-indigo-400/10',
+  AlignLeft: 'bg-emerald-400/10',
+  Trophy: 'bg-orange-400/10',
+  Eye: 'bg-violet-400/10',
+}
+
 function CategoryIcon({ name, size = 24 }: { name: string; size?: number }) {
   const Icon = CATEGORY_ICONS[name]
   if (!Icon) return null
   const color = CATEGORY_COLORS[name] ?? 'text-[var(--theme-primary)]'
-  return <Icon size={size} className={color} />
+  const bg = CATEGORY_BG_COLORS[name] ?? 'bg-[var(--theme-primary)]/10'
+  return (
+    <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center`}>
+      <Icon size={size} className={color} />
+    </div>
+  )
 }
 
 export default function LessonsPage() {
@@ -41,28 +61,47 @@ export default function LessonsPage() {
     document.title = 'Lessons | vim-arena'
   }, [])
 
-  const { isCompleted } = useLessonProgress()
+  const { isCompleted, completedCount } = useLessonProgress()
+  const totalLessons = ALL_LESSONS.length
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto animate-fade-in-up">
       <div className="mb-10">
-        <h1 className="text-4xl font-bold text-[var(--theme-foreground)] mb-2">Lessons</h1>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--theme-primary)]/10 flex items-center justify-center">
+            <BookOpen size={22} className="text-[var(--theme-primary)]" />
+          </div>
+          <h1 className="text-4xl font-black tracking-tight text-[var(--theme-foreground)]">Lessons</h1>
+        </div>
         <p className="text-lg text-[var(--theme-muted-foreground)]">
-          Master Vim from the ground up. {ALL_LESSONS.length} lessons across {LESSON_CATEGORIES.length} categories.
+          Master Vim from the ground up. {totalLessons} lessons across {LESSON_CATEGORIES.length} categories.
         </p>
+        <div className="mt-4 flex items-center gap-4">
+          <div className="flex-1 h-2 rounded-full bg-[var(--theme-muted)] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-[var(--theme-primary)] transition-all duration-500"
+              style={{ width: `${totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0}%` }}
+            />
+          </div>
+          <span className="text-sm font-mono font-bold text-[var(--theme-muted-foreground)]">
+            {completedCount}/{totalLessons}
+          </span>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-8">
+      <div className="divider-glow mb-8" />
+
+      <div className="flex flex-col gap-8 stagger">
         {LESSON_CATEGORIES.map(category => {
           const categoryLessons = ALL_LESSONS.filter(l => l.categoryId === category.id)
           if (categoryLessons.length === 0) return null
 
-          const completedCount = categoryLessons.filter(l => isCompleted(l.id)).length
+          const completedCatCount = categoryLessons.filter(l => isCompleted(l.id)).length
           const totalCount = categoryLessons.length
-          const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+          const progressPct = totalCount > 0 ? Math.round((completedCatCount / totalCount) * 100) : 0
 
           return (
-            <div key={category.id} className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] overflow-hidden">
+            <div key={category.id} className="glass-card glow-border rounded-xl overflow-hidden">
               <div className="p-5 border-b border-[var(--theme-border)] flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <CategoryIcon name={category.icon} />
@@ -72,15 +111,18 @@ export default function LessonsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className="text-xs font-mono text-[var(--theme-muted-foreground)]">
-                    {completedCount}/{totalCount}
+                  <span className="text-xs font-mono font-bold text-[var(--theme-muted-foreground)]">
+                    {completedCatCount}/{totalCount}
                   </span>
                   <div className="w-24 h-2 rounded-full bg-[var(--theme-muted)] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-green-500 transition-all duration-300"
+                      className="h-full rounded-full bg-green-500 transition-all duration-500"
                       style={{ width: `${progressPct}%` }}
                     />
                   </div>
+                  {progressPct === 100 && (
+                    <Check size={16} className="text-green-400" />
+                  )}
                 </div>
               </div>
 
@@ -95,7 +137,7 @@ export default function LessonsPage() {
                       key={lesson.id}
                       to={`/lessons/${lesson.id}`}
                       className={`
-                        flex items-start gap-3 p-4 transition-colors hover:bg-[var(--theme-muted)]
+                        flex items-start gap-3 p-4 transition-all hover:bg-[var(--theme-muted)]
                         ${!isLast ? 'border-b border-[var(--theme-border)]' : ''}
                         ${!isLastRow ? 'lg:border-b' : ''}
                         ${(idx + 1) % 3 !== 0 ? 'lg:border-r border-[var(--theme-border)]' : ''}
