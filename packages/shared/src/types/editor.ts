@@ -26,7 +26,7 @@ export interface VimEditorProps {
   allowedKeys?: string[]
   onStateChange?: (state: EditorState) => void
   onModeChange?: (mode: VimMode) => void
-  onKeystroke?: () => void
+  onKeystroke?: (key: string) => void
   className?: string
   fontSize?: number
   showLineNumbers?: boolean

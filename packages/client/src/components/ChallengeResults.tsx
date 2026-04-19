@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Trophy, Star } from 'lucide-react'
-import type { ChallengeResult } from '@/types/challenge'
+import type { ChallengeResult, ChallengeSolution } from '@/types/challenge'
 
 interface ChallengeResultsProps {
   result: ChallengeResult
@@ -10,6 +10,8 @@ interface ChallengeResultsProps {
   isPersonalBest: boolean
   isPractice?: boolean
   isRetry?: boolean
+  keyLog?: string[]
+  optimalSolutions?: ChallengeSolution[]
 }
 
 export function ChallengeResults({
@@ -20,6 +22,8 @@ export function ChallengeResults({
   isPersonalBest,
   isPractice = false,
   isRetry = false,
+  keyLog,
+  optimalSolutions,
 }: ChallengeResultsProps) {
   const [displayScore, setDisplayScore] = useState(0)
 
@@ -122,6 +126,49 @@ export function ChallengeResults({
         </div>
       </div>
 
+
+      {keyLog && keyLog.length > 0 && (
+        <div className="w-full mb-6">
+          <div className="border-b border-gray-800 pb-2 mb-3">
+            <span className="text-gray-400 text-sm font-bold uppercase tracking-wider">Your Keystrokes</span>
+            <span className="text-gray-500 text-xs ml-2">({keyLog.length})</span>
+          </div>
+          <div className="flex flex-wrap gap-1 mb-4">
+            {keyLog.map((key, i) => (
+              <kbd
+                key={i}
+                className="inline-flex items-center justify-center min-w-[1.5rem] h-7 px-1.5 bg-gray-800 border border-gray-600 rounded text-xs font-mono font-bold text-gray-200 shadow-[0_1px_0_rgba(0,0,0,0.4)]"
+              >
+                {key === ' ' ? '␣' : key === 'Escape' ? 'Esc' : key === 'Enter' ? '↵' : key === 'Backspace' ? '⌫' : key === 'Tab' ? '⇥' : key}
+              </kbd>
+            ))}
+          </div>
+          {optimalSolutions && optimalSolutions.length > 0 && keyLog.length > optimalSolutions[0].totalKeystrokes && (
+            <div>
+              <div className="border-b border-gray-800 pb-2 mb-3">
+                <span className="text-green-400 text-sm font-bold uppercase tracking-wider">Optimal Solution</span>
+                <span className="text-gray-500 text-xs ml-2">({optimalSolutions[0].totalKeystrokes} keys)</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {optimalSolutions[0].steps.map((step, i) => (
+                  <div key={i} className="flex items-center gap-1">
+                    {i > 0 && <span className="text-gray-600 text-xs">→</span>}
+                    <span className="inline-flex items-center gap-1 bg-green-900/20 border border-green-800/40 rounded px-1.5 py-0.5">
+                      <kbd className="font-mono font-bold text-green-300 text-xs">{step.keys}</kbd>
+                      <span className="text-green-500/70 text-[11px]">{step.description}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {optimalSolutions && optimalSolutions.length > 0 && keyLog.length <= optimalSolutions[0].totalKeystrokes && (
+            <div className="text-center py-2">
+              <span className="text-green-400 text-sm font-bold">✨ Optimal solution!</span>
+            </div>
+          )}
+        </div>
+      )}
       <div className="flex flex-col w-full gap-3">
         <button
           onClick={onNext}

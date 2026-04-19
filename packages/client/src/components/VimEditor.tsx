@@ -176,7 +176,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
               if (cm) {
                 Vim.handleKey(cm as Parameters<typeof Vim.handleKey>[0], '^', 'user')
               }
-              onKeystrokeRef.current?.()
+              onKeystrokeRef.current?.('^')
               return true
             }
           }
@@ -189,7 +189,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
             if (vs) {
               const inp = vs.inputState as { keyBuffer?: string[]; operator?: string | null }
               if ((inp?.keyBuffer && inp.keyBuffer.length > 0) || inp?.operator) {
-                onKeystrokeRef.current?.()
+                onKeystrokeRef.current?.(event.key)
                 return false
               }
             }
@@ -200,25 +200,25 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
                 event.stopPropagation()
                 return true
               }
-              onKeystrokeRef.current?.()
+              onKeystrokeRef.current?.(event.key)
               return false
             }
 
             const currentMode = readVimMode(view)
             if (currentMode === 'insert' || currentMode === 'replace') {
-              onKeystrokeRef.current?.()
+              onKeystrokeRef.current?.(event.key)
               return false
             }
             if (currentMode === 'visual' || currentMode === 'visual-line') {
-              onKeystrokeRef.current?.()
+              onKeystrokeRef.current?.(event.key)
               return false
             }
             if (event.key === 'Escape' || event.key === 'Enter' || event.key === 'Backspace' || event.key === 'Tab') {
-              onKeystrokeRef.current?.()
+              onKeystrokeRef.current?.(event.key)
               return false
             }
             if (event.key.startsWith('Arrow')) {
-              onKeystrokeRef.current?.()
+              onKeystrokeRef.current?.(event.key)
               return false
             }
             if (!keys.includes(event.key)) {
@@ -228,7 +228,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
             }
           }
 
-          onKeystrokeRef.current?.()
+          onKeystrokeRef.current?.(event.key)
           return false
         },
       })),

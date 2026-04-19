@@ -54,6 +54,7 @@ export interface ChallengeResult {
   speedScore: number
   totalScore: number
   timedOut: boolean
+  keyLog?: string[]
 }
 
 export interface ChallengeTemplate {

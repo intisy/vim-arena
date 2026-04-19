@@ -345,7 +345,7 @@ export function PvPRace() {
     }
   }, [phase, challenge, keystrokes, calcCompletionPercent, broadcastProgress, handleRaceComplete])
 
-  const handleKeystroke = useCallback(() => {
+  const handleKeystroke = useCallback((_key: string) => {
     setKeystrokes(prev => {
       const next = prev + 1
       broadcastProgress(next, completionPercent)

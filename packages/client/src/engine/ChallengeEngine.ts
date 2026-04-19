@@ -6,6 +6,7 @@ export class ChallengeEngine {
   private challenge: GeneratedChallenge
   private startTime: number = 0
   private keystrokeCount: number = 0
+  private keyLog: string[] = []
   private isActive: boolean = false
   private isPaused: boolean = false
   private accumulatedTime: number = 0
@@ -56,9 +57,10 @@ export class ChallengeEngine {
     return this.isPaused
   }
 
-  recordKeystroke(): void {
+  recordKeystroke(key?: string): void {
     if (!this.isActive || this.isPaused) return
     this.keystrokeCount++
+    if (key) this.keyLog.push(key)
   }
 
   getElapsedSeconds(): number {
@@ -69,6 +71,10 @@ export class ChallengeEngine {
 
   getKeystrokeCount(): number {
     return this.keystrokeCount
+  }
+
+  getKeyLog(): string[] {
+    return [...this.keyLog]
   }
 
   getChallenge(): GeneratedChallenge {
@@ -106,6 +112,7 @@ export class ChallengeEngine {
         speedScore: 0,
         totalScore: 0,
         timedOut: true,
+        keyLog: [...this.keyLog],
       }
     }
 
@@ -123,6 +130,7 @@ export class ChallengeEngine {
       speedScore: speed,
       totalScore: total,
       timedOut: false,
+      keyLog: [...this.keyLog],
     }
   }
 
@@ -130,6 +138,7 @@ export class ChallengeEngine {
     this.destroy()
     this.startTime = 0
     this.keystrokeCount = 0
+    this.keyLog = []
     this.isActive = false
     this.isPaused = false
     this.accumulatedTime = 0

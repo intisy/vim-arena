@@ -300,6 +300,8 @@ export default function ChallengeViewPage() {
                   isPersonalBest={isPersonalBest}
                   isPractice={practiceMode}
                   isRetry={isRetry}
+                  keyLog={result.keyLog}
+                  optimalSolutions={challenge.optimalSolutions}
                 />
                 {settings.challengeAutoAdvance && (
                   <p className="text-xs text-gray-500 animate-pulse">Auto-advancing in 3s...</p>

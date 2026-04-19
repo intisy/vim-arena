@@ -216,9 +216,9 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
     }
   }, [submitToServer])
 
-  const handleKeystroke = useCallback(() => {
+  const handleKeystroke = useCallback((key: string) => {
     if (phaseRef.current !== 'active' || !engineRef.current) return
-    engineRef.current.recordKeystroke()
+    engineRef.current.recordKeystroke(key)
     setKeystrokes(engineRef.current.getKeystrokeCount())
   }, [])
 
