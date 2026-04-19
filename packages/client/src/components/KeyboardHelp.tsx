@@ -1,13 +1,13 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 
 export function KeyboardHelp() {
   const [isOpen, setIsOpen] = useState(false)
   const [pendingG, setPendingG] = useState(false)
-
-  const navigate = useCallback((path: string) => {
-    window.location.hash = '#' + path
-  }, [])
+  const navigate = useNavigate()
+  const navigateRef = useRef(navigate)
+  navigateRef.current = navigate
 
   useEffect(() => {
     let gTimeout: ReturnType<typeof setTimeout> | null = null
@@ -40,6 +40,7 @@ export function KeyboardHelp() {
           h: '/',
           l: '/lessons',
           c: '/challenges',
+          p: '/pvp',
           s: '/settings',
           t: '/stats',
         }
@@ -47,7 +48,7 @@ export function KeyboardHelp() {
         const target = routes[e.key]
         if (target) {
           e.preventDefault()
-          navigate(target)
+          navigateRef.current(target)
         }
         return
       }
@@ -63,7 +64,7 @@ export function KeyboardHelp() {
       window.removeEventListener('keydown', handleKeyDown)
       if (gTimeout) clearTimeout(gTimeout)
     }
-  }, [isOpen, pendingG, navigate])
+  }, [isOpen, pendingG])
 
   return (
     <>
@@ -111,6 +112,10 @@ export function KeyboardHelp() {
                     <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">g c</kbd>
                   </li>
                   <li className="flex justify-between items-center">
+                    <span className="text-[var(--theme-foreground)]">PvP Arena</span>
+                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">g p</kbd>
+                  </li>
+                  <li className="flex justify-between items-center">
                     <span className="text-[var(--theme-foreground)]">Stats</span>
                     <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">g t</kbd>
                   </li>
@@ -148,10 +153,6 @@ export function KeyboardHelp() {
                     <span className="text-[var(--theme-foreground)]">Start Challenge</span>
                     <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">Enter</kbd>
                   </li>
-                  <li className="flex justify-between items-center">
-                    <span className="text-[var(--theme-foreground)]">Reset Rating</span>
-                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">Ctrl+⌫</kbd>
-                  </li>
                 </ul>
 
                 <h3 className="text-lg font-bold text-[var(--theme-accent)] mb-4 mt-6">Settings</h3>
@@ -159,10 +160,6 @@ export function KeyboardHelp() {
                   <li className="flex justify-between items-center">
                     <span className="text-[var(--theme-foreground)]">Select Theme</span>
                     <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">1-9</kbd>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <span className="text-[var(--theme-foreground)]">Reset All Data</span>
-                    <kbd className="px-2 py-1 bg-[var(--theme-muted)] border border-[var(--theme-border)] rounded text-sm font-mono text-[var(--theme-muted-foreground)]">Ctrl+⌫</kbd>
                   </li>
                 </ul>
               </div>

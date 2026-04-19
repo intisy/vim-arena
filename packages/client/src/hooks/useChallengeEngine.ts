@@ -33,6 +33,7 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
   const isRetryRef = useRef(false)
   const lastChallengeRef = useRef<GeneratedChallenge | null>(null)
   const challengeIdRef = useRef<string | null>(null)
+  const phaseRef = useRef<ChallengePhase>('idle')
   const countdownDurationRef = useRef(countdownDuration)
   countdownDurationRef.current = countdownDuration
   const { elo } = useEloRating()
@@ -68,14 +69,16 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
 
   const togglePause = useCallback(() => {
     if (!practiceModeRef.current || !engineRef.current) return
-    if (phase === 'active') {
+    if (phaseRef.current === 'active') {
       engineRef.current.pause()
+      phaseRef.current = 'paused'
       setPhase('paused')
-    } else if (phase === 'paused') {
+    } else if (phaseRef.current === 'paused') {
       engineRef.current.resume()
+      phaseRef.current = 'active'
       setPhase('active')
     }
-  }, [phase])
+  }, [])
 
   const registerChallenge = useCallback(async (ch: GeneratedChallenge) => {
     if (!user) return
@@ -133,6 +136,7 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
     setKeystrokes(0)
     const cdDuration = countdownDurationRef.current
     setCountdown(cdDuration)
+    phaseRef.current = 'countdown'
     setPhase('countdown')
 
     void registerChallenge(ch)
@@ -153,12 +157,14 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
           if (time >= ch.timeLimit) {
             const res = engine.forceComplete()
             setResult(res)
+            phaseRef.current = 'complete'
             setPhase('complete')
             void submitToServer(ch, res, practiceModeRef.current, isRetryRef.current)
           }
         })
         engineRef.current = engine
         engine.start()
+        phaseRef.current = 'active'
         setPhase('active')
       }
     }, 1000)
@@ -198,22 +204,23 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
   }, [startChallenge, difficulty])
 
   const handleEditorStateChange = useCallback((state: EditorState) => {
-    if (phase !== 'active' || !engineRef.current) return
+    if (phaseRef.current !== 'active' || !engineRef.current) return
     
     const res = engineRef.current.validateCompletion(state)
     if (res) {
       setResult(res)
+      phaseRef.current = 'complete'
       setPhase('complete')
       const ch = engineRef.current.getChallenge()
       void submitToServer(ch, res, practiceModeRef.current, isRetryRef.current)
     }
-  }, [phase, submitToServer])
+  }, [submitToServer])
 
   const handleKeystroke = useCallback(() => {
-    if (phase !== 'active' || !engineRef.current) return
+    if (phaseRef.current !== 'active' || !engineRef.current) return
     engineRef.current.recordKeystroke()
     setKeystrokes(engineRef.current.getKeystrokeCount())
-  }, [phase])
+  }, [])
 
   return {
     challenge,

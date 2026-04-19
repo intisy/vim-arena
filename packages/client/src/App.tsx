@@ -28,8 +28,8 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <DesktopGate>
-            <KeyboardHelp />
             <BrowserRouter basename="/vim-arena">
+              <KeyboardHelp />
               <Routes>
                 <Route element={<MainLayout />}>
                   <Route index element={<Suspense fallback={null}><HomePage /></Suspense>} />
