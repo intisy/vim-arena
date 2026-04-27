@@ -3845,6 +3845,17 @@ export const EXTRA_TEMPLATES: ChallengeTemplate[] = [
         for (let w = 0; w < wordPositions.length - 1; w++) {
           const count = Math.min(rng.next() > 0.5 ? 3 : 2, wordPositions.length - w)
           if (count < 2) continue
+          
+          let valid = true
+          for (let k = 0; k < count - 1; k++) {
+            const gap = lines[i].slice(wordPositions[w+k].end, wordPositions[w+k+1].start)
+            if (!/^\s+$/.test(gap)) {
+              valid = false
+              break
+            }
+          }
+          if (!valid) continue
+          
           const lastWord = wordPositions[w + count - 1]
           let endCol = lastWord.end
           while (endCol < lines[i].length && /\s/.test(lines[i][endCol])) endCol++
@@ -4094,6 +4105,8 @@ export const EXTRA_TEMPLATES: ChallengeTemplate[] = [
           wordPositions.push({ start: m.index, end: m.index + m[0].length })
         }
         for (let w = 0; w < wordPositions.length - 1; w++) {
+          const gap = lines[i].slice(wordPositions[w].end, wordPositions[w+1].start)
+          if (!/^\s+$/.test(gap)) continue
           const lastWord = wordPositions[w + 1]
           candidates.push({ lineIdx: i, col: wordPositions[w].start, endCol: lastWord.end })
         }
@@ -4332,6 +4345,9 @@ export const EXTRA_TEMPLATES: ChallengeTemplate[] = [
           wordPositions.push({ start: m.index, end: m.index + m[0].length })
         }
         for (let w = 0; w < wordPositions.length - 1; w++) {
+          const gap = lines[i].slice(wordPositions[w].end, wordPositions[w+1].start)
+          if (!/^\s+$/.test(gap)) continue
+          
           const lastWord = wordPositions[w + 1]
           let endWithSpace = lastWord.end
           while (endWithSpace < lines[i].length && /\s/.test(lines[i][endWithSpace])) endWithSpace++
