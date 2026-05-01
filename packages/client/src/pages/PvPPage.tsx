@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Swords, Loader2, X, Clock, Zap, Trophy, History, Eye } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Swords, Loader2, X, Clock, Trophy, History, Eye } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useEloRating } from '@/hooks/useEloRating'
@@ -13,6 +13,7 @@ export function PvPPage() {
   const navigate = useNavigate()
   const { elo } = useEloRating()
   const [queueState, setQueueState] = useState<QueueState>('idle')
+  const [pvpMode, setPvpMode] = useState<'ranked' | 'casual'>('ranked')
   const [error, setError] = useState<string | null>(null)
   const [queuedAt, setQueuedAt] = useState<number | null>(null)
   const [elapsed, setElapsed] = useState(0)
@@ -109,12 +110,12 @@ export function PvPPage() {
   }, [queueState, matchConfig, navigate])
 
   const joinQueue = useCallback(async () => {
-    if (!session?.user?.id) return
+    if (pvpMode === 'ranked' && !session?.user?.id) return
     setError(null)
     setQueueState('joining')
 
     try {
-      const { data, error: rpcError } = await supabase.rpc('join_matchmaking_queue')
+      const { data, error: rpcError } = await supabase.rpc('join_matchmaking_queue', { p_mode: pvpMode } as any)
 
       if (rpcError) {
         throw new Error(rpcError.message || 'Failed to join queue')
@@ -155,7 +156,7 @@ export function PvPPage() {
       setError(err instanceof Error ? err.message : 'Failed to join queue')
       setQueueState('error')
     }
-  }, [session?.user?.id])
+  }, [session?.user?.id, pvpMode])
 
   const leaveQueue = useCallback(async () => {
     try {
@@ -221,21 +222,40 @@ export function PvPPage() {
       <div className="w-full max-w-md p-8 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center gap-6 glow-border-warning">
         {queueState === 'idle' && (
           <>
-            <div className="flex flex-col items-center gap-3 text-center">
-              <div className="w-10 h-10 rounded-lg bg-[var(--theme-accent)]/10 flex items-center justify-center">
-                <Zap size={22} className="text-[var(--theme-accent)]" />
-              </div>
-              <p className="text-sm text-[var(--theme-muted-foreground)] leading-relaxed">
-                You'll be matched with a player of similar skill level.
-                Both players receive the same challenge — first to finish wins!
-              </p>
+            {/* Mode selector */}
+            <div className="flex w-full rounded-lg overflow-hidden border border-[var(--theme-border)]">
+              <button
+                onClick={() => setPvpMode('ranked')}
+                className={`flex-1 py-2.5 text-sm font-bold transition-colors ${pvpMode === 'ranked' ? 'bg-[var(--theme-warning)] text-[var(--theme-background)]' : 'bg-[var(--theme-muted)] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)]'}`}
+              >
+                🏆 Ranked
+              </button>
+              <button
+                onClick={() => setPvpMode('casual')}
+                className={`flex-1 py-2.5 text-sm font-bold transition-colors ${pvpMode === 'casual' ? 'bg-[var(--theme-accent)] text-white' : 'bg-[var(--theme-muted)] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)]'}`}
+              >
+                ⚡ Casual
+              </button>
             </div>
-            <button
-              onClick={joinQueue}
-              className="w-full px-6 py-4 bg-[var(--theme-warning)] text-[var(--theme-background)] font-black rounded-xl text-lg hover:opacity-90 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
-            >
-              Find Match
-            </button>
+
+            <p className="text-xs text-[var(--theme-muted-foreground)] text-center">
+              {pvpMode === 'ranked' ? 'Affects your Elo rating. Matched by skill level.' : 'No rating change. Open to all players.'}
+            </p>
+
+            {pvpMode === 'ranked' && !session?.user?.id ? (
+              <div className="w-full flex flex-col items-center gap-3">
+                <p className="text-sm text-[var(--theme-muted-foreground)] text-center">
+                  <Link to="/" className="text-[var(--theme-primary)] font-bold hover:underline">Sign in</Link> to play Ranked PvP.
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={joinQueue}
+                className="w-full px-6 py-4 bg-[var(--theme-warning)] text-[var(--theme-background)] font-black rounded-xl text-lg hover:opacity-90 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+              >
+                Find Match
+              </button>
+            )}
           </>
         )}
 

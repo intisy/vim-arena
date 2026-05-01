@@ -103,6 +103,7 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
   }, [user])
 
   const submitToServer = useCallback(async (ch: GeneratedChallenge, res: ChallengeResult, isPractice: boolean, isRetryAttempt: boolean) => {
+    sessionStorage.removeItem('vim_arena_challenge')
     if (!user) return
     try {
       await supabase.rpc('submit_solo_result', {
@@ -180,7 +181,24 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
   const startChallenge = useCallback((diff: 1 | 2 | 3 | 4 | 5) => {
     setDifficulty(diff)
     
-    const seed = Date.now()
+    let seed: number
+    const stored = sessionStorage.getItem('vim_arena_challenge')
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as { seed: number; difficulty: number }
+        if (parsed.difficulty === diff && Date.now() - parsed.seed < 10 * 60 * 1000) {
+          seed = parsed.seed
+        } else {
+          seed = Date.now()
+        }
+      } catch {
+        seed = Date.now()
+      }
+    } else {
+      seed = Date.now()
+    }
+    sessionStorage.setItem('vim_arena_challenge', JSON.stringify({ seed, difficulty: diff }))
+
     const rng = new SeededRandom(seed)
 
     const proceduralGen = new ProceduralSnippetGenerator(new SeededRandom(seed + 1))
@@ -243,6 +261,59 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
     setKeystrokes(engineRef.current.getKeystrokeCount())
   }, [])
 
+  const showSolutionAndLose = useCallback(() => {
+    if (phaseRef.current !== 'active' && phaseRef.current !== 'paused') return
+    const ch = lastChallengeRef.current
+    if (!ch) return
+    const elapsedTime = elapsed
+    const keyCount = engineRef.current?.getKeystrokeCount() ?? keystrokes
+    const log = engineRef.current?.getKeyLog() ?? []
+    cleanup()
+    const res: ChallengeResult = {
+      templateId: ch.templateId,
+      snippetId: ch.snippetId,
+      completedAt: Date.now(),
+      timeSeconds: elapsedTime,
+      keystrokeCount: keyCount,
+      referenceKeystrokeCount: ch.referenceKeystrokeCount,
+      speedScore: 0,
+      efficiencyScore: 0,
+      totalScore: 0,
+      timedOut: true,
+      keyLog: log,
+    }
+    setResult(res)
+    phaseRef.current = 'complete'
+    setPhase('complete')
+    void submitToServer(ch, res, true, true)
+  }, [cleanup, elapsed, keystrokes, submitToServer])
+
+  const skipChallenge = useCallback(() => {
+    if (phaseRef.current !== 'active' && phaseRef.current !== 'paused') return
+    const ch = lastChallengeRef.current
+    if (!ch) return
+    const elapsedTime = elapsed
+    const keyCount = engineRef.current?.getKeystrokeCount() ?? keystrokes
+    const log = engineRef.current?.getKeyLog() ?? []
+    cleanup()
+    const res: ChallengeResult = {
+      templateId: ch.templateId,
+      snippetId: ch.snippetId,
+      completedAt: Date.now(),
+      timeSeconds: elapsedTime,
+      keystrokeCount: keyCount,
+      referenceKeystrokeCount: ch.referenceKeystrokeCount,
+      speedScore: 0,
+      efficiencyScore: 0,
+      totalScore: 0,
+      timedOut: true,
+      keyLog: log,
+    }
+    void submitToServer(ch, res, true, true)
+    sessionStorage.removeItem('vim_arena_challenge')
+    startChallenge(difficulty)
+  }, [cleanup, elapsed, keystrokes, submitToServer, startChallenge, difficulty])
+
   return {
     challenge,
     phase,
@@ -259,6 +330,8 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
     retry,
     nextChallenge,
     handleEditorStateChange,
-    handleKeystroke
+    handleKeystroke,
+    showSolutionAndLose,
+    skipChallenge,
   }
 }

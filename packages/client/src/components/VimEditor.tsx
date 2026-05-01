@@ -161,7 +161,7 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
           if (event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'Meta') return false
           if (event.ctrlKey || event.altKey || event.metaKey) return false
 
-          if (event.key === '^' || event.key === 'Dead') {
+          if (event.key === '^' || (event.key === 'Dead' && !event.shiftKey)) {
             const currentMode = readVimMode(view)
             if (currentMode !== 'insert' && currentMode !== 'replace') {
               const ak = allowedKeysRef.current
@@ -218,6 +218,11 @@ export const VimEditor = forwardRef<VimEditorRef, VimEditorProps>(function VimEd
               return false
             }
             if (event.key.startsWith('Arrow')) {
+              onKeystrokeRef.current?.(event.key)
+              return false
+            }
+            // Allow any single shifted character (e.g. $, %, {, }) — Vim handles these natively
+            if (event.shiftKey && event.key.length === 1) {
               onKeystrokeRef.current?.(event.key)
               return false
             }

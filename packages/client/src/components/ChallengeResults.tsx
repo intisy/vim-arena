@@ -162,7 +162,7 @@ export function ChallengeResults({
               </div>
             </div>
           )}
-          {optimalSolutions && optimalSolutions.length > 0 && keyLog.length <= optimalSolutions[0].totalKeystrokes && (
+          {!result.timedOut && optimalSolutions && optimalSolutions.length > 0 && keyLog.length <= optimalSolutions[0].totalKeystrokes && (
             <div className="text-center py-2">
               <span className="text-green-400 text-sm font-bold">✨ Optimal solution!</span>
             </div>

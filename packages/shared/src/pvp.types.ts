@@ -14,6 +14,7 @@ export interface PvpRaceConfig {
   player2Username: string
   player1Elo: number
   player2Elo: number
+  mode?: 'ranked' | 'casual'
 }
 
 // Realtime broadcast message types

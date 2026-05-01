@@ -7,7 +7,7 @@ import { VimEditor } from '@/components/VimEditor'
 import type { VimEditorRef } from '@/components/VimEditor'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
 import { buildPracticeKeys } from '@/engine/KeyFilter'
-import { Target, GraduationCap, ArrowRight, LogIn, Pause, Play } from 'lucide-react'
+import { Target, GraduationCap, ArrowRight, LogIn, Pause, Play, Eye, SkipForward } from 'lucide-react'
 import type { TargetRange } from '@/types/editor'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/hooks/useSettings'
@@ -50,6 +50,8 @@ export default function ChallengeViewPage() {
     nextChallenge,
     handleEditorStateChange,
     handleKeystroke,
+    showSolutionAndLose,
+    skipChallenge,
   } = useChallengeEngine(initialPracticeMode, settings.challengeCountdownDuration)
 
   useEffect(() => {
@@ -179,6 +181,24 @@ export default function ChallengeViewPage() {
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
+          {(phase === 'active' || phase === 'paused') && (
+            <>
+              <button
+                onClick={showSolutionAndLose}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border bg-gray-800 text-gray-400 border-gray-700 hover:text-amber-400 hover:border-amber-700"
+              >
+                <Eye size={14} />
+                Show Solution
+              </button>
+              <button
+                onClick={skipChallenge}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border bg-gray-800 text-gray-400 border-gray-700 hover:text-red-400 hover:border-red-700"
+              >
+                <SkipForward size={14} />
+                Skip
+              </button>
+            </>
+          )}
           {practiceMode && (phase === 'active' || phase === 'paused') && (
             <button
               onClick={togglePause}
@@ -196,7 +216,7 @@ export default function ChallengeViewPage() {
           <button
             onClick={togglePracticeMode}
             disabled={phase === 'active' || phase === 'countdown' || phase === 'paused'}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border ${
+            className={`flex items-center min-w-[110px] justify-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border ${
               phase === 'active' || phase === 'countdown' || phase === 'paused'
                 ? 'bg-gray-800/50 text-gray-600 border-gray-800 cursor-not-allowed'
                 : practiceMode
@@ -217,7 +237,7 @@ export default function ChallengeViewPage() {
       </div>
 
       <div className="flex-1 relative min-h-[400px]">
-        <div className={`transition-opacity duration-300 ${phase === 'complete' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`transition-opacity duration-300 ${phase === 'complete' ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
           {practiceMode && equalSolutions.length > 0 && phase !== 'countdown' && (
             <div className="mb-3 bg-gray-800/60 border border-amber-800/40 rounded-lg px-4 py-2.5">
               {equalSolutions.map((sol, si) => (
