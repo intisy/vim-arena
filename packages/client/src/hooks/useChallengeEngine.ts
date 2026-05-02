@@ -26,6 +26,7 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
   const [difficulty, setDifficulty] = useState<1 | 2 | 3 | 4 | 5>(1)
   const [practiceMode, setPracticeMode] = useState(initialPracticeMode)
   const [isRetry, setIsRetry] = useState(false)
+  const [replaySnapshots, setReplaySnapshots] = useState<any[]>([])
 
   const engineRef = useRef<ChallengeEngine | null>(null)
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -140,6 +141,7 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
     setElapsed(0)
     setKeystrokes(0)
     replaySnapshotsRef.current = []
+    setReplaySnapshots([])
     startTimeRef.current = 0
     const cdDuration = countdownDurationRef.current
     setCountdown(cdDuration)
@@ -166,6 +168,7 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
             setResult(res)
             phaseRef.current = 'complete'
             setPhase('complete')
+            setReplaySnapshots([...replaySnapshotsRef.current])
             void submitToServer(ch, res, practiceModeRef.current, isRetryRef.current)
           }
         })
@@ -234,7 +237,6 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
     const now = Date.now()
     if (startTimeRef.current > 0) {
       const elapsedSec = (now - startTimeRef.current) / 1000
-      // Record snapshot if it's the first one, or if it changed
       const lastSnap = replaySnapshotsRef.current[replaySnapshotsRef.current.length - 1]
       if (!lastSnap || lastSnap.c !== state.content || lastSnap.l !== state.cursorLine || lastSnap.col !== state.cursorColumn) {
         replaySnapshotsRef.current.push({
@@ -250,6 +252,7 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
       setResult(res)
       phaseRef.current = 'complete'
       setPhase('complete')
+      setReplaySnapshots([...replaySnapshotsRef.current])
       const ch = engineRef.current.getChallenge()
       void submitToServer(ch, res, practiceModeRef.current, isRetryRef.current)
     }
@@ -285,6 +288,7 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
     setResult(res)
     phaseRef.current = 'complete'
     setPhase('complete')
+    setReplaySnapshots([...replaySnapshotsRef.current])
     void submitToServer(ch, res, true, true)
   }, [cleanup, elapsed, keystrokes, submitToServer])
 
@@ -324,6 +328,7 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
     difficulty,
     practiceMode,
     isRetry,
+    replaySnapshots,
     togglePracticeMode,
     togglePause,
     startChallenge,

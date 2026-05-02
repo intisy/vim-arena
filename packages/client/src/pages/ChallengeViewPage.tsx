@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useMemo, useCallback, useState } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useChallengeEngine } from '@/hooks/useChallengeEngine'
 import { ChallengeTimer } from '@/components/ChallengeTimer'
@@ -11,6 +11,7 @@ import { Target, GraduationCap, ArrowRight, LogIn, Pause, Play, Eye, SkipForward
 import type { TargetRange } from '@/types/editor'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/hooks/useSettings'
+import SoloReplayModal from '@/components/SoloReplayModal'
 
 const EDITOR_HEIGHTS: Record<string, string> = {
   compact: '300px',
@@ -31,6 +32,7 @@ export default function ChallengeViewPage() {
   const initialPracticeMode = location.state?.practiceMode ?? false
   const editorRef = useRef<VimEditorRef>(null)
   const { getBestScore } = useChallengeStats()
+  const [showingReplay, setShowingReplay] = useState(false)
 
   const editorHeight = EDITOR_HEIGHTS[settings.editorHeight] ?? '400px'
 
@@ -43,6 +45,7 @@ export default function ChallengeViewPage() {
     countdown,
     practiceMode,
     isRetry,
+    replaySnapshots,
     togglePracticeMode,
     togglePause,
     startChallenge,
@@ -62,6 +65,7 @@ export default function ChallengeViewPage() {
     if (phase === 'countdown' && editorRef.current) {
       editorRef.current.exitInsertMode()
       editorRef.current.reset()
+      setShowingReplay(false)
     }
     if (phase === 'active' && editorRef.current) {
       editorRef.current.focus()
@@ -81,12 +85,12 @@ export default function ChallengeViewPage() {
   }, [navigate])
 
   const handleTimeoutKeyDown = useCallback((e: KeyboardEvent) => {
-    if (phase !== 'complete' || result) return
+    if (phase !== 'complete' || result || showingReplay) return
     if (e.key === 'n') { e.preventDefault(); nextChallenge() }
     else if (e.key === 'r') { e.preventDefault(); retry() }
     else if (e.key === 'b' || e.key === 'Escape') { e.preventDefault(); handleBack() }
     else if (e.key === 'p') { e.preventDefault(); togglePracticeMode() }
-  }, [phase, result, nextChallenge, retry, handleBack, togglePracticeMode])
+  }, [phase, result, showingReplay, nextChallenge, retry, handleBack, togglePracticeMode])
 
   useEffect(() => {
     if (phase === 'complete' && !result) {
@@ -96,13 +100,13 @@ export default function ChallengeViewPage() {
   }, [phase, result, handleTimeoutKeyDown])
 
   useEffect(() => {
-    if (phase !== 'complete') return
+    if (phase !== 'complete' || showingReplay) return
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'p') { e.preventDefault(); togglePracticeMode() }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [phase, togglePracticeMode])
+  }, [phase, showingReplay, togglePracticeMode])
 
   useEffect(() => {
     if (phase !== 'active' && phase !== 'paused') return
@@ -115,12 +119,12 @@ export default function ChallengeViewPage() {
 
   // Auto-advance on completion
   useEffect(() => {
-    if (phase !== 'complete' || !result || !settings.challengeAutoAdvance) return
+    if (phase !== 'complete' || !result || !settings.challengeAutoAdvance || showingReplay) return
     const timer = setTimeout(() => {
       nextChallenge()
     }, 3000)
     return () => clearTimeout(timer)
-  }, [phase, result, settings.challengeAutoAdvance, nextChallenge])
+  }, [phase, result, settings.challengeAutoAdvance, showingReplay, nextChallenge])
 
   const allowedKeys = useMemo(() => {
     if (!practiceMode || !challenge?.optimalSolutions) return undefined
@@ -309,7 +313,7 @@ export default function ChallengeViewPage() {
         )}
 
         {phase === 'complete' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md rounded-xl z-20 p-6">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-xl z-20 p-6">
             {result ? (
               <div className="flex flex-col items-center gap-4">
                 <ChallengeResults
@@ -323,7 +327,18 @@ export default function ChallengeViewPage() {
                   keyLog={result.keyLog}
                   optimalSolutions={challenge.optimalSolutions}
                 />
-                {settings.challengeAutoAdvance && (
+                
+                {replaySnapshots.length > 0 && (
+                  <button
+                    onClick={() => setShowingReplay(true)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg bg-gray-800 text-gray-400 border border-gray-700 hover:text-white hover:border-gray-500 transition-colors mt-2"
+                  >
+                    <Eye size={14} />
+                    Watch Replay
+                  </button>
+                )}
+                
+                {settings.challengeAutoAdvance && !showingReplay && (
                   <p className="text-xs text-gray-500 animate-pulse">Auto-advancing in 3s...</p>
                 )}
               </div>
@@ -361,6 +376,16 @@ export default function ChallengeViewPage() {
           </div>
         )}
       </div>
+
+      {showingReplay && challenge && (
+        <SoloReplayModal
+          snapshots={replaySnapshots}
+          templateId={challenge.templateId}
+          timeSeconds={result?.timeSeconds ?? 0}
+          keystrokeCount={result?.keystrokeCount ?? 0}
+          onClose={() => setShowingReplay(false)}
+        />
+      )}
     </div>
   )
 }

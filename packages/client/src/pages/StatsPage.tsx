@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import {
   BarChart3, TrendingUp, Award, BookOpen,
   Target, Pencil, Move, Zap, ChevronsUp, Search,
-  Braces, Quote, Type, AlignLeft, Trophy, Eye, Play, Pause, SkipBack, SkipForward, X, Clock,
+  Braces, Quote, Type, AlignLeft, Trophy, Eye, Clock,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useEloRating } from '@/hooks/useEloRating'
@@ -10,9 +10,9 @@ import { useUserStats } from '@/hooks/useUserStats'
 import { useLessonProgress } from '@/hooks/useLessonProgress'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
 import { CHALLENGE_TEMPLATES } from '@/data/challenge-templates'
-import type { ReplaySnapshot } from '@vim-arena/shared'
 import { LESSON_CATEGORIES } from '@/data/categories'
 import { ALL_LESSONS } from '@/data/lessons/index'
+import SoloReplayModal from '@/components/SoloReplayModal'
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Target, Pencil, Move, Zap, ChevronsUp, Search,
@@ -257,104 +257,6 @@ function LessonProgressBars({ isCompleted }: { isCompleted: (id: string) => bool
   )
 }
 
-
-function SoloReplayModal({ result, onClose }: { result: any, onClose: () => void }) {
-  const [playing, setPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const animFrameRef = useRef<number | null>(null)
-  const lastTickRef = useRef<number>(0)
-
-  const template = CHALLENGE_TEMPLATES.find(t => t.id === result.templateId)
-
-  const snapshots: ReplaySnapshot[] = result.replayData || []
-  const totalDuration = snapshots.length > 0 ? snapshots[snapshots.length - 1].t : 0
-
-  useEffect(() => {
-    if (!playing) {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-      return
-    }
-    lastTickRef.current = performance.now()
-    const tick = (now: number) => {
-      const dt = (now - lastTickRef.current) / 1000
-      lastTickRef.current = now
-      setCurrentTime(prev => {
-        const next = prev + dt
-        if (next >= totalDuration) {
-          setPlaying(false)
-          return totalDuration
-        }
-        return next
-      })
-      animFrameRef.current = requestAnimationFrame(tick)
-    }
-    animFrameRef.current = requestAnimationFrame(tick)
-    return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-    }
-  }, [playing, totalDuration])
-
-  const currentState = React.useMemo(() => {
-    if (snapshots.length === 0) return { content: '', line: 0, col: 0 }
-    if (currentTime <= 0) return { content: snapshots[0].c, line: snapshots[0].l, col: snapshots[0].col }
-    let best = snapshots[0]
-    for (const snap of snapshots) {
-      if (snap.t <= currentTime) best = snap
-      else break
-    }
-    return { content: best.c, line: best.l, col: best.col }
-  }, [snapshots, currentTime])
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-[#1e1f29] rounded-xl border border-gray-700 shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-gray-800">
-          <div className="flex items-center gap-3">
-            <h3 className="font-bold text-white">{template?.title || 'Challenge Replay'}</h3>
-            <span className="text-xs font-mono text-gray-500">{result.timeSeconds.toFixed(1)}s • {result.keystrokeCount} keys</span>
-          </div>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-white transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-        
-        <div className="flex-1 p-4 bg-black/50 overflow-auto min-h-[300px]">
-          <pre className="font-mono text-sm leading-relaxed text-[#f8f8f2] whitespace-pre">
-            {currentState.content || '\n'}
-          </pre>
-        </div>
-        
-        <div className="p-4 border-t border-gray-800 bg-gray-900 flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-mono text-gray-500 w-12 text-right">{currentTime.toFixed(1)}</span>
-            <input
-              type="range"
-              min="0"
-              max={totalDuration}
-              step="0.05"
-              value={currentTime}
-              onChange={(e) => setCurrentTime(parseFloat(e.target.value))}
-              className="flex-1 h-2 rounded-full appearance-none cursor-pointer bg-gray-700"
-            />
-            <span className="text-xs font-mono text-gray-500 w-12">{totalDuration.toFixed(1)}</span>
-          </div>
-          <div className="flex items-center justify-center gap-4">
-            <button onClick={() => { setCurrentTime(0); setPlaying(true) }} className="p-2 text-gray-400 hover:text-white">
-              <SkipBack size={18} />
-            </button>
-            <button onClick={() => setPlaying(p => !p)} className="p-3 bg-green-600 text-white rounded-full hover:bg-green-500">
-              {playing ? <Pause size={20} /> : <Play size={20} />}
-            </button>
-            <button onClick={() => { setCurrentTime(totalDuration); setPlaying(false) }} className="p-2 text-gray-400 hover:text-white">
-              <SkipForward size={18} />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export default function StatsPage() {
   const { elo } = useEloRating()
   const { userStats } = useUserStats()
@@ -367,135 +269,150 @@ export default function StatsPage() {
   }, [])
 
   return (
-    <div className="max-w-5xl mx-auto animate-fade-in-up">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-[var(--theme-primary)]/10 flex items-center justify-center">
-            <BarChart3 size={22} className="text-[var(--theme-primary)]" />
+    <>
+      <div className="max-w-5xl mx-auto animate-fade-in-up">
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--theme-primary)]/10 flex items-center justify-center">
+              <BarChart3 size={22} className="text-[var(--theme-primary)]" />
+            </div>
+            <h1 className="text-4xl font-black tracking-tight text-[var(--theme-foreground)]">Stats</h1>
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-[var(--theme-foreground)]">Stats</h1>
+          <p className="text-lg text-[var(--theme-muted-foreground)]">
+            Track your Vim mastery progress
+          </p>
         </div>
-        <p className="text-lg text-[var(--theme-muted-foreground)]">
-          Track your Vim mastery progress
-        </p>
-      </div>
 
-      <div className="divider-glow mb-8" />
+        <div className="divider-glow mb-8" />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 stagger">
-        <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
-          <div className="text-3xl font-black font-mono text-[var(--theme-primary)] mb-1">{elo.rating}</div>
-          <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Rating</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 stagger">
+          <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
+            <div className="text-3xl font-black font-mono text-[var(--theme-primary)] mb-1">{elo.rating}</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Rating</div>
+          </div>
+          <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
+            <div className="text-3xl font-black font-mono text-[var(--theme-accent)] mb-1">{elo.peakRating}</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Peak Rating</div>
+          </div>
+          <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
+            <div className="text-3xl font-black font-mono text-[var(--theme-warning)] mb-1">{completedCount}</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Lessons Done</div>
+          </div>
+          <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
+            <div className="text-3xl font-black font-mono text-[var(--theme-success)] mb-1">{userStats.bestChallengeScore}%</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Best Score</div>
+          </div>
         </div>
-        <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
-          <div className="text-3xl font-black font-mono text-[var(--theme-accent)] mb-1">{elo.peakRating}</div>
-          <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Peak Rating</div>
-        </div>
-        <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
-          <div className="text-3xl font-black font-mono text-[var(--theme-warning)] mb-1">{completedCount}</div>
-          <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Lessons Done</div>
-        </div>
-        <div className="stat-card p-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-background)] flex flex-col items-center text-center">
-          <div className="text-3xl font-black font-mono text-[var(--theme-success)] mb-1">{userStats.bestChallengeScore}%</div>
-          <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-muted-foreground)]">Best Score</div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="glass-card glow-border rounded-xl p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="glass-card glow-border rounded-xl p-6">
+            <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-[var(--theme-primary)]/10 flex items-center justify-center">
+                <TrendingUp size={16} className="text-[var(--theme-primary)]" />
+              </div>
+              Rating History
+            </h2>
+            <RatingHistoryChart history={elo.history} />
+          </div>
+
+          <div className="glass-card glow-border-accent rounded-xl p-6">
+            <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-[var(--theme-accent)]/10 flex items-center justify-center">
+                <Award size={16} className="text-[var(--theme-accent)]" />
+              </div>
+              Win Rate
+            </h2>
+            <WinLossRing wins={elo.wins} losses={elo.losses} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="glass-card glow-border rounded-xl p-6">
+            <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-red-400/10 flex items-center justify-center">
+                <Target size={16} className="text-red-400" />
+              </div>
+              Difficulty Distribution
+            </h2>
+            <DifficultyBars history={elo.history} />
+          </div>
+
+          <div className="glass-card glow-border rounded-xl p-6">
+            <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center">
+                <BookOpen size={16} className="text-amber-400" />
+              </div>
+              Lesson Progress
+            </h2>
+            <LessonProgressBars isCompleted={isCompleted} />
+          </div>
+        </div>
+      
+        <div className="mb-8 glass-card glow-border rounded-xl p-6">
           <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[var(--theme-primary)]/10 flex items-center justify-center">
-              <TrendingUp size={16} className="text-[var(--theme-primary)]" />
+              <Clock size={16} className="text-[var(--theme-primary)]" />
             </div>
-            Rating History
+            Recent Challenge History
           </h2>
-          <RatingHistoryChart history={elo.history} />
-        </div>
-
-        <div className="glass-card glow-border-accent rounded-xl p-6">
-          <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[var(--theme-accent)]/10 flex items-center justify-center">
-              <Award size={16} className="text-[var(--theme-accent)]" />
+          
+          {(!recentResults || recentResults.length === 0) ? (
+            <div className="text-center py-8 text-sm text-[var(--theme-muted-foreground)]">
+              No recent challenges found. Complete some challenges to see them here!
             </div>
-            Win Rate
-          </h2>
-          <WinLossRing wins={elo.wins} losses={elo.losses} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card glow-border rounded-xl p-6">
-          <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-red-400/10 flex items-center justify-center">
-              <Target size={16} className="text-red-400" />
-            </div>
-            Difficulty Distribution
-          </h2>
-          <DifficultyBars history={elo.history} />
-        </div>
-
-        <div className="glass-card glow-border rounded-xl p-6">
-          <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center">
-              <BookOpen size={16} className="text-amber-400" />
-            </div>
-            Lesson Progress
-          </h2>
-          <LessonProgressBars isCompleted={isCompleted} />
-        </div>
-      </div>
-    
-      <div className="mb-8 glass-card glow-border rounded-xl p-6">
-        <h2 className="text-lg font-bold text-[var(--theme-foreground)] mb-4 flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[var(--theme-primary)]/10 flex items-center justify-center">
-            <Clock size={16} className="text-[var(--theme-primary)]" />
-          </div>
-          Recent Challenge History
-        </h2>
-        
-        {(!recentResults || recentResults.length === 0) ? (
-          <div className="text-center py-8 text-sm text-[var(--theme-muted-foreground)]">
-            No recent challenges found. Complete some challenges to see them here!
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {recentResults.map((result, i) => {
-              const template = CHALLENGE_TEMPLATES.find(t => t.id === result.templateId)
-              return (
-                <div key={i} className="flex items-center justify-between p-4 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-background)] hover:border-[var(--theme-primary)]/50 transition-colors">
-                  <div>
-                    <div className="font-bold text-[var(--theme-foreground)] mb-1">
-                      {template?.title || 'Unknown Challenge'}
+          ) : (
+            <div className="flex flex-col gap-2">
+              {recentResults.map((result, i) => {
+                const template = CHALLENGE_TEMPLATES.find(t => t.id === result.templateId)
+                const hasReplay = result.replayData && result.replayData.length > 0
+                return (
+                  <div 
+                    key={i} 
+                    className={`flex items-center justify-between p-4 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-background)] hover:border-[var(--theme-primary)]/50 transition-colors ${hasReplay ? 'cursor-pointer' : ''}`}
+                    onClick={() => hasReplay && setActiveReplay(result)}
+                  >
+                    <div>
+                      <div className="font-bold text-[var(--theme-foreground)] mb-1">
+                        {template?.title || 'Unknown Challenge'}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-[var(--theme-muted-foreground)] font-mono">
+                        <span className={result.totalScore >= 50 ? 'text-[var(--theme-success)]' : 'text-[var(--theme-error)]'}>
+                          {result.totalScore} pts
+                        </span>
+                        <span>{result.timeSeconds.toFixed(1)}s</span>
+                        <span>{result.keystrokeCount} keys</span>
+                        <span>{new Date(result.completedAt).toLocaleString()}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[var(--theme-muted-foreground)] font-mono">
-                      <span className={result.totalScore >= 50 ? 'text-[var(--theme-success)]' : 'text-[var(--theme-error)]'}>
-                        {result.totalScore} pts
-                      </span>
-                      <span>{result.timeSeconds.toFixed(1)}s</span>
-                      <span>{result.keystrokeCount} keys</span>
-                      <span>{new Date(result.completedAt).toLocaleString()}</span>
-                    </div>
+                    {hasReplay && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActiveReplay(result)
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-[var(--theme-muted)] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:bg-[var(--theme-border)] transition-colors border border-[var(--theme-border)]"
+                      >
+                        <Eye size={14} />
+                        Replay
+                      </button>
+                    )}
                   </div>
-                  {result.replayData && result.replayData.length > 0 && (
-                    <button
-                      onClick={() => setActiveReplay(result)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-[var(--theme-muted)] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:bg-[var(--theme-border)] transition-colors border border-[var(--theme-border)]"
-                    >
-                      <Eye size={14} />
-                      Replay
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {activeReplay && (
-        <SoloReplayModal result={activeReplay} onClose={() => setActiveReplay(null)} />
+        <SoloReplayModal
+          snapshots={Array.isArray(activeReplay.replayData) ? activeReplay.replayData : JSON.parse(activeReplay.replayData ?? '[]')}
+          templateId={activeReplay.templateId}
+          timeSeconds={activeReplay.timeSeconds}
+          keystrokeCount={activeReplay.keystrokeCount}
+          onClose={() => setActiveReplay(null)}
+        />
       )}
-
-</div>
+    </>
   )
 }
