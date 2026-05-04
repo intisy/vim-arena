@@ -55,6 +55,7 @@ export default function ChallengeViewPage() {
     handleKeystroke,
     showSolutionAndLose,
     skipChallenge,
+    skipCountdown,
   } = useChallengeEngine(initialPracticeMode, settings.challengeCountdownDuration)
 
   useEffect(() => {
@@ -109,13 +110,14 @@ export default function ChallengeViewPage() {
   }, [phase, showingReplay, togglePracticeMode])
 
   useEffect(() => {
-    if (phase !== 'active' && phase !== 'paused') return
+    if (phase !== 'active' && phase !== 'paused' && phase !== 'countdown') return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); togglePause() }
+      if (phase === 'countdown' && (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); skipCountdown() }
+      else if (e.key === 'Escape') { e.preventDefault(); togglePause() }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [phase, togglePause])
+  }, [phase, togglePause, skipCountdown])
 
   // Auto-advance on completion
   useEffect(() => {
@@ -214,7 +216,7 @@ export default function ChallengeViewPage() {
             >
               {phase === 'paused' ? <Play size={14} /> : <Pause size={14} />}
               {phase === 'paused' ? 'Resume' : 'Pause'}
-              {showKbd && <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-0.5">Esc</kbd>}
+              {showKbd && <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-0.5 text-gray-200">Esc</kbd>}
             </button>
           )}
           <button
@@ -230,7 +232,7 @@ export default function ChallengeViewPage() {
           >
             {practiceMode ? <Target size={14} /> : <GraduationCap size={14} />}
             {practiceMode ? 'Practice ON' : 'Practice'}
-            {showKbd && <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-0.5">p</kbd>}
+            {showKbd && <kbd className="text-xs bg-gray-600 px-1 py-0.5 rounded font-mono ml-0.5 text-gray-200">p</kbd>}
           </button>
           <ChallengeTimer
             timeLimit={challenge.timeLimit}
@@ -241,7 +243,7 @@ export default function ChallengeViewPage() {
       </div>
 
       <div className="flex-1 relative min-h-[400px]">
-        <div className={`transition-opacity duration-300 ${phase === 'complete' ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`transition-opacity duration-300 ${phase === 'complete' ? 'opacity-100 pointer-events-none' : 'opacity-100'}`}>
           {practiceMode && equalSolutions.length > 0 && phase !== 'countdown' && (
             <div className="mb-3 bg-gray-800/60 border border-amber-800/40 rounded-lg px-4 py-2.5">
               {equalSolutions.map((sol, si) => (
@@ -295,7 +297,7 @@ export default function ChallengeViewPage() {
         </div>
 
         {phase === 'countdown' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl z-10">
+          <div onClick={skipCountdown} className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl z-10 cursor-pointer" title="Click to skip">
             <div className="text-9xl font-black text-white animate-bounce drop-shadow-[0_0_30px_rgba(0,255,65,0.5)]">
               {countdown > 0 ? countdown : 'GO!'}
             </div>
@@ -313,7 +315,7 @@ export default function ChallengeViewPage() {
         )}
 
         {phase === 'complete' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-xl z-20 p-6">
+          <div className="absolute top-4 right-4 z-20 scale-[0.85] origin-top-right drop-shadow-2xl">
             {result ? (
               <div className="flex flex-col items-center gap-4">
                 <ChallengeResults
@@ -360,14 +362,14 @@ export default function ChallengeViewPage() {
                       className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                       Retry
-                      {showKbd && <kbd className="text-xs bg-gray-600 px-1.5 py-0.5 rounded font-mono">r</kbd>}
+                      {showKbd && <kbd className="text-xs bg-gray-600 px-1.5 py-0.5 rounded font-mono text-gray-200">r</kbd>}
                     </button>
                     <button
                       onClick={handleBack}
                       className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                       Back
-                      {showKbd && <kbd className="text-xs bg-gray-700 px-1.5 py-0.5 rounded font-mono">b</kbd>}
+                      {showKbd && <kbd className="text-xs bg-gray-700 px-1.5 py-0.5 rounded font-mono text-gray-200">b</kbd>}
                     </button>
                   </div>
                 </div>

@@ -364,7 +364,8 @@ export function PvPPage() {
               return (
                 <div
                   key={match.matchId}
-                  className={`p-4 rounded-xl border bg-[var(--theme-background)] transition-all duration-200 hover:-translate-y-0.5 ${won ? 'border-[var(--theme-success)]/30 hover:border-[var(--theme-success)]/50' : draw ? 'border-[var(--theme-warning)]/30 hover:border-[var(--theme-warning)]/50' : 'border-[var(--theme-error)]/30 hover:border-[var(--theme-error)]/50'}`}
+                  onClick={() => match.hasReplay && navigate(`/pvp/replay/${match.matchId}`)}
+                  className={`p-4 rounded-xl border bg-[var(--theme-background)] transition-all duration-200 ${match.hasReplay ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-lg' : ''} ${won ? 'border-[var(--theme-success)]/30 hover:border-[var(--theme-success)]/50' : draw ? 'border-[var(--theme-warning)]/30 hover:border-[var(--theme-warning)]/50' : 'border-[var(--theme-error)]/30 hover:border-[var(--theme-error)]/50'}`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">

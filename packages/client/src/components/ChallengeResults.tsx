@@ -25,6 +25,19 @@ export function ChallengeResults({
   keyLog,
   optimalSolutions,
 }: ChallengeResultsProps) {
+  const cleanOptimalSolutions = optimalSolutions?.map(sol => {
+    if (sol.steps.length === 0) return sol;
+    const lastStep = sol.steps[sol.steps.length - 1];
+    if (lastStep.keys === 'Escape' || lastStep.keys === 'Esc') {
+      return {
+        ...sol,
+        steps: sol.steps.slice(0, -1),
+        totalKeystrokes: sol.totalKeystrokes - 1
+      };
+    }
+    return sol;
+  });
+
   const [displayScore, setDisplayScore] = useState(0)
 
   useEffect(() => {
@@ -143,14 +156,14 @@ export function ChallengeResults({
               </kbd>
             ))}
           </div>
-          {optimalSolutions && optimalSolutions.length > 0 && keyLog.length > optimalSolutions[0].totalKeystrokes && (
+          {cleanOptimalSolutions && cleanOptimalSolutions.length > 0 && keyLog.length > cleanOptimalSolutions[0].totalKeystrokes && (
             <div>
               <div className="border-b border-gray-800 pb-2 mb-3">
                 <span className="text-green-400 text-sm font-bold uppercase tracking-wider">Optimal Solution</span>
-                <span className="text-gray-500 text-xs ml-2">({optimalSolutions[0].totalKeystrokes} keys)</span>
+                <span className="text-gray-500 text-xs ml-2">({cleanOptimalSolutions[0].totalKeystrokes} keys)</span>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
-                {optimalSolutions[0].steps.map((step, i) => (
+                {cleanOptimalSolutions[0].steps.map((step, i) => (
                   <div key={i} className="flex items-center gap-1">
                     {i > 0 && <span className="text-gray-600 text-xs">→</span>}
                     <span className="inline-flex items-center gap-1 bg-green-900/20 border border-green-800/40 rounded px-1.5 py-0.5">
@@ -162,7 +175,7 @@ export function ChallengeResults({
               </div>
             </div>
           )}
-          {!result.timedOut && optimalSolutions && optimalSolutions.length > 0 && keyLog.length <= optimalSolutions[0].totalKeystrokes && (
+          {!result.timedOut && cleanOptimalSolutions && cleanOptimalSolutions.length > 0 && keyLog.length <= cleanOptimalSolutions[0].totalKeystrokes && (
             <div className="text-center py-2">
               <span className="text-green-400 text-sm font-bold">✨ Optimal solution!</span>
             </div>

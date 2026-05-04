@@ -292,6 +292,21 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
     void submitToServer(ch, res, true, true)
   }, [cleanup, elapsed, keystrokes, submitToServer])
 
+  const skipCountdown = useCallback(() => {
+    if (phaseRef.current !== 'countdown') return
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+      countdownIntervalRef.current = null
+    }
+    setCountdown(0)
+    if (engineRef.current) {
+      engineRef.current.start()
+      startTimeRef.current = Date.now()
+      phaseRef.current = 'active'
+      setPhase('active')
+    }
+  }, [])
+
   const skipChallenge = useCallback(() => {
     if (phaseRef.current !== 'active' && phaseRef.current !== 'paused') return
     const ch = lastChallengeRef.current
@@ -338,5 +353,6 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
     handleKeystroke,
     showSolutionAndLose,
     skipChallenge,
+    skipCountdown,
   }
 }

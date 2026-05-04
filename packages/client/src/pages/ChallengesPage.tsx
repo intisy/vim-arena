@@ -3,9 +3,10 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useEloRating } from '@/hooks/useEloRating'
 import { useChallengeStats } from '@/hooks/useChallengeStats'
 import { getRatingLabel, getRatingColor } from '@/engine/EloRating'
-import { Target, GraduationCap, Star, LogIn } from 'lucide-react'
+import { Target, GraduationCap, Star, LogIn, Eye } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/hooks/useSettings'
+import SoloReplayModal from '@/components/SoloReplayModal'
 
 const DIFFICULTY_LABELS: Record<number, { label: string; desc: string }> = {
   1: { label: 'Beginner', desc: 'delete/replace single characters' },
@@ -23,9 +24,10 @@ export default function ChallengesPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { elo, getMatchedDifficulty } = useEloRating()
-  const { stats } = useChallengeStats()
+  const { recentResults } = useChallengeStats()
   const { settings } = useSettings()
   const [practiceMode, setPracticeMode] = useState(settings.challengeDefaultPractice)
+  const [activeReplay, setActiveReplay] = useState<any>(null)
 
   const matchedDiff = getMatchedDifficulty()
   const ratingLabel = getRatingLabel(elo.rating)
@@ -196,8 +198,18 @@ export default function ChallengesPage() {
                 {elo.history.slice(0, 20).map((entry, i) => {
                   const diff = entry.rating - (i < elo.history.length - 1 ? elo.history[i + 1].rating : 1000)
                   const isGain = diff >= 0
+                  
+                  const result = recentResults?.find(r => 
+                    r.totalScore === entry.score && 
+                    Math.abs(r.completedAt - entry.timestamp) < 5000
+                  )
+                  
                   return (
-                    <div key={i} className="p-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-background)] flex justify-between items-center glow-border transition-all duration-150">
+                    <div 
+                      key={i} 
+                      onClick={() => result && result.replayData && setActiveReplay(result)}
+                      className={`p-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-background)] flex justify-between items-center transition-all duration-150 ${result && result.replayData ? 'cursor-pointer hover:border-[var(--theme-primary)]/50' : ''}`}
+                    >
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-[var(--theme-muted-foreground)] font-mono w-8">L{entry.difficulty}</span>
                         <span className="text-[var(--theme-foreground)] font-mono">{entry.rating}</span>
@@ -205,8 +217,11 @@ export default function ChallengesPage() {
                           {isGain ? '+' : ''}{diff}
                         </span>
                       </div>
-                      <div className="text-right">
+                      <div className="flex items-center gap-4">
                         <span className="text-[var(--theme-muted-foreground)] text-sm">Score: {entry.score}</span>
+                        {result && result.replayData && (
+                          <Eye size={14} className="text-[var(--theme-muted-foreground)]" />
+                        )}
                       </div>
                     </div>
                   )
@@ -216,26 +231,18 @@ export default function ChallengesPage() {
           </div>
 
           {/* Best Scores */}
-          {Object.keys(stats).length > 0 && (
-            <div>
-              <h2 className="section-heading text-xl font-bold text-[var(--theme-foreground)] mb-6">Best Scores</h2>
-              <div className="space-y-2">
-                {Object.values(stats).map((stat) => (
-                  <div key={stat.templateId} className="p-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-background)] flex justify-between items-center">
-                    <div>
-                      <div className="text-[var(--theme-foreground)] font-medium text-sm">{stat.templateId}</div>
-                      <div className="text-[var(--theme-muted-foreground)] text-xs">{stat.attempts} attempts</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[var(--theme-success)] font-mono font-bold">{stat.bestScore}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          
         </div>
       </div>
+      {activeReplay && (
+        <SoloReplayModal 
+          snapshots={Array.isArray(activeReplay.replayData) ? activeReplay.replayData : JSON.parse(activeReplay.replayData || '[]')}
+          templateId={activeReplay.templateId}
+          timeSeconds={activeReplay.timeSeconds}
+          keystrokeCount={activeReplay.keystrokeCount}
+          onClose={() => setActiveReplay(null)} 
+        />
+      )}
     </div>
   )
 }
