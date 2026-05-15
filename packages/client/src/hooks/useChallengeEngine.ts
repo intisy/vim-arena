@@ -148,6 +148,19 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
     phaseRef.current = 'countdown'
     setPhase('countdown')
 
+    const engine = new ChallengeEngine(ch, (time) => {
+      setElapsed(time)
+      if (time >= ch.timeLimit) {
+        const res = engine.forceComplete()
+        setResult(res)
+        phaseRef.current = 'complete'
+        setPhase('complete')
+        setReplaySnapshots([...replaySnapshotsRef.current])
+        void submitToServer(ch, res, practiceModeRef.current, isRetryRef.current)
+      }
+    })
+    engineRef.current = engine
+
     void registerChallenge(ch)
 
     let currentCountdown = cdDuration
@@ -161,19 +174,7 @@ export function useChallengeEngine(initialPracticeMode = false, countdownDuratio
           countdownIntervalRef.current = null
         }
         
-        const engine = new ChallengeEngine(ch, (time) => {
-          setElapsed(time)
-          if (time >= ch.timeLimit) {
-            const res = engine.forceComplete()
-            setResult(res)
-            phaseRef.current = 'complete'
-            setPhase('complete')
-            setReplaySnapshots([...replaySnapshotsRef.current])
-            void submitToServer(ch, res, practiceModeRef.current, isRetryRef.current)
-          }
-        })
-        engineRef.current = engine
-        engine.start()
+        engineRef.current?.start()
         startTimeRef.current = Date.now()
         phaseRef.current = 'active'
         setPhase('active')

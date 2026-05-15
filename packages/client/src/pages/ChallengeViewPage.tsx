@@ -297,10 +297,11 @@ export default function ChallengeViewPage() {
         </div>
 
         {phase === 'countdown' && (
-          <div onClick={skipCountdown} className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl z-10 cursor-pointer" title="Click to skip">
+          <div onClick={skipCountdown} className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl z-10 cursor-pointer" title="Click to skip">
             <div className="text-9xl font-black text-white animate-bounce drop-shadow-[0_0_30px_rgba(0,255,65,0.5)]">
               {countdown > 0 ? countdown : 'GO!'}
             </div>
+            <div className="text-sm text-white/70 mt-4 font-mono animate-pulse">Press Space, Enter, or Click to skip</div>
           </div>
         )}
 

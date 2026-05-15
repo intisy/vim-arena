@@ -211,7 +211,11 @@ export default function ChallengesPage() {
                       className={`p-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-background)] flex justify-between items-center transition-all duration-150 ${result && result.replayData ? 'cursor-pointer hover:border-[var(--theme-primary)]/50' : ''}`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-[var(--theme-muted-foreground)] font-mono w-8">L{entry.difficulty}</span>
+                        <span className="flex gap-0.5 w-16">
+                          {Array.from({ length: 5 }, (_, idx) => (
+                             <Star key={idx} size={10} className={idx < entry.difficulty ? 'text-[var(--theme-warning)] fill-[var(--theme-warning)]' : 'text-[var(--theme-border)]'} />
+                          ))}
+                        </span>
                         <span className="text-[var(--theme-foreground)] font-mono">{entry.rating}</span>
                         <span className={`text-sm font-bold ${isGain ? 'text-[var(--theme-success)]' : 'text-[var(--theme-error)]'}`}>
                           {isGain ? '+' : ''}{diff}
@@ -220,7 +224,13 @@ export default function ChallengesPage() {
                       <div className="flex items-center gap-4">
                         <span className="text-[var(--theme-muted-foreground)] text-sm">Score: {entry.score}</span>
                         {result && result.replayData && (
-                          <Eye size={14} className="text-[var(--theme-muted-foreground)]" />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setActiveReplay(result) }}
+                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-[var(--theme-muted)] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:bg-[var(--theme-border)] transition-colors border border-[var(--theme-border)]"
+                          >
+                            <Eye size={14} />
+                            Replay
+                          </button>
                         )}
                       </div>
                     </div>

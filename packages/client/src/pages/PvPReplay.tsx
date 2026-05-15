@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Play, Pause, SkipBack, SkipForward, Loader2, Trophy, User, Timer, ArrowLeft } from 'lucide-react'
+import ReactCodeMirror from '@uiw/react-codemirror'
+import { EditorView, Decoration } from '@codemirror/view'
+import { StateField, StateEffect } from '@codemirror/state'
+import { javascript } from '@codemirror/lang-javascript'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { ChallengeGenerator, SeededRandom } from '@/engine/ChallengeGenerator'
@@ -26,6 +30,22 @@ function getSnapshotAtTime(snapshots: ReplaySnapshot[], time: number, initialCon
   return best
 }
 
+const setCursorEffect = StateEffect.define<number | null>()
+const cursorMark = Decoration.mark({ class: 'cm-replay-cursor' })
+const cursorField = StateField.define({
+  create() { return Decoration.none },
+  update(decos, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setCursorEffect)) {
+        if (e.value === null) return Decoration.none
+        return Decoration.set(cursorMark.range(e.value, Math.min(e.value + 1, tr.state.doc.length)))
+      }
+    }
+    return decos
+  },
+  provide: f => EditorView.decorations.from(f)
+})
+
 export function PvPReplay() {
   const { matchId } = useParams<{ matchId: string }>()
   const navigate = useNavigate()
@@ -40,6 +60,8 @@ export function PvPReplay() {
   const [speed, setSpeed] = useState(1)
   const animFrameRef = useRef<number | null>(null)
   const lastTickRef = useRef<number>(0)
+  const p1CmRef = useRef<any>(null)
+  const p2CmRef = useRef<any>(null)
 
   useEffect(() => {
     if (!matchId || !session?.user?.id) return
@@ -132,6 +154,30 @@ export function PvPReplay() {
     if (!replay?.player2.replay || !challenge) return { content: challenge?.initialContent ?? '', line: 0, col: 0 }
     return getSnapshotAtTime(replay.player2.replay, currentTime, challenge.initialContent)
   }, [replay, challenge, currentTime])
+
+  useEffect(() => {
+    const view1 = p1CmRef.current?.view
+    if (view1) {
+      try {
+        const lineCount = view1.state.doc.lines
+        const lineNum = Math.min(p1State.line + 1, lineCount)
+        const line = view1.state.doc.line(lineNum)
+        const pos = Math.min(line.from + p1State.col, line.to)
+        view1.dispatch({ effects: setCursorEffect.of(pos) })
+      } catch(e) {}
+    }
+    
+    const view2 = p2CmRef.current?.view
+    if (view2) {
+      try {
+        const lineCount = view2.state.doc.lines
+        const lineNum = Math.min(p2State.line + 1, lineCount)
+        const line = view2.state.doc.line(lineNum)
+        const pos = Math.min(line.from + p2State.col, line.to)
+        view2.dispatch({ effects: setCursorEffect.of(pos) })
+      } catch(e) {}
+    }
+  }, [p1State, p2State])
 
   const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setCurrentTime(parseFloat(e.target.value))
@@ -239,27 +285,55 @@ export function PvPReplay() {
 
       {/* Side-by-side editors */}
       <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
+        <style>{`
+          .cm-replay-cursor {
+            background-color: rgba(248, 248, 242, 0.8);
+            color: #282a36 !important;
+          }
+          .cm-editor { background-color: #1e1f29 !important; height: 100%; }
+          .cm-gutters { background-color: #1e1f29 !important; border-right: 1px solid #333 !important; color: #6272a4 !important; }
+        `}</style>
         {/* Player 1 Editor */}
-        <div className="flex flex-col rounded-xl overflow-hidden border border-[var(--theme-border)]">
-          <pre
-            className="flex-1 p-4 overflow-auto font-mono text-sm leading-relaxed whitespace-pre"
-            style={{ backgroundColor: '#1e1f29', color: '#f8f8f2', minHeight: '300px' }}
-          >
-            {p1State.content || '\n'}
-          </pre>
+        <div className="flex flex-col rounded-xl overflow-hidden border border-[var(--theme-border)] relative">
+          <div className="flex-1 bg-[#1e1f29] relative overflow-hidden min-h-[300px]">
+            <ReactCodeMirror
+              ref={p1CmRef}
+              value={p1State.content}
+              theme="dark"
+              readOnly={true}
+              extensions={[javascript(), cursorField]}
+              basicSetup={{
+                lineNumbers: true,
+                highlightActiveLine: false,
+                foldGutter: false,
+                dropCursor: false,
+              }}
+              style={{ height: '100%', fontSize: '14px', fontFamily: 'monospace', position: 'absolute', inset: 0 }}
+            />
+          </div>
           <div className="px-3 py-1 text-xs font-mono bg-[#1e1f29] text-[#6272a4] border-t border-[#333]">
             Ln {p1State.line + 1}, Col {p1State.col + 1}
           </div>
         </div>
 
         {/* Player 2 Editor */}
-        <div className="flex flex-col rounded-xl overflow-hidden border border-[var(--theme-border)]">
-          <pre
-            className="flex-1 p-4 overflow-auto font-mono text-sm leading-relaxed whitespace-pre"
-            style={{ backgroundColor: '#1e1f29', color: '#f8f8f2', minHeight: '300px' }}
-          >
-            {p2State.content || '\n'}
-          </pre>
+        <div className="flex flex-col rounded-xl overflow-hidden border border-[var(--theme-border)] relative">
+          <div className="flex-1 bg-[#1e1f29] relative overflow-hidden min-h-[300px]">
+            <ReactCodeMirror
+              ref={p2CmRef}
+              value={p2State.content}
+              theme="dark"
+              readOnly={true}
+              extensions={[javascript(), cursorField]}
+              basicSetup={{
+                lineNumbers: true,
+                highlightActiveLine: false,
+                foldGutter: false,
+                dropCursor: false,
+              }}
+              style={{ height: '100%', fontSize: '14px', fontFamily: 'monospace', position: 'absolute', inset: 0 }}
+            />
+          </div>
           <div className="px-3 py-1 text-xs font-mono bg-[#1e1f29] text-[#6272a4] border-t border-[#333]">
             Ln {p2State.line + 1}, Col {p2State.col + 1}
           </div>
