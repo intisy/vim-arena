@@ -26,6 +26,14 @@ export default function ChallengeViewPage() {
 
   const location = useLocation()
   const navigate = useNavigate()
+  
+  useEffect(() => {
+    const navEntries = performance.getEntriesByType('navigation');
+    if (navEntries.length > 0 && (navEntries[0] as PerformanceNavigationTiming).type === 'reload') {
+      navigate('/challenges', { replace: true });
+    }
+  }, [navigate]);
+
   const { user } = useAuth()
   const { settings } = useSettings()
   const difficulty = location.state?.difficulty || 1
@@ -316,7 +324,7 @@ export default function ChallengeViewPage() {
         )}
 
         {phase === 'complete' && (
-          <div className="absolute top-4 right-4 z-20 scale-[0.85] origin-top-right drop-shadow-2xl">
+          <div className="mt-6 animate-in slide-in-from-bottom-4 duration-500 fade-in">
             {result ? (
               <div className="flex flex-col items-center gap-4">
                 <ChallengeResults
