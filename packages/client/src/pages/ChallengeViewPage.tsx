@@ -13,6 +13,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/hooks/useSettings'
 import SoloReplayModal from '@/components/SoloReplayModal'
 
+const ENTRY_PATH = window.location.pathname;
+
 const EDITOR_HEIGHTS: Record<string, string> = {
   compact: '300px',
   default: '400px',
@@ -28,8 +30,8 @@ export default function ChallengeViewPage() {
   const navigate = useNavigate()
   
   useEffect(() => {
-    const navEntries = performance.getEntriesByType('navigation');
-    if (navEntries.length > 0 && (navEntries[0] as PerformanceNavigationTiming).type === 'reload') {
+    // If the JS bundle was first loaded on this page, it's a hard refresh.
+    if (ENTRY_PATH.includes('/active')) {
       navigate('/challenges', { replace: true });
     }
   }, [navigate]);
