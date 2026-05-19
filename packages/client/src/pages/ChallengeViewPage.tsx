@@ -13,8 +13,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/hooks/useSettings'
 import SoloReplayModal from '@/components/SoloReplayModal'
 
-const ENTRY_PATH = window.location.pathname;
-
 const EDITOR_HEIGHTS: Record<string, string> = {
   compact: '300px',
   default: '400px',
@@ -30,9 +28,12 @@ export default function ChallengeViewPage() {
   const navigate = useNavigate()
   
   useEffect(() => {
-    // If the JS bundle was first loaded on this page, it's a hard refresh.
-    if (ENTRY_PATH.includes('/active')) {
+    // If the token is missing, they hard-refreshed or navigated directly to the URL.
+    if (!sessionStorage.getItem('challenge_started')) {
       navigate('/challenges', { replace: true });
+    } else {
+      // Clear it so a subsequent hard-refresh kicks them out
+      sessionStorage.removeItem('challenge_started');
     }
   }, [navigate]);
 

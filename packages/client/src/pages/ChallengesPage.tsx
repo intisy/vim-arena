@@ -35,6 +35,7 @@ export default function ChallengesPage() {
   const diffInfo = DIFFICULTY_LABELS[matchedDiff]
 
   const handleStart = useCallback(() => {
+    sessionStorage.setItem('challenge_started', 'true')
     navigate('/challenges/active', { state: { difficulty: matchedDiff, practiceMode } })
   }, [navigate, matchedDiff, practiceMode])
 
